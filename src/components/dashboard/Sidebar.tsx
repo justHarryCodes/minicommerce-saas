@@ -14,6 +14,7 @@ import {
   ChevronRight,
   X,
   Menu,
+  ExternalLink,
 } from "lucide-react";
 import { auth } from "@/lib/firebase-client";
 import { signOut } from "firebase/auth";
@@ -47,6 +48,18 @@ function SidebarContent({
     router.push("/auth/login");
   };
 
+  const storeUrl = store
+    ? process.env.NEXT_PUBLIC_ROOT_DOMAIN
+      ? `https://${store.slug}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`
+      : `/store/${store.slug}`
+    : null;
+
+  const storeDisplayUrl = store
+    ? process.env.NEXT_PUBLIC_ROOT_DOMAIN
+      ? `${store.slug}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`
+      : `shopforge.com/store/${store.slug}`
+    : null;
+
   return (
     <div className="flex h-full flex-col">
       {/* Brand */}
@@ -70,21 +83,27 @@ function SidebarContent({
       </div>
 
       {/* Store card */}
-      {store && (
+      {store && storeUrl && (
         <div className="mx-4 mt-5 mb-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 px-4 py-3 border border-zinc-200 dark:border-zinc-700">
-          <p className="text-xs font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">
+          <p className="text-xs font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">
             Your store
           </p>
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-base font-bold text-zinc-900 dark:text-zinc-100 truncate">
-              {store.name}
-            </p>
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-base font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                {store.name}
+              </p>
+              <p className="text-xs text-zinc-400 dark:text-zinc-500 truncate mt-0.5">
+                {storeDisplayUrl}
+              </p>
+            </div>
             <a
-              href={`/store/${store.slug}`}
+              href={storeUrl}
               target="_blank"
-              className="text-xs font-semibold text-accent-600 dark:text-accent-400 hover:underline flex items-center gap-0.5 shrink-0"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-xs font-semibold text-accent-600 dark:text-accent-400 hover:underline shrink-0 mt-0.5"
             >
-              View <ChevronRight className="h-3.5 w-3.5" />
+              View <ExternalLink className="h-3 w-3" />
             </a>
           </div>
         </div>

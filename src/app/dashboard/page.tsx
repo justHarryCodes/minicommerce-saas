@@ -101,13 +101,18 @@ export default async function DashboardPage() {
             Welcome back! Here&apos;s what&apos;s happening with your store.
           </p>
         </div>
-        <Link
-          href={`/store/${store!.slug}`}
+        <a
+          href={
+            process.env.NEXT_PUBLIC_ROOT_DOMAIN
+              ? `https://${store!.slug}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`
+              : `/store/${store!.slug}`
+          }
           target="_blank"
+          rel="noopener noreferrer"
           className="hidden sm:flex items-center gap-2 text-sm font-medium text-accent-600 dark:text-accent-400 hover:underline"
         >
           View storefront <ExternalLink className="w-3.5 h-3.5" />
-        </Link>
+        </a>
       </div>
 
       {/* Store banner if no products */}
