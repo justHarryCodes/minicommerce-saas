@@ -17,13 +17,21 @@ export default async function DashboardLayout({
   if (!store) redirect("/onboarding");
 
   return (
-    <div className="min-h-screen bg-surface-50 dark:bg-surface-950 flex">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       <Sidebar
-        store={{ name: store.name, slug: store.slug, logoUrl: store.logo_url }}
+        store={{
+          name: store.name,
+          slug: store.slug,
+          logoUrl: store.logoUrl ?? store.logo_url,
+        }}
       />
-      <div className="flex-1 flex flex-col min-w-0 lg:ml-64">
+
+      {/* Main — offset by sidebar width on desktop, full width on mobile */}
+      <div className="lg:pl-64 flex flex-col min-h-screen">
         <Topbar user={user} store={store} />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 pt-16 lg:pt-6">
+          {children}
+        </main>
       </div>
     </div>
   );

@@ -1,6 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export function middleware(req: NextRequest) {
+  const hostname = req.headers.get("host") ?? "";
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "awarizonmall.com";
+
+  // ── Subdomain detection ──────────────────────────────────────────
+  const isSubdomain =
+    hostname.endsWith(`.${rootDomain}`) &&
+    !hostname.startsWith("www.") &&
+    !hostname.startsWith("localhost");
+
+  if (isSubdomain) {
+    const subdomain = hostname.replace(`.${rootDomain}`, "");
+    const url = req.nextUrl.clone();
+    url.pathname = `/store/${subdomain}${req.nextUrl.pathname}`;
+    return NextResponse.rewrite(url);
+  }
+
+  // ── Main domain routes ───────────────────────────────────────────
   const { pathname } = req.nextUrl;
 
   // Protect dashboard routes
@@ -13,10 +30,8 @@ export function middleware(req: NextRequest) {
     }
   }
 
-  // Redirect root to dashboard if logged in, else to landing
+  // Let landing page handle its own logic
   if (pathname === "/") {
-    const session = req.cookies.get("session");
-    // Let the landing page handle its own CTA logic
     return NextResponse.next();
   }
 
@@ -32,9 +47,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/dashboard/:path*",
-    "/onboarding",
-    "/((?!_next/static|_next/image|favicon.ico|public/).*)",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|public/).*)"],
 };
