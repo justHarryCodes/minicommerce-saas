@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=Syne:wght@700;800&display=swap');
+
+:root {
+  --font-sans: 'DM Sans', sans-serif;
+  --font-display: 'Syne', sans-serif;
+}
+
+html {
+  font-family: var(--font-sans);
+}
+
+@layer base {
+  body {
+    @apply antialiased;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { @apply bg-transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-zinc-300 dark:bg-zinc-700 rounded-full; }
+}
+
+/* Storefront CSS variables — injected by server based on store theme */
+.sf-theme-light {
+  --sf-bg:      #ffffff;
+  --sf-surface: #f8f8f8;
+  --sf-text:    #111111;
+  --sf-muted:   #888888;
+  --sf-border:  #e5e5e5;
+  --sf-accent:  #eab308;
+}
+
+.sf-theme-dark {
+  --sf-bg:      #111111;
+  --sf-surface: #1c1c1c;
+  --sf-text:    #f0f0f0;
+  --sf-muted:   #888888;
+  --sf-border:  #2a2a2a;
+  --sf-accent:  #ca8a04;
+}
