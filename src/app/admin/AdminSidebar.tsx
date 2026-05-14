@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Users, Settings, LogOut, Shield, CreditCard } from "lucide-react";
+import { LayoutDashboard, Users, Settings, LogOut, Shield, CreditCard, ArrowLeftRight } from "lucide-react";
 import { auth } from "@/lib/firebase-client";
 import { signOut } from "firebase/auth";
 import type { AdminUser } from "@/lib/admin-auth";
@@ -10,8 +10,9 @@ import type { AdminUser } from "@/lib/admin-auth";
 const navItems = [
   { href: "/admin",          label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/admin/vendors",  label: "Vendors",  icon: Users,           exact: false },
-  { href: "/admin/plans",    label: "Plans",    icon: CreditCard,      exact: false },
-  { href: "/admin/settings", label: "Settings", icon: Settings,        exact: false },
+  { href: "/admin/plans",     label: "Plans",     icon: CreditCard,       exact: false },
+  { href: "/admin/transfers", label: "Transfers", icon: ArrowLeftRight,   exact: false },
+  { href: "/admin/settings",  label: "Settings",  icon: Settings,         exact: false },
 ];
 
 export default function AdminSidebar({ admin }: { admin: AdminUser }) {

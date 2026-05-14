@@ -37,18 +37,19 @@ export default async function BillingPage({
 
   if (!store) redirect("/onboarding");
 
-  const [settings, payments, plans, sp] = await Promise.all([
+  const [settings, payments, plans, bankAccounts, sp] = await Promise.all([
     getPlatformSettings(),
     query<{
       id: string;
       type: string;
       amount: number;
       payment_status: string;
+      payment_method: string;
       period_start: string | null;
       period_end: string | null;
       created_at: string;
     }>(
-      `SELECT id, type, amount, payment_status, period_start, period_end, created_at
+      `SELECT id, type, amount, payment_status, payment_method, period_start, period_end, created_at
        FROM subscription_payments WHERE store_id = $1 ORDER BY created_at DESC LIMIT 20`,
       [store.id]
     ),
@@ -60,6 +61,12 @@ export default async function BillingPage({
       max_products: number;
       is_active: boolean;
     }>('SELECT id, name, description, price_monthly, max_products, is_active FROM plans WHERE is_active = true ORDER BY sort_order, created_at', []),
+    query<{
+      id: string;
+      bank_name: string;
+      account_number: string;
+      account_name: string;
+    }>('SELECT id, bank_name, account_number, account_name FROM platform_bank_accounts WHERE is_active = true ORDER BY sort_order', []),
     searchParams,
   ]);
 
@@ -88,6 +95,7 @@ export default async function BillingPage({
       settings={settings}
       payments={payments}
       plans={plans}
+      bankAccounts={bankAccounts}
       currentPlan={currentPlan ?? null}
       success={sp.success}
       error={sp.error}
