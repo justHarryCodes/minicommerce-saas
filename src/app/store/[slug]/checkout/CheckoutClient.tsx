@@ -3,9 +3,20 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, CreditCard, Building2, Loader2, CheckCircle2 } from "lucide-react";
+import {
+  ChevronLeft,
+  CreditCard,
+  Building2,
+  Loader2,
+  CheckCircle2,
+  Tag,
+  ChevronDown,
+  ChevronUp,
+  X,
+} from "lucide-react";
 import { useCart } from "@/components/storefront/CartProvider";
 import { formatCurrency } from "@/lib/utils";
+import { clThumb } from "@/lib/cloudinary";
 import toast from "react-hot-toast";
 
 interface CheckoutProps {
@@ -16,6 +27,13 @@ interface CheckoutProps {
   accountNumber?: string;
   accountName?: string;
   paystackPublicKey?: string;
+  returnPolicy?: string;
+}
+
+interface AppliedCoupon {
+  code: string;
+  discountAmount: number;
+  couponId: string;
 }
 
 // This is a Client Component — store data passed via parent server component
@@ -27,6 +45,7 @@ export default function CheckoutClient({
   accountNumber,
   accountName,
   paystackPublicKey,
+  returnPolicy,
 }: CheckoutProps) {
   const router = useRouter();
   const { items, totalAmount, clearCart } = useCart();
@@ -37,6 +56,14 @@ export default function CheckoutClient({
   );
   const [orderId, setOrderId] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
+
+  // Coupon state
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
+
+  // Return policy state
+  const [policyOpen, setPolicyOpen] = useState(false);
 
   const [form, setForm] = useState({
     customerName: "",
@@ -50,6 +77,9 @@ export default function CheckoutClient({
 
   const change = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+
+  const discountAmount = appliedCoupon?.discountAmount ?? 0;
+  const finalTotal = Math.max(0, totalAmount - discountAmount);
 
   if (items.length === 0 && step !== "success") {
     return (
@@ -65,6 +95,39 @@ export default function CheckoutClient({
         </Link>
       </div>
     );
+  }
+
+  async function handleApplyCoupon() {
+    const code = couponCode.trim().toUpperCase();
+    if (!code) return;
+    setValidatingCoupon(true);
+    try {
+      const res = await fetch(`/api/storefront/${storeSlug}/coupons/validate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, order_amount: totalAmount }),
+      });
+      const data = await res.json();
+      if (!data.valid) {
+        toast.error(data.error ?? "Invalid coupon code");
+        return;
+      }
+      setAppliedCoupon({
+        code,
+        discountAmount: data.discount_amount,
+        couponId: data.coupon_id,
+      });
+      toast.success(`Coupon applied! You save ${formatCurrency(data.discount_amount)}`);
+    } catch {
+      toast.error("Failed to validate coupon");
+    } finally {
+      setValidatingCoupon(false);
+    }
+  }
+
+  function handleRemoveCoupon() {
+    setAppliedCoupon(null);
+    setCouponCode("");
   }
 
   async function handleSubmitDetails(e: React.FormEvent) {
@@ -92,6 +155,8 @@ export default function CheckoutClient({
           })),
           paymentMethod: payMethod,
           totalAmount,
+          couponCode: appliedCoupon?.code ?? null,
+          discountAmount: appliedCoupon?.discountAmount ?? 0,
         }),
       });
 
@@ -109,7 +174,7 @@ export default function CheckoutClient({
           body: JSON.stringify({
             orderId: data.orderId,
             email: form.customerEmail || `${form.customerPhone}@noemail.com`,
-            amount: totalAmount,
+            amount: finalTotal,
           }),
         });
         const initData = await initRes.json();
@@ -167,7 +232,7 @@ export default function CheckoutClient({
               <div className="flex justify-between pt-2 border-t border-surface-200 dark:border-surface-700">
                 <span>Amount:</span>
                 <span className="font-black text-surface-900 dark:text-white">
-                  {formatCurrency(totalAmount)}
+                  {formatCurrency(finalTotal)}
                 </span>
               </div>
             </div>
@@ -379,7 +444,7 @@ export default function CheckoutClient({
                       <p className="font-semibold text-surface-900 dark:text-white text-sm">
                         Bank transfer
                       </p>
-                      <p className="text-xs text-surface-400">Pay manually to store's bank</p>
+                      <p className="text-xs text-surface-400">Pay manually to store&apos;s bank</p>
                     </div>
                   </label>
                 )}
@@ -410,6 +475,29 @@ export default function CheckoutClient({
                   )}
                 </div>
               )}
+
+              {/* Return policy accordion */}
+              {returnPolicy && (
+                <div className="mt-4 rounded-xl border border-surface-200 dark:border-surface-700 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setPolicyOpen((v) => !v)}
+                    className="flex items-center justify-between w-full px-4 py-3 text-sm font-semibold text-surface-700 dark:text-surface-300 bg-surface-50 dark:bg-surface-800 hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
+                  >
+                    <span>Return &amp; Refund Policy</span>
+                    {policyOpen ? (
+                      <ChevronUp className="w-4 h-4 text-surface-400" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-surface-400" />
+                    )}
+                  </button>
+                  {policyOpen && (
+                    <div className="px-4 py-4 text-sm text-surface-600 dark:text-surface-400 whitespace-pre-wrap leading-relaxed">
+                      {returnPolicy}
+                    </div>
+                  )}
+                </div>
+              )}
             </section>
           )}
         </div>
@@ -421,12 +509,13 @@ export default function CheckoutClient({
               Order summary ({items.length} item{items.length !== 1 ? "s" : ""})
             </h2>
 
+            {/* Cart items */}
             <div className="space-y-3 mb-5">
               {items.map((item) => (
                 <div key={item.product_id} className="flex items-center gap-3">
                   {item.image_url ? (
                     <img
-                      src={item.image_url}
+                      src={clThumb(item.image_url)}
                       alt={item.name}
                       className="w-12 h-12 rounded-lg object-cover border border-surface-100 dark:border-surface-700 shrink-0"
                     />
@@ -446,18 +535,74 @@ export default function CheckoutClient({
               ))}
             </div>
 
+            {/* Coupon input */}
+            <div className="mb-5">
+              {appliedCoupon ? (
+                <div className="flex items-center justify-between p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                  <div className="flex items-center gap-2">
+                    <Tag className="w-4 h-4 text-green-600 dark:text-green-400" />
+                    <span className="text-sm font-bold text-green-700 dark:text-green-400 font-mono">
+                      {appliedCoupon.code}
+                    </span>
+                    <span className="text-xs text-green-600 dark:text-green-400">
+                      -{formatCurrency(appliedCoupon.discountAmount)}
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleRemoveCoupon}
+                    className="p-1 rounded-lg text-green-500 hover:text-green-700 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 flex items-center rounded-xl border border-surface-200 dark:border-surface-700 overflow-hidden">
+                    <Tag className="w-4 h-4 text-surface-400 ml-3 shrink-0" />
+                    <input
+                      type="text"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
+                      placeholder="Coupon code"
+                      maxLength={30}
+                      className="flex-1 px-3 py-2.5 bg-transparent text-surface-900 dark:text-white placeholder:text-surface-400 text-sm font-mono focus:outline-none"
+                    />
+                  </div>
+                  <button
+                    onClick={handleApplyCoupon}
+                    disabled={validatingCoupon || !couponCode.trim()}
+                    className="px-3 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-50 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800"
+                  >
+                    {validatingCoupon ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      "Apply"
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Totals */}
             <div className="border-t border-surface-100 dark:border-surface-800 pt-4 space-y-2">
               <div className="flex justify-between text-sm text-surface-500 dark:text-surface-400">
                 <span>Subtotal</span>
                 <span>{formatCurrency(totalAmount)}</span>
               </div>
+              {appliedCoupon && (
+                <div className="flex justify-between text-sm text-green-600 dark:text-green-400 font-medium">
+                  <span>Discount ({appliedCoupon.code})</span>
+                  <span>-{formatCurrency(appliedCoupon.discountAmount)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm text-surface-500 dark:text-surface-400">
                 <span>Delivery</span>
                 <span className="text-green-500">To be arranged</span>
               </div>
               <div className="flex justify-between font-black text-lg text-surface-900 dark:text-white border-t border-surface-100 dark:border-surface-800 pt-3 mt-2">
                 <span>Total</span>
-                <span>{formatCurrency(totalAmount)}</span>
+                <span>{formatCurrency(finalTotal)}</span>
               </div>
             </div>
 

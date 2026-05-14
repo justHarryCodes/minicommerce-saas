@@ -36,6 +36,7 @@ export default async function CheckoutPage({ params }: Props) {
       accountNumber={store.bank_account_number}
       accountName={store.bank_account_name}
       paystackPublicKey={store.paystack_public_key}
+      returnPolicy={store.return_policy}
     />
   );
 }

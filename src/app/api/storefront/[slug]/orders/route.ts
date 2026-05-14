@@ -13,6 +13,8 @@ const OrderSchema = z.object({
   deliveryNote: z.string().optional(),
   paymentMethod: z.enum(["paystack", "transfer"]),
   totalAmount: z.number().min(0),
+  couponCode: z.string().optional().nullable(),
+  discountAmount: z.number().min(0).optional().default(0),
   items: z.array(
     z.object({
       productId: z.string().uuid(),
@@ -67,12 +69,15 @@ export async function POST(
     const dbPaymentMethod = d.paymentMethod === "transfer" ? "bank_transfer" : "paystack";
 
     const result = await withTransaction(async (client) => {
+      const discountAmt = d.discountAmount ?? 0;
+      const finalTotal = Math.max(0, d.totalAmount - discountAmt);
+
       const orderRows = await client.query(
         `INSERT INTO orders (
           store_id, order_number, customer_name, customer_email, customer_phone,
           delivery_address, delivery_city, delivery_state,
-          subtotal, total, payment_method
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id, order_number`,
+          subtotal, total, payment_method, coupon_code, discount_amount
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id, order_number`,
         [
           store.id, orderNumber,
           d.customerName,
@@ -82,8 +87,10 @@ export async function POST(
           d.deliveryCity || "N/A",
           d.deliveryState || "N/A",
           d.totalAmount,
-          d.totalAmount,
+          finalTotal,
           dbPaymentMethod,
+          d.couponCode || null,
+          discountAmt,
         ]
       );
 
@@ -107,6 +114,14 @@ export async function POST(
         await client.query(
           "UPDATE products SET stock_quantity = stock_quantity - $1 WHERE id = $2",
           [item.quantity, item.productId]
+        );
+      }
+
+      // Increment coupon usage if one was applied
+      if (d.couponCode) {
+        await client.query(
+          "UPDATE coupons SET uses_count = uses_count + 1 WHERE store_id = $1 AND code = $2",
+          [store.id, d.couponCode.toUpperCase()]
         );
       }
 

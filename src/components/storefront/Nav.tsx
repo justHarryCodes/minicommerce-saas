@@ -3,8 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, ShoppingCart, X, ChevronRight } from "lucide-react";
+import { Menu, ShoppingCart, X, ChevronRight, Heart, BadgeCheck } from "lucide-react";
 import { useCart } from "./CartProvider";
+import { useBookmarks } from "@/hooks/useBookmarks";
 import CartDrawer from "./CartDrawer";
 import type { Store, Category } from "@/types";
 
@@ -21,6 +22,7 @@ export default function StorefrontNav({ store, categories }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const { totalItems } = useCart();
+  const { count: bookmarkCount } = useBookmarks(store.slug);
 
   return (
     <>
@@ -42,7 +44,7 @@ export default function StorefrontNav({ store, categories }: Props) {
           </button>
 
           {/* Center: Store logo */}
-          <Link href={`/store/${store.slug}`} className="absolute left-1/2 -translate-x-1/2">
+          <Link href={`/store/${store.slug}`} className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5">
             {store.logo_url ? (
               <Image
                 src={store.logo_url}
@@ -55,6 +57,9 @@ export default function StorefrontNav({ store, categories }: Props) {
               <span className="font-black text-lg text-surface-900 dark:text-white tracking-tight">
                 {store.name}
               </span>
+            )}
+            {store.nin_verified && (
+              <span title="NIN Verified"><BadgeCheck className="w-5 h-5 shrink-0" style={{ color: "var(--sf-accent)" }} aria-label="NIN Verified" /></span>
             )}
           </Link>
 
@@ -87,7 +92,7 @@ export default function StorefrontNav({ store, categories }: Props) {
           <aside className="fixed inset-y-0 left-0 z-50 w-80 bg-white dark:bg-surface-900 shadow-2xl animate-slide-in-left overflow-y-auto">
             {/* Drawer header */}
             <div className="flex items-center justify-between p-5 border-b border-surface-100 dark:border-surface-800">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 {store.logo_url ? (
                   <Image
                     src={store.logo_url}
@@ -100,6 +105,9 @@ export default function StorefrontNav({ store, categories }: Props) {
                   <span className="font-black text-lg text-surface-900 dark:text-white">
                     {store.name}
                   </span>
+                )}
+                {store.nin_verified && (
+                  <span title="NIN Verified"><BadgeCheck className="w-5 h-5 shrink-0" style={{ color: "var(--sf-accent)" }} aria-label="NIN Verified" /></span>
                 )}
               </div>
               <button
@@ -119,6 +127,22 @@ export default function StorefrontNav({ store, categories }: Props) {
               >
                 🏠 All Products
               </Link>
+
+              {bookmarkCount > 0 && (
+                <a
+                  href={`/store/${store.slug}#saved-items`}
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+                  style={{ color: "var(--sf-accent)" }}
+                >
+                  <Heart className="w-4 h-4 fill-current" />
+                  Saved Items
+                  <span className="ml-auto text-xs font-bold px-2 py-0.5 rounded-full text-black"
+                    style={{ background: "var(--sf-accent)" }}>
+                    {bookmarkCount}
+                  </span>
+                </a>
+              )}
 
               {categories.length > 0 && (
                 <div className="mt-3">

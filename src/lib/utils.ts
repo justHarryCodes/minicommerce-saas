@@ -83,3 +83,22 @@ export const deriveThemeColors = (hex: string) => {
   const colors = deriveColors(hex)
   return { accentLight: colors.light, accentDark: colors.dark }
 }
+
+// Store / product URL helpers — uses subdomain when NEXT_PUBLIC_ROOT_DOMAIN is set
+export function getStoreUrl(slug: string): string {
+  const domain = process.env.NEXT_PUBLIC_ROOT_DOMAIN
+  return domain ? `https://${slug}.${domain}` : `/store/${slug}`
+}
+
+export function getProductUrl(storeSlug: string, productSlug: string): string {
+  const domain = process.env.NEXT_PUBLIC_ROOT_DOMAIN
+  return domain
+    ? `https://${storeSlug}.${domain}/products/${productSlug}`
+    : `/store/${storeSlug}/products/${productSlug}`
+}
+
+// Build a prefilled WhatsApp URL
+export function waLink(phone: string, message: string): string {
+  const digits = phone.replace(/\D/g, '')
+  return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`
+}

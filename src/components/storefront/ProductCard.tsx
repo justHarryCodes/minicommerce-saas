@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingCart, Check } from "lucide-react";
+import { ShoppingCart, Check, Heart } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "./CartProvider";
+import { useBookmarks } from "@/hooks/useBookmarks";
 import { formatCurrency } from "@/lib/utils";
+import { clCard } from "@/lib/cloudinary";
 import type { Product } from "@/types";
 
 interface Props {
@@ -14,6 +16,7 @@ interface Props {
 
 export default function ProductCard({ product, storeSlug }: Props) {
   const { addItem } = useCart();
+  const { isBookmarked, toggleBookmark } = useBookmarks(storeSlug);
   const [added, setAdded] = useState(false);
 
   const images = product.images ?? [];
@@ -22,6 +25,7 @@ export default function ProductCard({ product, storeSlug }: Props) {
   const comparePrice = product.compare_price ?? product.comparePrice;
   const hasDiscount = comparePrice && comparePrice > product.price;
   const discountPct = hasDiscount ? Math.round((1 - product.price / comparePrice!) * 100) : 0;
+  const bookmarked = isBookmarked(product.id);
 
   function handleAddToCart(e: React.MouseEvent) {
     e.preventDefault();
@@ -38,6 +42,19 @@ export default function ProductCard({ product, storeSlug }: Props) {
     setTimeout(() => setAdded(false), 1500);
   }
 
+  function handleBookmark(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleBookmark({
+      id: product.id,
+      name: product.name,
+      slug: product.slug ?? product.id,
+      price: product.price,
+      compare_price: comparePrice ?? null,
+      image_url: imageUrl,
+    });
+  }
+
   return (
     <Link
       href={`/store/${storeSlug}/products/${product.slug ?? product.id}`}
@@ -46,8 +63,13 @@ export default function ProductCard({ product, storeSlug }: Props) {
       {/* Image */}
       <div className="relative aspect-square overflow-hidden bg-surface-50 dark:bg-surface-800">
         {imageUrl ? (
-          <img src={imageUrl} alt={product.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+          <img
+            src={clCard(imageUrl)}
+            alt={product.name}
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-4xl text-surface-200 dark:text-surface-700">
             🛍️
@@ -66,6 +88,18 @@ export default function ProductCard({ product, storeSlug }: Props) {
             </span>
           </div>
         )}
+        {/* Bookmark button */}
+        <button
+          onClick={handleBookmark}
+          aria-label={bookmarked ? "Remove bookmark" : "Bookmark product"}
+          className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center shadow-md transition-all ${
+            bookmarked
+              ? "bg-red-500 text-white scale-110"
+              : "bg-white/90 text-surface-400 hover:text-red-500 hover:scale-110"
+          }`}
+        >
+          <Heart className={`w-4 h-4 ${bookmarked ? "fill-current" : ""}`} />
+        </button>
       </div>
 
       {/* Info */}

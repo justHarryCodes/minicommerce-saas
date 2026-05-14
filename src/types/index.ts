@@ -50,6 +50,24 @@ export interface Store {
   created_at?: string
   updatedAt?: string
   updated_at?: string
+  // NIN verification
+  nin_verified?: boolean
+  ninVerified?: boolean
+  nin_number?: string
+  ninNumber?: string
+  // Storefront customisation
+  banner_images?: string[]
+  bannerImages?: string[]
+  featured_product_ids?: string[]
+  featuredProductIds?: string[]
+  // Return policy
+  return_policy?: string
+  returnPolicy?: string
+  // Referral
+  referral_code?: string
+  referralCode?: string
+  referral_credits?: number
+  referralCredits?: number
 }
 
 export interface Category {

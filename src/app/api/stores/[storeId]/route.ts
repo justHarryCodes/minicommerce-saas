@@ -33,6 +33,7 @@ export async function PATCH(
     bankAccountNumber: 'bank_account_number',
     bankAccountName: 'bank_account_name',
     paystackPublicKey: 'paystack_public_key',
+    return_policy: 'return_policy',
   }
 
   const sets: string[] = []

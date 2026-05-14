@@ -1,11 +1,19 @@
 import { query, queryOne } from "@/lib/db";
 import { getOrSet, cacheKey, TTL } from "@/lib/redis";
 import ProductCard from "@/components/storefront/ProductCard";
+import BookmarkSlider from "@/components/storefront/BookmarkSlider";
+import HeroSlider from "@/components/storefront/HeroSlider";
+import { BadgeCheck } from "lucide-react";
 import type { Product, Category, Store } from "@/types";
+import { clLogo } from "@/lib/cloudinary";
 
 interface Props {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ category?: string; sub?: string }>;
+}
+
+interface CategoryWithCover extends Category {
+  cover_image: string | null;
 }
 
 async function getStoreProducts(storeId: string, categorySlug?: string, subSlug?: string) {
@@ -48,94 +56,215 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
     TTL.CATEGORY_LIST
   ) ?? [];
 
-  const products = await getStoreProducts(store.id, category, sub);
   const topCategories = allCategories.filter((c) => !c.parent_id);
   const activeCategory = topCategories.find((c) => c.slug === category);
   const subcategories = activeCategory
     ? allCategories.filter((c) => c.parent_id === activeCategory.id)
     : [];
 
+  // Fetch all data in parallel
+  const [products, featuredProducts, categoryCovers] = await Promise.all([
+    getStoreProducts(store.id, category, sub),
+
+    // Featured products (vendor-selected, in order)
+    !category && store.featured_product_ids?.length
+      ? query<Product>(
+          `SELECT * FROM products
+           WHERE store_id = $1 AND id = ANY($2::uuid[]) AND is_active = true`,
+          [store.id, store.featured_product_ids]
+        ).then((rows) => {
+          // Preserve vendor-defined order
+          const order = store.featured_product_ids!;
+          return rows.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+        })
+      : Promise.resolve([] as Product[]),
+
+    // Category collection covers (only on main page)
+    !category
+      ? query<CategoryWithCover>(
+          `SELECT c.id, c.name, c.slug, c.sort_order,
+             (SELECT p.image_url FROM products p
+              WHERE p.category_id = c.id AND p.is_active = true
+                AND p.image_url IS NOT NULL AND p.image_url <> ''
+              ORDER BY p.sort_order, p.created_at DESC LIMIT 1
+             ) AS cover_image
+           FROM categories c
+           WHERE c.store_id = $1 AND c.parent_id IS NULL
+           ORDER BY c.sort_order, c.name`,
+          [store.id]
+        )
+      : Promise.resolve([] as CategoryWithCover[]),
+  ]);
+
+  const bannerImages: string[] = store.banner_images ?? [];
+  const showBanner = !category;
+
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      {/* Hero banner */}
-      {!category && (
-        <div
-          className="rounded-2xl overflow-hidden mb-10 p-8 sm:p-12 text-center"
-          style={{ background: "linear-gradient(135deg, var(--sf-accent-light) 0%, var(--sf-accent) 100%)" }}
-        >
-          {store.logo_url && (
-            <img src={store.logo_url} alt={store.name}
-              className="h-16 w-auto object-contain mx-auto mb-4" />
-          )}
-          <h1 className="text-2xl sm:text-3xl font-black text-black mb-2">{store.name}</h1>
-          {store.description && (
-            <p className="text-sm text-black/70 max-w-md mx-auto">{store.description}</p>
-          )}
+    <div className="max-w-6xl mx-auto">
+      {/* ── Hero Banner Slider ─────────────────────────────── */}
+      {showBanner && bannerImages.length > 0 && (
+        <div className="px-0 sm:px-4 pt-4">
+          <HeroSlider images={bannerImages} storeName={store.name} />
         </div>
       )}
 
-      {/* Category filters */}
-      {topCategories.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-hide">
-          <a href={`/store/${slug}`}
-            className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
-              !category ? "text-black" : "bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300"
-            }`}
-            style={!category ? { backgroundColor: "var(--sf-accent)" } : {}}>
-            All
-          </a>
-          {topCategories.map((cat) => (
-            <a key={cat.id} href={`/store/${slug}?category=${cat.slug}`}
+      {/* ── Old gradient banner (fallback if no images) ─── */}
+      {showBanner && bannerImages.length === 0 && (
+        <div className="px-4 pt-6">
+          <div
+            className="rounded-2xl overflow-hidden p-8 sm:p-12 text-center"
+            style={{ background: "linear-gradient(135deg, var(--sf-accent-light) 0%, var(--sf-accent) 100%)" }}
+          >
+            {store.logo_url && (
+              <img src={clLogo(store.logo_url)} alt={store.name}
+                loading="eager" decoding="sync"
+                className="h-16 w-auto object-contain mx-auto mb-4" />
+            )}
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <h1 className="text-2xl sm:text-3xl font-black text-black">{store.name}</h1>
+              {store.nin_verified && (
+                <span title="NIN Verified"><BadgeCheck className="w-6 h-6 text-black/60" aria-label="NIN Verified" /></span>
+              )}
+            </div>
+            {store.description && (
+              <p className="text-sm text-black/70 max-w-md mx-auto">{store.description}</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="px-4 py-8 space-y-12">
+        {/* ── Featured Products Slider ───────────────────── */}
+        {showBanner && featuredProducts.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest mb-1"
+                  style={{ color: "var(--sf-accent)" }}>
+                  Hand-picked
+                </p>
+                <h2 className="text-xl font-black text-surface-900 dark:text-white">
+                  Featured Products
+                </h2>
+              </div>
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+              {featuredProducts.map((product) => (
+                <div key={product.id} className="shrink-0 w-48 sm:w-56">
+                  <ProductCard product={product} storeSlug={slug} />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── Collections / Category Grid ────────────────── */}
+        {showBanner && categoryCovers.filter(c => c.cover_image).length > 0 && (
+          <section>
+            <div className="mb-5">
+              <p className="text-xs font-bold uppercase tracking-widest mb-1"
+                style={{ color: "var(--sf-accent)" }}>
+                Browse by collection
+              </p>
+              <h2 className="text-xl font-black text-surface-900 dark:text-white">
+                Shop Collections
+              </h2>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {categoryCovers.filter(c => c.cover_image).map((cat) => (
+                <a
+                  key={cat.id}
+                  href={`/store/${slug}?category=${cat.slug}`}
+                  className="group relative aspect-square rounded-2xl overflow-hidden border border-surface-100 dark:border-surface-800 block"
+                >
+                  <img
+                    src={cat.cover_image!}
+                    alt={cat.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  {/* Gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-3">
+                    <p className="text-white font-bold text-sm leading-tight">{cat.name}</p>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── Category filter tabs ───────────────────────── */}
+        {topCategories.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mt-4">
+            <a href={`/store/${slug}`}
               className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                category === cat.slug ? "text-black" : "bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300"
+                !category ? "text-black" : "bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300"
               }`}
-              style={category === cat.slug ? { backgroundColor: "var(--sf-accent)" } : {}}>
-              {cat.name}
+              style={!category ? { backgroundColor: "var(--sf-accent)" } : {}}>
+              All
             </a>
-          ))}
-        </div>
-      )}
+            {topCategories.map((cat) => (
+              <a key={cat.id} href={`/store/${slug}?category=${cat.slug}`}
+                className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  category === cat.slug ? "text-black" : "bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300"
+                }`}
+                style={category === cat.slug ? { backgroundColor: "var(--sf-accent)" } : {}}>
+                {cat.name}
+              </a>
+            ))}
+          </div>
+        )}
 
-      {/* Subcategory pills */}
-      {subcategories.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-hide">
-          <a href={`/store/${slug}?category=${category}`}
-            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-              !sub ? "bg-surface-800 dark:bg-surface-200 text-white dark:text-black"
-                   : "bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400"
-            }`}>
-            All {activeCategory?.name}
-          </a>
-          {subcategories.map((s) => (
-            <a key={s.id} href={`/store/${slug}?category=${category}&sub=${s.slug}`}
+        {/* Subcategory pills */}
+        {subcategories.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mt-8">
+            <a href={`/store/${slug}?category=${category}`}
               className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                sub === s.slug ? "bg-surface-800 dark:bg-surface-200 text-white dark:text-black"
-                               : "bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400"
+                !sub ? "bg-surface-800 dark:bg-surface-200 text-white dark:text-black"
+                     : "bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400"
               }`}>
-              {s.name}
+              All {activeCategory?.name}
             </a>
-          ))}
-        </div>
-      )}
+            {subcategories.map((s) => (
+              <a key={s.id} href={`/store/${slug}?category=${category}&sub=${s.slug}`}
+                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                  sub === s.slug ? "bg-surface-800 dark:bg-surface-200 text-white dark:text-black"
+                                 : "bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400"
+                }`}>
+                {s.name}
+              </a>
+            ))}
+          </div>
+        )}
 
-      {/* Product grid */}
-      {products.length === 0 ? (
-        <div className="py-24 text-center">
-          <p className="text-4xl mb-4">🛍️</p>
-          <p className="font-semibold text-surface-900 dark:text-white mb-1">No products found</p>
-          <p className="text-sm text-surface-400">
-            {category ? "No products in this category yet" : "This store hasn't added products yet"}
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={product} storeSlug={slug} />
-          ))}
-        </div>
-      )}
+        {/* ── All Products grid ──────────────────────────── */}
+        <section>
+          {category && activeCategory && (
+            <h2 className="text-xl font-black text-surface-900 dark:text-white mb-5">
+              {activeCategory.name}
+            </h2>
+          )}
+          {products.length === 0 ? (
+            <div className="py-24 text-center">
+              <p className="text-4xl mb-4">🛍️</p>
+              <p className="font-semibold text-surface-900 dark:text-white mb-1">No products found</p>
+              <p className="text-sm text-surface-400">
+                {category ? "No products in this category yet" : "This store hasn't added products yet"}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {products.map((product) => (
+                <ProductCard key={product.id} product={product} storeSlug={slug} />
+              ))}
+            </div>
+          )}
+        </section>
 
-      <div className="mt-16 pt-8 border-t border-surface-100 dark:border-surface-800 text-center">
+        <BookmarkSlider storeSlug={slug} />
+      </div>
+
+      <div className="px-4 pb-8 border-t border-surface-100 dark:border-surface-800 pt-8 text-center">
         <p className="text-xs text-surface-300 dark:text-surface-600">
           Powered by{" "}
           <a href="/" className="font-semibold hover:underline">ShopForge</a>

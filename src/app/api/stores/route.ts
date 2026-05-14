@@ -19,6 +19,7 @@ const CreateStoreSchema = z.object({
   accountName:      z.string().optional(),  // legacy key
   bankAccountNumber:z.string().optional(),
   bankAccountName:  z.string().optional(),
+  referralCode:     z.string().max(20).optional().nullable(),
 })
 
 function derivePaymentPreference(
@@ -56,20 +57,47 @@ export async function POST(req: NextRequest) {
   const bankAccountNumber = d.bankAccountNumber || d.accountNumber || null
   const bankAccountName = d.bankAccountName || d.accountName || null
 
+  // Resolve referral code → referrer store id
+  let referredByStoreId: string | null = null
+  if (d.referralCode) {
+    const referrer = await queryOne<{ id: string }>(
+      'SELECT id FROM stores WHERE referral_code = $1',
+      [d.referralCode.toUpperCase()]
+    )
+    if (referrer) referredByStoreId = referrer.id
+  }
+
   const rows = await query(`
     INSERT INTO stores (
       owner_id, name, slug, description, logo_url, phone, whatsapp,
-      primary_category, payment_preference, bank_name, bank_account_number, bank_account_name
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+      primary_category, payment_preference, bank_name, bank_account_number, bank_account_name,
+      referred_by_store_id,
+      referral_code
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,
+      UPPER(SUBSTRING(MD5(gen_random_uuid()::text) FROM 1 FOR 8))
+    )
     RETURNING *
   `, [
     user.firebaseUid, d.name, d.slug, d.description || null,
     d.logoUrl || null, d.phone || null, d.whatsapp || null,
     d.primaryCategory || 'other', paymentPreference,
-    d.bankName || null, bankAccountNumber, bankAccountName
+    d.bankName || null, bankAccountNumber, bankAccountName,
+    referredByStoreId,
   ])
 
-  return NextResponse.json({ data: toCamel(rows[0] as Record<string, unknown>) }, { status: 201 })
+  const newStore = rows[0] as Record<string, unknown>
+
+  // Record referral signup (rewarded later when setup fee is paid)
+  if (referredByStoreId) {
+    await query(
+      `INSERT INTO referrals (referrer_store_id, referred_store_id, status)
+       VALUES ($1, $2, 'signed_up')
+       ON CONFLICT DO NOTHING`,
+      [referredByStoreId, newStore.id]
+    )
+  }
+
+  return NextResponse.json({ data: toCamel(newStore) }, { status: 201 })
 }
 
 export async function GET() {

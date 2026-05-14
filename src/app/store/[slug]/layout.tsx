@@ -4,6 +4,7 @@ import { getOrSet, cacheKey, TTL } from "@/lib/redis";
 import { deriveThemeColors } from "@/lib/utils";
 import StorefrontNav from "@/components/storefront/Nav";
 import CartProvider from "@/components/storefront/CartProvider";
+import VisitTracker from "@/components/storefront/VisitTracker";
 import type { Store, Category } from "@/types";
 import type { Metadata } from "next";
 
@@ -75,6 +76,7 @@ export default async function StorefrontLayout({ params, children }: Props) {
       <div className="storefront min-h-screen bg-white dark:bg-surface-950">
         <style dangerouslySetInnerHTML={{ __html: themeStyle }} />
         <StorefrontNav store={store} categories={withSubs} />
+        <VisitTracker storeSlug={slug} storeId={store.id} />
         <div className="pt-16">{children}</div>
       </div>
     </CartProvider>

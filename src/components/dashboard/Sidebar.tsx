@@ -15,6 +15,11 @@ import {
   X,
   Menu,
   ExternalLink,
+  CreditCard,
+  Layout,
+  Tag,
+  Star,
+  Gift,
 } from "lucide-react";
 import { auth } from "@/lib/firebase-client";
 import { signOut } from "firebase/auth";
@@ -25,6 +30,11 @@ const navItems = [
   { href: "/dashboard/products", label: "Products", icon: Package },
   { href: "/dashboard/categories", label: "Categories", icon: FolderTree },
   { href: "/dashboard/orders", label: "Orders", icon: ShoppingBag },
+  { href: "/dashboard/storefront", label: "Store Page", icon: Layout },
+  { href: "/dashboard/billing", label: "Billing & NIN", icon: CreditCard },
+  { href: "/dashboard/coupons", label: "Coupons", icon: Tag },
+  { href: "/dashboard/reviews", label: "Reviews", icon: Star },
+  { href: "/dashboard/referral", label: "Refer & Earn", icon: Gift },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 

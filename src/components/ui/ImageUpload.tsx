@@ -2,6 +2,7 @@
 import { useState, useRef } from 'react'
 import { Upload, X, ImageIcon, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { clLogo } from '@/lib/cloudinary'
 import toast from 'react-hot-toast'
 
 interface ImageUploadProps {
@@ -41,7 +42,7 @@ export function ImageUpload({ value, onChange, onRemove, className, label }: Ima
 
       {value ? (
         <div className="relative w-32 h-32 rounded-xl overflow-hidden border border-surface-200 dark:border-surface-700">
-          <img src={value} alt="Upload" className="w-full h-full object-cover" />
+          <img src={clLogo(value)} alt="Upload" loading="lazy" decoding="async" className="w-full h-full object-cover" />
           <button
             type="button"
             onClick={() => { onRemove?.(); onChange('') }}

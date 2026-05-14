@@ -61,9 +61,9 @@ export default function LoginPage() {
         body: JSON.stringify({ idToken }),
       });
 
-      const storeRes = await fetch("/api/stores");
-      const storeJson = await storeRes.json();
-      router.push(storeJson.data ? "/dashboard" : "/onboarding");
+      const redirectRes = await fetch("/api/auth/redirect");
+      const { url } = await redirectRes.json();
+      router.push(url);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "";
       if (

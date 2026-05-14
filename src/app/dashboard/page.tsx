@@ -9,20 +9,22 @@ import {
   Clock,
   ArrowRight,
   ExternalLink,
+  Eye,
 } from "lucide-react";
 import type { Order } from "@/types";
+import { Tip } from "@/components/dashboard/Tip";
 
 export const dynamic = "force-dynamic";
 
 async function getDashboardStats(storeId: string) {
-  const [stats, recentOrders] = await Promise.all([
+  const [stats, visitors, recentOrders] = await Promise.all([
     queryOne<{
       total_orders: string;
       pending_orders: string;
       total_revenue: string;
       total_products: string;
     }>(
-      `SELECT 
+      `SELECT
          COUNT(DISTINCT o.id) AS total_orders,
          COUNT(DISTINCT o.id) FILTER (WHERE o.order_status = 'pending') AS pending_orders,
          COALESCE(SUM(o.total) FILTER (WHERE o.payment_status = 'paid'), 0) AS total_revenue,
@@ -31,6 +33,14 @@ async function getDashboardStats(storeId: string) {
        WHERE o.store_id = $1`,
       [storeId],
     ),
+    queryOne<{ total_visitors: string; today_visitors: string }>(
+      `SELECT
+         COUNT(DISTINCT visitor_id) AS total_visitors,
+         COUNT(DISTINCT visitor_id) FILTER (WHERE visited_at = CURRENT_DATE) AS today_visitors
+       FROM store_visits
+       WHERE store_id = $1`,
+      [storeId],
+    ).catch(() => null),
     queryMany<Order>(
       `SELECT * FROM orders WHERE store_id = $1 ORDER BY created_at DESC LIMIT 5`,
       [storeId],
@@ -43,6 +53,8 @@ async function getDashboardStats(storeId: string) {
       pending_orders: parseInt(stats?.pending_orders ?? "0"),
       total_revenue: parseFloat(stats?.total_revenue ?? "0"),
       total_products: parseInt(stats?.total_products ?? "0"),
+      total_visitors: parseInt(visitors?.total_visitors ?? "0"),
+      today_visitors: parseInt(visitors?.today_visitors ?? "0"),
     },
     recentOrders,
   };
@@ -87,6 +99,13 @@ export default async function DashboardPage() {
       icon: Package,
       color: "bg-purple-50 dark:bg-purple-950/30 text-purple-600",
     },
+    {
+      label: "Unique visitors",
+      value: stats.total_visitors,
+      icon: Eye,
+      color: "bg-cyan-50 dark:bg-cyan-950/30 text-cyan-600",
+      sub: stats.today_visitors > 0 ? `${stats.today_visitors} today` : undefined,
+    },
   ];
 
   return (
@@ -115,6 +134,11 @@ export default async function DashboardPage() {
         </a>
       </div>
 
+      {/* Getting-started guide — dismissable */}
+      <Tip id="dash-start" variant="info">
+        <strong>How your dashboard works:</strong> Revenue counts only paid orders. Unique visitors are tracked per day (not page views). To go fully live: add products → set up your Store Page (banner + featured) → complete Billing &amp; NIN if required.
+      </Tip>
+
       {/* Store banner if no products */}
       {stats.total_products === 0 && (
         <div className="rounded-2xl bg-accent-50 dark:bg-accent-950/20 border border-accent-200 dark:border-accent-800 p-6">
@@ -140,7 +164,7 @@ export default async function DashboardPage() {
       )}
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {statCards.map((card) => {
           const Icon = card.icon;
           return (
@@ -159,6 +183,9 @@ export default async function DashboardPage() {
               <div className="text-xs text-surface-500 dark:text-surface-400 font-medium">
                 {card.label}
               </div>
+              {"sub" in card && card.sub && (
+                <div className="text-xs text-cyan-500 font-semibold mt-0.5">{card.sub}</div>
+              )}
             </div>
           );
         })}

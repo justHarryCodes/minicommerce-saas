@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import type { Store as StoreType } from "@/types";
+import { Tip } from "@/components/dashboard/Tip";
+import { clLogo } from "@/lib/cloudinary";
 
 interface Props {
   store: StoreType;
@@ -84,6 +86,7 @@ export default function SettingsClient({ store: initial }: Props) {
             store.paymentPreference ?? store.payment_preference,
           paystackPublicKey:
             store.paystackPublicKey ?? store.paystack_public_key,
+          return_policy: store.return_policy ?? store.returnPolicy ?? null,
         }),
       });
       const data = await res.json();
@@ -120,6 +123,10 @@ export default function SettingsClient({ store: initial }: Props) {
         </a>
       </div>
 
+      <Tip id="settings-guide" variant="tip">
+        <strong>Tips:</strong> Add a WhatsApp number to get an order button in your cart. Set your bank details so customers know how to pay. Pick an accent colour that matches your brand — it highlights buttons and links on your storefront.
+      </Tip>
+
       {/* Store Info */}
       <section className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-6 space-y-5">
         <h2 className="font-bold text-surface-900 dark:text-white flex items-center gap-2">
@@ -135,8 +142,10 @@ export default function SettingsClient({ store: initial }: Props) {
           <div className="flex items-center gap-4">
             {(store.logoUrl ?? store.logo_url) ? (
               <img
-                src={store.logoUrl ?? store.logo_url}
+                src={clLogo(store.logoUrl ?? store.logo_url)}
                 alt="Logo"
+                loading="lazy"
+                decoding="async"
                 className="w-16 h-16 rounded-xl object-contain border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800"
               />
             ) : (
@@ -432,6 +441,26 @@ export default function SettingsClient({ store: initial }: Props) {
             </p>
           </div>
         )}
+      </section>
+
+      {/* Return & Refund Policy */}
+      <section className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-6 space-y-5">
+        <h2 className="font-bold text-surface-900 dark:text-white flex items-center gap-2">
+          Return &amp; Refund Policy
+        </h2>
+        <div>
+          <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
+            Return &amp; Refund Policy
+          </label>
+          <textarea
+            value={store.return_policy ?? store.returnPolicy ?? ""}
+            onChange={(e) => change("return_policy", e.target.value)}
+            rows={5}
+            placeholder="e.g. Returns accepted within 7 days of delivery. Item must be unused and in original packaging. Contact us via WhatsApp to initiate a return."
+            className="w-full px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-transparent text-surface-900 dark:text-white placeholder:text-surface-300 dark:placeholder:text-surface-600 focus:outline-none focus:ring-2 focus:ring-accent-400 text-sm resize-none"
+          />
+          <p className="text-xs text-surface-400 mt-1">Shown to customers at checkout.</p>
+        </div>
       </section>
 
       {/* Save button */}

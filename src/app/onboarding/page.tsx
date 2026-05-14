@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ImageUpload } from "@/components/ui/ImageUpload";
 import {
   Store,
@@ -30,13 +30,20 @@ const STEPS = [
 const inputClass =
   "w-full px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 text-zinc-900 dark:text-white placeholder-zinc-400 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all";
 
-export default function OnboardingPage() {
+function OnboardingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [checkingSlug, setCheckingSlug] = useState(false);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+
+  useEffect(() => {
+    const ref = searchParams.get("ref");
+    if (ref) setReferralCode(ref.toUpperCase());
+  }, [searchParams]);
 
   const [form, setForm] = useState({
     name: "",
@@ -120,7 +127,7 @@ export default function OnboardingPage() {
       const res = await fetch("/api/stores", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, referralCode }),
       });
       const { error } = await res.json();
       if (error)
@@ -254,6 +261,13 @@ export default function OnboardingPage() {
         {/* Form area */}
         <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
           <div className="w-full max-w-xl">
+            {/* Referral notice */}
+            {referralCode && (
+              <div className="mb-6 flex items-center gap-2 px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-sm text-amber-800 dark:text-amber-300 font-medium">
+                🎁 Referred by <strong className="font-mono">{referralCode}</strong> — your friend earns 1 free month when you pay your setup fee!
+              </div>
+            )}
+
             {/* Step heading */}
             <div className="mb-8">
               <p className="text-amber-500 dark:text-amber-400 text-sm font-semibold mb-1 uppercase tracking-wide">
@@ -587,5 +601,13 @@ export default function OnboardingPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function OnboardingPageWrapper() {
+  return (
+    <Suspense>
+      <OnboardingPage />
+    </Suspense>
   );
 }

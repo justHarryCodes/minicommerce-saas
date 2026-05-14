@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { query, queryOne } from '@/lib/db'
 import { verifyTransaction } from '@/lib/paystack'
 
 export async function GET(req: NextRequest) {
@@ -7,10 +7,31 @@ export async function GET(req: NextRequest) {
   const orderId = req.nextUrl.searchParams.get('orderId')
   if (!ref || !orderId) return NextResponse.redirect(new URL('/store-not-found', req.url))
 
+  const order = await queryOne<{
+    id: string;
+    payment_reference: string | null;
+    payment_status: string;
+  }>(
+    'SELECT id, payment_reference, payment_status FROM orders WHERE id = $1',
+    [orderId]
+  )
+
+  if (!order) return NextResponse.redirect(new URL('/store-not-found', req.url))
+
+  // Idempotency
+  if (order.payment_status === 'paid') {
+    return NextResponse.redirect(new URL(`/order-success?orderId=${orderId}`, req.url))
+  }
+
+  // Reject if the reference doesn't match what we stored at init time
+  if (order.payment_reference !== ref) {
+    return NextResponse.redirect(new URL(`/order-failed?orderId=${orderId}`, req.url))
+  }
+
   const res = await verifyTransaction(ref)
   if (res.status && res.data.status === 'success') {
     await query(
-      "UPDATE orders SET payment_status='paid', order_status='confirmed' WHERE id=$1",
+      "UPDATE orders SET payment_status='paid', order_status='confirmed' WHERE id=$1 AND payment_status='pending'",
       [orderId]
     )
     return NextResponse.redirect(new URL(`/order-success?orderId=${orderId}`, req.url))
