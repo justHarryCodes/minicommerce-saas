@@ -3,10 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, ShoppingCart, X, ChevronRight, Heart, BadgeCheck } from "lucide-react";
+import { Menu, ShoppingCart, X, ChevronRight, Heart, BadgeCheck, Search } from "lucide-react";
 import { useCart } from "./CartProvider";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import CartDrawer from "./CartDrawer";
+import SearchOverlay from "./SearchOverlay";
 import type { Store, Category } from "@/types";
 
 interface CategoryWithSubs extends Category {
@@ -21,6 +22,7 @@ interface Props {
 export default function StorefrontNav({ store, categories }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const { totalItems } = useCart();
   const { count: bookmarkCount } = useBookmarks(store.slug);
 
@@ -63,22 +65,31 @@ export default function StorefrontNav({ store, categories }: Props) {
             )}
           </Link>
 
-          {/* Cart button */}
-          <button
-            onClick={() => setCartOpen(true)}
-            className="relative p-2 -mr-2 rounded-lg text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
-            aria-label="Open cart"
-          >
-            <ShoppingCart className="w-5 h-5" />
-            {totalItems > 0 && (
-              <span
-                className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white"
-                style={{ backgroundColor: "var(--sf-accent)" }}
-              >
-                {totalItems > 9 ? "9+" : totalItems}
-              </span>
-            )}
-          </button>
+          {/* Right actions: search + cart */}
+          <div className="flex items-center gap-1 -mr-2">
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="p-2 rounded-lg text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+              aria-label="Search products"
+            >
+              <Search className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setCartOpen(true)}
+              className="relative p-2 rounded-lg text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+              aria-label="Open cart"
+            >
+              <ShoppingCart className="w-5 h-5" />
+              {totalItems > 0 && (
+                <span
+                  className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center text-white"
+                  style={{ backgroundColor: "var(--sf-accent)" }}
+                >
+                  {totalItems > 9 ? "9+" : totalItems}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
       </nav>
 
@@ -209,6 +220,14 @@ export default function StorefrontNav({ store, categories }: Props) {
         onClose={() => setCartOpen(false)}
         store={store}
       />
+
+      {/* ─── Search overlay ──────────────────────────────────────────────────── */}
+      {searchOpen && (
+        <SearchOverlay
+          storeSlug={store.slug}
+          onClose={() => setSearchOpen(false)}
+        />
+      )}
     </>
   );
 }
