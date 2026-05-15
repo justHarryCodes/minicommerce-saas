@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export function middleware(req: NextRequest) {
   const hostname = req.headers.get("host") ?? "";
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "awarizonmall.com";
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "awarizon.shop";
 
   // ── Subdomain detection ──────────────────────────────────────────
   const isSubdomain =

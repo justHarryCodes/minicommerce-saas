@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm -rf \"c:/Users/USER/Desktop/shopforge-saas/storefront-saas/src/app/api/stores/visit-slug\" && mkdir -p \"c:/Users/USER/Desktop/shopforge-saas/storefront-saas/src/app/api/stores/[slug]/visit\")",
+      "Bash(mkdir -p \"c:/Users/USER/Desktop/shopforge-saas/storefront-saas/src/app/api/stores/[storeId]/visit\")",
+      "Bash(cp \"c:/Users/USER/Desktop/shopforge-saas/storefront-saas/src/app/api/stores/[slug]/visit/route.ts\" \"c:/Users/USER/Desktop/shopforge-saas/storefront-saas/src/app/api/stores/[storeId]/visit/route.ts\")",
+      "Bash(rm -rf \"c:/Users/USER/Desktop/shopforge-saas/storefront-saas/src/app/api/stores/[slug]\")",
+      "Bash(node -e ' *)",
+      "Bash(mkdir -p \"c:\\\\Users\\\\USER\\\\Desktop\\\\shopforge-saas\\\\storefront-saas\\\\src\\\\app\\\\api\\\\admin\\\\plans\\\\[id]\")",
+      "Bash(node scripts/run-migrations.mjs scripts/plans-migration.sql)",
+      "Bash(node scripts/run-migrations.mjs)",
+      "Bash(npx tsc *)",
+      "Bash(mkdir -p \"c:\\\\Users\\\\USER\\\\Desktop\\\\shopforge-saas\\\\storefront-saas\\\\src\\\\app\\\\api\\\\stores\\\\coupons\\\\[id]\")",
+      "Bash(mkdir -p \"c:\\\\Users\\\\USER\\\\Desktop\\\\shopforge-saas\\\\storefront-saas\\\\src\\\\app\\\\api\\\\storefront\\\\[slug]\\\\coupons\\\\validate\")",
+      "Bash(mkdir -p \"c:\\\\Users\\\\USER\\\\Desktop\\\\shopforge-saas\\\\storefront-saas\\\\src\\\\app\\\\api\\\\storefront\\\\[slug]\\\\reviews\")",
+      "Bash(mkdir -p \"c:\\\\Users\\\\USER\\\\Desktop\\\\shopforge-saas\\\\storefront-saas\\\\src\\\\app\\\\api\\\\dashboard\\\\reviews\\\\[id]\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\USER\\\\.claude\\\\projects\\\\c--Users-USER-Desktop-shopforge-saas-storefront-saas\\\\memory\")",
+      "Bash(git push *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git ls-tree *)",
+      "Bash(node -e \"const n = require\\('./node_modules/next/package.json'\\); console.log\\(n.version\\)\")",
+      "Bash(set NEXT_TURBOPACK=0)",
+      "Bash(node -e \"const n=require\\('./node_modules/next/package.json'\\); console.log\\(Object.keys\\(n.bin||{}\\)\\)\")",
+      "Bash(node -e \"const fs=require\\('fs'\\);const p='./node_modules/next/dist/bin/next';const s=fs.readFileSync\\(p,'utf8'\\).slice\\(0,2000\\);console.log\\(s\\)\")",
+      "Bash(npm show *)",
+      "Bash(npm install *)",
+      "Bash(node -e \"console.log\\(require\\('./node_modules/next/package.json'\\).version\\)\")",
+      "Bash(git rm *)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\USER\\Desktop\\shopforge-saas\\storefront-saas\\src\\app\\api\\stores\\[slug]",
+      "c:\\Users\\USER\\Desktop\\shopforge-saas\\storefront-saas\\src\\app\\api\\admin\\plans",
+      "C:\\Users\\USER\\.claude\\projects\\c--Users-USER-Desktop-shopforge-saas-storefront-saas\\memory"
+    ]
+  }
+}
