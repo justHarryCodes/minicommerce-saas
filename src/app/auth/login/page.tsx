@@ -101,12 +101,11 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="relative z-10">
           <Link href="/" className="inline-flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-400 flex items-center justify-center">
-              <ShoppingBag className="w-5 h-5 text-black" />
+            <img src="/logo.png" alt="Duka" className="h-10 w-auto object-contain" />
+            <div>
+              <span className="text-white text-xl font-extrabold tracking-tight block leading-none">Duka</span>
+              <span className="text-amber-400/70 text-xs font-medium tracking-wider">by Awarizon</span>
             </div>
-            <span className="text-white text-xl font-extrabold tracking-tight">
-              ShopForge
-            </span>
           </Link>
         </div>
 
@@ -141,7 +140,7 @@ export default function LoginPage() {
           {/* Testimonial */}
           <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
             <p className="text-zinc-300 text-sm leading-relaxed mb-3">
-              &ldquo;ShopForge helped me launch my fashion store in a single
+              &ldquo;Duka helped me launch my fashion store in a single
               afternoon. Sales started coming in the same day!&rdquo;
             </p>
             <div className="flex items-center gap-2.5">
@@ -166,7 +165,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <p className="relative z-10 text-zinc-600 text-xs">
-          © {new Date().getFullYear()} ShopForge. All rights reserved.
+          © {new Date().getFullYear()} Duka. All rights reserved.
         </p>
       </div>
 
@@ -175,13 +174,9 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           {/* Mobile logo */}
           <div className="flex justify-center mb-8 lg:hidden">
-            <Link href="/" className="inline-flex items-center gap-2">
-              <div className="w-9 h-9 rounded-xl bg-amber-400 flex items-center justify-center">
-                <ShoppingBag className="w-4 h-4 text-black" />
-              </div>
-              <span className="font-extrabold text-xl text-zinc-900 dark:text-white">
-                ShopForge
-              </span>
+            <Link href="/" className="inline-flex flex-col items-center gap-1">
+              <img src="/logo.png" alt="Duka" className="h-10 w-auto object-contain" />
+              <span className="text-xs text-zinc-400 font-medium tracking-wider">by Awarizon</span>
             </Link>
           </div>
 
@@ -267,7 +262,7 @@ export default function LoginPage() {
                   Signing in...
                 </>
               ) : (
-                "Sign in to ShopForge"
+                "Sign in to Duka"
               )}
             </button>
           </form>

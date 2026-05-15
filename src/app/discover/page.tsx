@@ -7,7 +7,7 @@ interface DiscoverPageProps {
 
 export const metadata = {
   title: "Discover Stores",
-  description: "Browse vendors on ShopForge across fashion, electronics, food, and more.",
+  description: "Browse verified vendors on Duka across fashion, electronics, food, and more.",
 };
 
 export default async function DiscoverPage({ searchParams }: DiscoverPageProps) {

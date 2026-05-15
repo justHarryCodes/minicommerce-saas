@@ -43,17 +43,9 @@ export default function HomeNav() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 shrink-0">
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm text-black"
-                style={{ background: "var(--accent)" }}
-              >
-                SF
-              </div>
-              <span className="font-black text-lg" style={{ color: "var(--text-primary)" }}>
-                ShopForge
-              </span>
+            {/* Logo — replace /logo.png in public/ once asset is ready */}
+            <Link href="/" className="shrink-0 flex items-center">
+              <img src="/logo.png" alt="Duka" className="h-9 w-auto object-contain" />
             </Link>
 
             {/* Desktop nav links */}

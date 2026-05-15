@@ -4,7 +4,7 @@ import AdminSidebar from './AdminSidebar'
 
 export const dynamic = 'force-dynamic'
 
-export const metadata = { title: { default: 'Admin', template: '%s | Admin — ShopForge' } }
+export const metadata = { title: { default: 'Admin', template: '%s | Admin — Duka' } }
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const admin = await verifyAdminSession()

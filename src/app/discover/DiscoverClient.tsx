@@ -81,16 +81,8 @@ export default function DiscoverClient({
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm text-black"
-                style={{ background: "var(--accent)" }}
-              >
-                SF
-              </div>
-              <span className="font-black text-lg" style={{ color: "var(--text-primary)" }}>
-                ShopForge
-              </span>
+            <Link href="/" className="shrink-0 flex items-center">
+              <img src="/logo.png" alt="Duka" className="h-8 w-auto object-contain" />
             </Link>
             <div className="flex items-center gap-3">
               <Link
@@ -124,7 +116,7 @@ export default function DiscoverClient({
           <p className="text-lg" style={{ color: "var(--text-secondary)" }}>
             {totalCount > 0
               ? `${totalCount} vendor${totalCount === 1 ? "" : "s"} and growing`
-              : "Browse vendors on ShopForge"}
+              : "Browse vendors on Duka"}
           </p>
         </div>
 
@@ -299,19 +291,12 @@ export default function DiscoverClient({
         style={{ borderColor: "var(--border)" }}
       >
         <div className="max-w-7xl mx-auto text-center">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <div
-              className="w-6 h-6 rounded-md flex items-center justify-center font-black text-xs text-black"
-              style={{ background: "var(--accent)" }}
-            >
-              SF
-            </div>
-            <span className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>
-              ShopForge
-            </span>
+          <Link href="/" className="inline-flex flex-col items-center gap-1">
+            <img src="/logo.png" alt="Duka" className="h-7 w-auto object-contain" />
+            <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>by Awarizon</span>
           </Link>
           <p className="text-xs mt-3" style={{ color: "var(--text-muted)" }}>
-            © {new Date().getFullYear()} ShopForge. All rights reserved.
+            © {new Date().getFullYear()} Duka by Awarizon. All rights reserved.
           </p>
         </div>
       </footer>

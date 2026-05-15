@@ -178,7 +178,7 @@ function OnboardingPage() {
             <div className="w-9 h-9 rounded-xl bg-amber-400 flex items-center justify-center">
               <ShoppingBag className="w-4 h-4 text-black" />
             </div>
-            <span className="text-white text-lg font-extrabold">ShopForge</span>
+            <span className="text-white text-lg font-extrabold">Duka</span>
           </div>
 
           {/* Steps */}
@@ -242,7 +242,7 @@ function OnboardingPage() {
               <ShoppingBag className="w-4 h-4 text-black" />
             </div>
             <span className="font-extrabold text-zinc-900 dark:text-white">
-              ShopForge
+              Duka
             </span>
           </div>
           <span className="text-xs text-zinc-400 font-medium">
@@ -310,7 +310,7 @@ function OnboardingPage() {
                   </label>
                   <div className="flex rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden focus-within:ring-2 focus-within:ring-amber-400">
                     <span className="px-4 py-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 text-sm border-r border-zinc-200 dark:border-zinc-700 shrink-0">
-                      shopforge.com/store/
+                      awarizon.shop/store/
                     </span>
                     <input
                       className="flex-1 px-3 py-3 bg-zinc-50 dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm focus:outline-none"

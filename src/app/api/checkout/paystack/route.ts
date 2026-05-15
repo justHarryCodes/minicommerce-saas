@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
   const res = await initializeTransaction({
-    email: email || 'customer@shopforge.co',
+    email: email || 'customer@awarizon.shop',
     amount: Number(order.total),
     reference: ref,
     callbackUrl: `${baseUrl}/api/paystack/callback?orderId=${orderId}`,

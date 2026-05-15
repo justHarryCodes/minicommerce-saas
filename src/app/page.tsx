@@ -39,6 +39,7 @@ const SELLER_FEATURES = [
   "Real-time dashboard — orders, revenue & inventory",
   "Product & category management tools",
   "NIN-verified badge to build customer trust",
+  "Get promoted in Duka's featured listings & ad campaigns",
   "Start receiving orders in under 10 minutes",
 ];
 
@@ -93,14 +94,24 @@ export default async function HomePage() {
           />
         </div>
         <div className="relative max-w-4xl mx-auto text-center">
+          {/* Brand mark */}
+          <div className="flex flex-col items-center mb-6">
+            <img src="/logo.png" alt="Duka" className="h-14 w-auto object-contain mb-2" />
+            <span
+              className="text-xs font-bold uppercase tracking-widest"
+              style={{ color: "var(--text-muted)" }}
+            >
+              by Awarizon
+            </span>
+          </div>
+
           <div
             className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-6 text-black"
             style={{ background: "var(--accent-light)" }}
           >
-  
             {totalStores > 0
-              ? `${totalStores}+ stores live on ShopForge`
-              : "Your marketplace platform"}
+              ? `${totalStores}+ stores live on Duka`
+              : "Nigeria's marketplace platform"}
           </div>
 
           <h1
@@ -116,7 +127,7 @@ export default async function HomePage() {
             className="text-xl max-w-2xl mx-auto mb-10 leading-relaxed"
             style={{ color: "var(--text-secondary)" }}
           >
-            ShopForge connects you with thousands of sellers across fashion,
+            Duka connects you with thousands of verified sellers across fashion,
             electronics, food, and more. Or launch your own store in minutes.
           </p>
 
@@ -215,7 +226,7 @@ export default async function HomePage() {
           {/* Header */}
           <div className="text-center mb-16">
             <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--accent)" }}>
-              Why ShopForge
+              Why Duka
             </p>
             <h2 className="text-3xl sm:text-4xl font-black mb-4" style={{ color: "var(--text-primary)" }}>
               Everything included,{" "}
@@ -223,7 +234,7 @@ export default async function HomePage() {
             </h2>
             <p className="text-lg max-w-2xl mx-auto" style={{ color: "var(--text-secondary)" }}>
               Built for both sides of the marketplace — whether you&apos;re shopping or selling,
-              ShopForge has you covered.
+              Duka has you covered.
             </p>
           </div>
 
@@ -425,19 +436,12 @@ export default async function HomePage() {
       {/* ── Footer ─────────────────────────────────────── */}
       <footer className="py-10 px-4 border-t" style={{ borderColor: "var(--border)" }}>
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <Link href="/" className="flex items-center gap-2">
-            <div
-              className="w-6 h-6 rounded-md flex items-center justify-center font-black text-xs text-black"
-              style={{ background: "var(--accent)" }}
-            >
-              SF
-            </div>
-            <span className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>
-              ShopForge
-            </span>
+          <Link href="/" className="flex flex-col items-start gap-0.5">
+            <img src="/logo.png" alt="Duka" className="h-7 w-auto object-contain" />
+            <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>by Awarizon</span>
           </Link>
           <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-            © {new Date().getFullYear()} ShopForge. All rights reserved.
+            © {new Date().getFullYear()} Duka by Awarizon. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             <Link href="/discover" className="text-xs hover:underline" style={{ color: "var(--text-secondary)" }}>

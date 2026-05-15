@@ -30,7 +30,7 @@ export default function ReferralClient({ referralCode, referralCredits, referral
   const baseUrl =
     typeof window !== "undefined"
       ? window.location.origin
-      : process.env.NEXT_PUBLIC_APP_URL ?? "https://shopforge.com";
+      : process.env.NEXT_PUBLIC_APP_URL ?? "https://awarizon.shop";
 
   const referralLink = referralCode
     ? `${baseUrl}/onboarding?ref=${referralCode}`
@@ -135,7 +135,7 @@ export default function ReferralClient({ referralCode, referralCredits, referral
             {
               icon: <Copy className="w-5 h-5" />,
               title: "Share your link",
-              desc: "Send your referral link to friends who want to start an online store on ShopForge.",
+              desc: "Send your referral link to friends who want to start an online store on Duka.",
             },
             {
               icon: <Users className="w-5 h-5" />,

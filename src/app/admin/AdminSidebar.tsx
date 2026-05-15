@@ -39,7 +39,7 @@ export default function AdminSidebar({ admin }: { admin: AdminUser }) {
             Admin Panel
           </span>
         </div>
-        <p className="text-xs pl-10" style={{ color: "var(--text-muted)" }}>ShopForge</p>
+        <p className="text-xs pl-10" style={{ color: "var(--text-muted)" }}>Duka by Awarizon</p>
       </div>
 
       {/* Nav */}

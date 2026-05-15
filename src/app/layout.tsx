@@ -4,8 +4,8 @@ import { Toaster } from "react-hot-toast";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "ShopForge", template: "%s | ShopForge" },
-  description: "Create your online store in minutes",
+  title: { default: "Duka by Awarizon", template: "%s | Duka" },
+  description: "Discover and shop from verified Nigerian vendors — Duka by Awarizon",
 };
 
 export default function RootLayout({

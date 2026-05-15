@@ -117,7 +117,7 @@ export default function SignupPage() {
               Almost there!
             </h2>
             <p className="text-zinc-400 text-lg max-w-xs mx-auto">
-              Verify your email to start selling with ShopForge
+              Verify your email to start selling with Duka
             </p>
           </div>
         </div>
@@ -143,7 +143,7 @@ export default function SignupPage() {
                 Next steps:
               </p>
               <ol className="text-sm text-amber-700 dark:text-amber-400 space-y-1.5 list-decimal list-inside">
-                <li>Open the email from ShopForge</li>
+                <li>Open the email from Duka</li>
                 <li>Click the verification link</li>
                 <li>Come back and set up your store</li>
               </ol>
@@ -194,12 +194,11 @@ export default function SignupPage() {
         {/* Logo */}
         <div className="relative z-10">
           <Link href="/" className="inline-flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-400 flex items-center justify-center">
-              <ShoppingBag className="w-5 h-5 text-black" />
+            <img src="/logo.png" alt="Duka" className="h-10 w-auto object-contain" />
+            <div>
+              <span className="text-white text-xl font-extrabold tracking-tight block leading-none">Duka</span>
+              <span className="text-amber-400/70 text-xs font-medium tracking-wider">by Awarizon</span>
             </div>
-            <span className="text-white text-xl font-extrabold tracking-tight">
-              ShopForge
-            </span>
           </Link>
         </div>
 
@@ -213,7 +212,7 @@ export default function SignupPage() {
             </h2>
             <p className="text-zinc-400 text-lg leading-relaxed max-w-sm">
               Join thousands of merchants already growing their business on
-              ShopForge.
+              Duka.
             </p>
           </div>
 
@@ -250,7 +249,7 @@ export default function SignupPage() {
         </div>
 
         <p className="relative z-10 text-zinc-600 text-xs">
-          © {new Date().getFullYear()} ShopForge. All rights reserved.
+          © {new Date().getFullYear()} Duka. All rights reserved.
         </p>
       </div>
 
@@ -259,13 +258,9 @@ export default function SignupPage() {
         <div className="w-full max-w-md py-8">
           {/* Mobile logo */}
           <div className="flex justify-center mb-8 lg:hidden">
-            <Link href="/" className="inline-flex items-center gap-2">
-              <div className="w-9 h-9 rounded-xl bg-amber-400 flex items-center justify-center">
-                <ShoppingBag className="w-4 h-4 text-black" />
-              </div>
-              <span className="font-extrabold text-xl text-zinc-900 dark:text-white">
-                ShopForge
-              </span>
+            <Link href="/" className="inline-flex flex-col items-center gap-1">
+              <img src="/logo.png" alt="Duka" className="h-10 w-auto object-contain" />
+              <span className="text-xs text-zinc-400 font-medium tracking-wider">by Awarizon</span>
             </Link>
           </div>
 

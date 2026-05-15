@@ -29,7 +29,7 @@ export default async function AdminDashboardPage() {
   const stats = [
     {
       label: 'Total Vendors', value: totalRow[0]?.count ?? '0', icon: Users, color: '#3b82f6',
-      tip: 'All stores that have registered on ShopForge, whether active or not.',
+      tip: 'All stores that have registered on Duka, whether active or not.',
     },
     {
       label: 'Active Vendors', value: activeRow[0]?.count ?? '0', icon: TrendingUp, color: '#22c55e',

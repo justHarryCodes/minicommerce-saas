@@ -67,7 +67,7 @@ function SidebarContent({
   const storeDisplayUrl = store
     ? process.env.NEXT_PUBLIC_ROOT_DOMAIN
       ? `${store.slug}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`
-      : `shopforge.com/store/${store.slug}`
+      : `awarizon.shop/store/${store.slug}`
     : null;
 
   return (
@@ -78,9 +78,10 @@ function SidebarContent({
           <div className="h-9 w-9 rounded-xl bg-accent-400 flex items-center justify-center">
             <Store className="h-5 w-5 text-black" />
           </div>
-          <span className="text-lg font-extrabold text-zinc-900 dark:text-white tracking-tight">
-            ShopForge
-          </span>
+          <div>
+            <span className="text-base font-extrabold text-zinc-900 dark:text-white tracking-tight leading-none">Duka</span>
+            <span className="block text-xs font-medium text-zinc-400 leading-none mt-0.5">by Awarizon</span>
+          </div>
         </div>
         {onClose && (
           <button
