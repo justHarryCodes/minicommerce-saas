@@ -12,9 +12,23 @@ export function middleware(req: NextRequest) {
 
   if (isSubdomain) {
     const subdomain = hostname.replace(`.${rootDomain}`, "");
+    const { pathname } = req.nextUrl;
+
+    // Guard: client-side Next.js navigation (RSC fetches) already contains the
+    // store prefix because internal links use /store/{slug}/... paths.
+    // Without this check the middleware would double-rewrite and produce
+    // /store/{slug}/store/{slug}/... → 404.
+    if (pathname.startsWith(`/store/${subdomain}`)) {
+      const res = NextResponse.next();
+      res.headers.set("x-store-slug", subdomain);
+      return res;
+    }
+
     const url = req.nextUrl.clone();
-    url.pathname = `/store/${subdomain}${req.nextUrl.pathname}`;
-    return NextResponse.rewrite(url);
+    url.pathname = `/store/${subdomain}${pathname}`;
+    const res = NextResponse.rewrite(url);
+    res.headers.set("x-store-slug", subdomain);
+    return res;
   }
 
   // ── Main domain routes ───────────────────────────────────────────

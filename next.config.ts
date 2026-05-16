@@ -4,6 +4,8 @@ const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
       allowedOrigins: [
+        "awarizon.shop",
+        "*.awarizon.shop",
         "awarizonmall.com",
         "*.awarizonmall.com",
         "localhost:3000",
