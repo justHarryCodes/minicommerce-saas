@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Menu, ShoppingCart, X, ChevronRight, Heart, BadgeCheck, Search } from "lucide-react";
 import { useCart } from "./CartProvider";
 import { useBookmarks } from "@/hooks/useBookmarks";
+import { useStore } from "@/lib/store-context";
 import CartDrawer from "./CartDrawer";
 import SearchOverlay from "./SearchOverlay";
 import type { Store, Category } from "@/types";
@@ -25,6 +26,8 @@ export default function StorefrontNav({ store, categories }: Props) {
   const [searchOpen, setSearchOpen] = useState(false);
   const { totalItems } = useCart();
   const { count: bookmarkCount } = useBookmarks(store.slug);
+  const { storeBase } = useStore();
+  const homeHref = storeBase || "/";
 
   return (
     <>
@@ -46,7 +49,7 @@ export default function StorefrontNav({ store, categories }: Props) {
           </button>
 
           {/* Center: Store logo */}
-          <Link href={`/store/${store.slug}`} className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5">
+          <Link href={homeHref} className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5">
             {store.logo_url ? (
               <Image
                 src={store.logo_url}
@@ -132,7 +135,7 @@ export default function StorefrontNav({ store, categories }: Props) {
             {/* Nav links */}
             <nav className="p-4">
               <Link
-                href={`/store/${store.slug}`}
+                href={homeHref}
                 onClick={() => setMenuOpen(false)}
                 className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold text-surface-900 dark:text-white hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
               >
@@ -141,7 +144,7 @@ export default function StorefrontNav({ store, categories }: Props) {
 
               {bookmarkCount > 0 && (
                 <a
-                  href={`/store/${store.slug}#saved-items`}
+                  href={`${homeHref}#saved-items`}
                   onClick={() => setMenuOpen(false)}
                   className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
                   style={{ color: "var(--sf-accent)" }}
@@ -163,7 +166,7 @@ export default function StorefrontNav({ store, categories }: Props) {
                   {categories.map((cat) => (
                     <div key={cat.id}>
                       <Link
-                        href={`/store/${store.slug}?category=${cat.slug}`}
+                        href={`${homeHref}?category=${cat.slug}`}
                         onClick={() => setMenuOpen(false)}
                         className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-surface-800 dark:text-surface-200 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
                       >
@@ -173,7 +176,7 @@ export default function StorefrontNav({ store, categories }: Props) {
                       {cat.subcategories.map((sub) => (
                         <Link
                           key={sub.id}
-                          href={`/store/${store.slug}?category=${cat.slug}&sub=${sub.slug}`}
+                          href={`${homeHref}?category=${cat.slug}&sub=${sub.slug}`}
                           onClick={() => setMenuOpen(false)}
                           className="flex items-center gap-2 pl-8 pr-3 py-2 rounded-xl text-sm text-surface-500 dark:text-surface-400 hover:text-surface-900 dark:hover:text-white hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
                         >

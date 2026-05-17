@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronLeft, ShoppingCart, Check, Minus, Plus, Share2, Star, Loader2, Send } from "lucide-react";
 import { useCart } from "@/components/storefront/CartProvider";
 import ProductCard from "@/components/storefront/ProductCard";
+import { useStore } from "@/lib/store-context";
 import { formatCurrency, getProductUrl, waLink } from "@/lib/utils";
 import type { Product, Store } from "@/types";
 
@@ -78,6 +79,8 @@ function formatDate(dateStr: string) {
 
 export default function ProductDetailClient({ product, related, store, storeSlug }: Props) {
   const { addItem } = useCart();
+  const { storeBase } = useStore();
+  const homeHref = storeBase || "/";
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
   const [activeImg, setActiveImg] = useState(0);
@@ -183,14 +186,14 @@ export default function ProductDetailClient({ product, related, store, storeSlug
     <div className="max-w-5xl mx-auto px-4 py-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 mb-6 text-sm text-surface-400">
-        <Link href={`/store/${storeSlug}`}
+        <Link href={homeHref}
           className="flex items-center gap-1 hover:text-surface-900 dark:hover:text-white transition-colors">
           <ChevronLeft className="w-4 h-4" />Back to shop
         </Link>
         {product.category_name && (
           <>
             <span>/</span>
-            <Link href={`/store/${storeSlug}?category=${product.category_slug}`}
+            <Link href={`${homeHref}?category=${product.category_slug}`}
               className="hover:text-surface-900 dark:hover:text-white transition-colors">
               {product.category_name}
             </Link>

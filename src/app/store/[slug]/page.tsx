@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { query, queryOne } from "@/lib/db";
 import { getOrSet, cacheKey, TTL } from "@/lib/redis";
 import ProductCard from "@/components/storefront/ProductCard";
@@ -40,6 +41,11 @@ async function getStoreProducts(storeId: string, categorySlug?: string, subSlug?
 export default async function StorefrontPage({ params, searchParams }: Props) {
   const { slug } = await params;
   const { category, sub } = await searchParams;
+
+  const h = await headers();
+  const isSubdomain = h.get("x-is-subdomain") === "1";
+  const storeBase = isSubdomain ? "" : `/store/${slug}`;
+  const homeHref = storeBase || "/";
 
   const store = await queryOne<Store>(
     "SELECT * FROM stores WHERE slug = $1 AND is_active = true",
@@ -174,7 +180,7 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
               {categoryCovers.filter(c => c.cover_image).map((cat) => (
                 <a
                   key={cat.id}
-                  href={`/store/${slug}?category=${cat.slug}`}
+                  href={`${homeHref}?category=${cat.slug}`}
                   className="group relative aspect-square rounded-2xl overflow-hidden border border-surface-100 dark:border-surface-800 block"
                 >
                   <img
@@ -196,7 +202,7 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
         {/* ── Category filter tabs ───────────────────────── */}
         {topCategories.length > 0 && (
           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mt-4">
-            <a href={`/store/${slug}`}
+            <a href={homeHref}
               className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                 !category ? "text-black" : "bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300"
               }`}
@@ -204,7 +210,7 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
               All
             </a>
             {topCategories.map((cat) => (
-              <a key={cat.id} href={`/store/${slug}?category=${cat.slug}`}
+              <a key={cat.id} href={`${homeHref}?category=${cat.slug}`}
                 className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                   category === cat.slug ? "text-black" : "bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300"
                 }`}
@@ -218,7 +224,7 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
         {/* Subcategory pills */}
         {subcategories.length > 0 && (
           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mt-8">
-            <a href={`/store/${slug}?category=${category}`}
+            <a href={`${homeHref}?category=${category}`}
               className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                 !sub ? "bg-surface-800 dark:bg-surface-200 text-white dark:text-black"
                      : "bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400"
@@ -226,7 +232,7 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
               All {activeCategory?.name}
             </a>
             {subcategories.map((s) => (
-              <a key={s.id} href={`/store/${slug}?category=${category}&sub=${s.slug}`}
+              <a key={s.id} href={`${homeHref}?category=${category}&sub=${s.slug}`}
                 className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                   sub === s.slug ? "bg-surface-800 dark:bg-surface-200 text-white dark:text-black"
                                  : "bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400"

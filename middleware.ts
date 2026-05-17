@@ -14,21 +14,21 @@ export function middleware(req: NextRequest) {
     const subdomain = hostname.replace(`.${rootDomain}`, "");
     const { pathname } = req.nextUrl;
 
-    // Guard: client-side Next.js navigation (RSC fetches) already contains the
-    // store prefix because internal links use /store/{slug}/... paths.
-    // Without this check the middleware would double-rewrite and produce
-    // /store/{slug}/store/{slug}/... → 404.
+    // Enrich request headers so server components can detect store context
+    const reqHeaders = new Headers(req.headers);
+    reqHeaders.set("x-store-slug", subdomain);
+    reqHeaders.set("x-is-subdomain", "1");
+
+    // Guard: path already has the store prefix (client RSC fetch after Link click).
+    // Skip rewrite — serve the internal path directly, just forward the headers.
     if (pathname.startsWith(`/store/${subdomain}`)) {
-      const res = NextResponse.next();
-      res.headers.set("x-store-slug", subdomain);
-      return res;
+      return NextResponse.next({ request: { headers: reqHeaders } });
     }
 
+    // Rewrite: deeluxify.awarizon.shop/products/abc → /store/deeluxify/products/abc
     const url = req.nextUrl.clone();
     url.pathname = `/store/${subdomain}${pathname}`;
-    const res = NextResponse.rewrite(url);
-    res.headers.set("x-store-slug", subdomain);
-    return res;
+    return NextResponse.rewrite(url, { request: { headers: reqHeaders } });
   }
 
   // ── Main domain routes ───────────────────────────────────────────

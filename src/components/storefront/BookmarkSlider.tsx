@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { Heart, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useBookmarks } from "@/hooks/useBookmarks";
+import { useStore } from "@/lib/store-context";
 import { formatCurrency } from "@/lib/utils";
 
 const CARD_W = 180;
@@ -13,6 +14,7 @@ interface Props {
 
 export default function BookmarkSlider({ storeSlug }: Props) {
   const { bookmarks, clearAll, toggleBookmark, hydrated } = useBookmarks(storeSlug);
+  const { storeBase } = useStore();
   const ref = useRef<HTMLDivElement>(null);
 
   if (!hydrated || bookmarks.length === 0) return null;
@@ -71,7 +73,7 @@ export default function BookmarkSlider({ storeSlug }: Props) {
                 <X className="w-3.5 h-3.5 text-red-500" />
               </button>
 
-              <a href={`/store/${storeSlug}/products/${p.slug}`} className="block">
+              <a href={`${storeBase}/products/${p.slug}`} className="block">
                 {/* Image */}
                 <div className="aspect-square bg-surface-50 dark:bg-surface-800 overflow-hidden">
                   {p.image_url ? (

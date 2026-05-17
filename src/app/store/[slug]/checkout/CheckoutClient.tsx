@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { useCart } from "@/components/storefront/CartProvider";
+import { useStore } from "@/lib/store-context";
 import { formatCurrency } from "@/lib/utils";
 import { clThumb } from "@/lib/cloudinary";
 import toast from "react-hot-toast";
@@ -49,6 +50,8 @@ export default function CheckoutClient({
 }: CheckoutProps) {
   const router = useRouter();
   const { items, totalAmount, clearCart } = useCart();
+  const { storeBase } = useStore();
+  const homeHref = storeBase || "/";
   const [step, setStep] = useState<"details" | "payment" | "success">("details");
   const [loading, setLoading] = useState(false);
   const [payMethod, setPayMethod] = useState<"paystack" | "transfer">(
@@ -87,7 +90,7 @@ export default function CheckoutClient({
         <p className="text-4xl mb-4">🛒</p>
         <p className="font-semibold text-surface-900 dark:text-white mb-2">Your cart is empty</p>
         <Link
-          href={`/store/${storeSlug}`}
+          href={homeHref}
           className="text-sm font-semibold underline"
           style={{ color: "var(--sf-accent)" }}
         >
@@ -244,7 +247,7 @@ export default function CheckoutClient({
         )}
 
         <Link
-          href={`/store/${storeSlug}`}
+          href={homeHref}
           className="mt-8 inline-block px-8 py-3 rounded-xl font-bold text-sm text-black"
           style={{ backgroundColor: "var(--sf-accent)" }}
         >

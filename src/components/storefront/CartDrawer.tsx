@@ -2,6 +2,7 @@
 import { X, Trash2, Minus, Plus, ShoppingBag } from 'lucide-react'
 import Image from 'next/image'
 import { useCart } from '@/hooks/useCart'
+import { useStore } from '@/lib/store-context'
 import { formatPrice, getStoreUrl, waLink } from '@/lib/utils'
 import type { Store } from '@/types'
 import Link from 'next/link'
@@ -14,6 +15,7 @@ interface CartDrawerProps {
 
 export function CartDrawer({ isOpen, onClose, store }: CartDrawerProps) {
   const { items, totalItems, totalPrice, updateQuantity, removeItem, clearCart } = useCart(store.id)
+  const { storeBase } = useStore()
 
   return (
     <>
@@ -101,7 +103,7 @@ export function CartDrawer({ isOpen, onClose, store }: CartDrawerProps) {
               <span className="text-xl font-bold">{formatPrice(totalPrice)}</span>
             </div>
             <Link
-              href={`/store/${store.slug}/checkout`}
+              href={`${storeBase}/checkout`}
               onClick={onClose}
               className="block w-full py-3.5 rounded-xl text-center font-bold text-sm transition-opacity hover:opacity-90"
               style={{ background: 'var(--sf-accent)', color: '#000' }}

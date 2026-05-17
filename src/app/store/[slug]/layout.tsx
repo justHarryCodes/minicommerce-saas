@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { query, queryOne } from "@/lib/db";
 import { getOrSet, cacheKey, TTL } from "@/lib/redis";
 import { deriveThemeColors } from "@/lib/utils";
 import StorefrontNav from "@/components/storefront/Nav";
 import CartProvider from "@/components/storefront/CartProvider";
 import VisitTracker from "@/components/storefront/VisitTracker";
+import { StoreProvider } from "@/lib/store-context";
 import type { Store, Category } from "@/types";
 import type { Metadata } from "next";
 
@@ -53,6 +55,10 @@ export default async function StorefrontLayout({ params, children }: Props) {
   const store = await getStore(slug);
   if (!store) notFound();
 
+  const h = await headers();
+  const isSubdomain = h.get("x-is-subdomain") === "1";
+  const storeBase = isSubdomain ? "" : `/store/${slug}`;
+
   const categories = await getCategories(store.id);
   const topCategories = categories.filter((c) => !c.parent_id);
   const withSubs = topCategories.map((cat) => ({
@@ -72,6 +78,7 @@ export default async function StorefrontLayout({ params, children }: Props) {
   `;
 
   return (
+    <StoreProvider storeSlug={slug} storeBase={storeBase}>
     <CartProvider storeId={store.id}>
       <div className="storefront min-h-screen bg-white dark:bg-surface-950">
         <style dangerouslySetInnerHTML={{ __html: themeStyle }} />
@@ -80,5 +87,6 @@ export default async function StorefrontLayout({ params, children }: Props) {
         <div className="pt-16">{children}</div>
       </div>
     </CartProvider>
+    </StoreProvider>
   );
 }

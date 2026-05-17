@@ -5,6 +5,7 @@ import { ShoppingCart, Check, Heart } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "./CartProvider";
 import { useBookmarks } from "@/hooks/useBookmarks";
+import { useStore } from "@/lib/store-context";
 import { formatCurrency } from "@/lib/utils";
 import { clCard } from "@/lib/cloudinary";
 import type { Product } from "@/types";
@@ -17,6 +18,7 @@ interface Props {
 export default function ProductCard({ product, storeSlug }: Props) {
   const { addItem } = useCart();
   const { isBookmarked, toggleBookmark } = useBookmarks(storeSlug);
+  const { storeBase } = useStore();
   const [added, setAdded] = useState(false);
 
   const images = product.images ?? [];
@@ -57,7 +59,7 @@ export default function ProductCard({ product, storeSlug }: Props) {
 
   return (
     <Link
-      href={`/store/${storeSlug}/products/${product.slug ?? product.id}`}
+      href={`${storeBase}/products/${product.slug ?? product.id}`}
       className="group flex flex-col rounded-2xl bg-white dark:bg-surface-900 border border-surface-100 dark:border-surface-800 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
     >
       {/* Image */}

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { X, Search, ShoppingCart, Check, Loader2, PackageSearch } from "lucide-react";
 import { useCart } from "./CartProvider";
+import { useStore } from "@/lib/store-context";
 import { formatCurrency } from "@/lib/utils";
 import { clCard } from "@/lib/cloudinary";
 
@@ -33,6 +34,7 @@ function SearchResultRow({
   onClose: () => void;
 }) {
   const { addItem } = useCart();
+  const { storeBase } = useStore();
   const [added, setAdded] = useState(false);
   const imageUrl = product.images?.[0] ?? product.image_url ?? null;
   const comparePrice = product.compare_price;
@@ -60,7 +62,7 @@ function SearchResultRow({
 
   return (
     <Link
-      href={`/store/${storeSlug}/products/${product.slug ?? product.id}`}
+      href={`${storeBase}/products/${product.slug ?? product.id}`}
       onClick={onClose}
       className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors group"
     >
