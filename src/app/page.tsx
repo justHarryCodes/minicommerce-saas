@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { redirect, notFound } from "next/navigation";
 import { verifySession, getUserStore } from "@/lib/auth";
 import { verifyAdminSession } from "@/lib/admin-auth";
 import { query } from "@/lib/db";
@@ -44,6 +45,14 @@ const SELLER_FEATURES = [
 ];
 
 export default async function HomePage() {
+  // ── Subdomain guard ────────────────────────────────────────────────────────
+  // If a subdomain request (e.g. deeluxify.awarizon.shop) bypasses the
+  // middleware rewrite and lands here, bail immediately instead of rendering
+  // the homepage — this is the root cause of the "always shows home" bug.
+  const h = await headers();
+  if (h.get("x-is-subdomain") === "1") return notFound();
+
+  // ── Auth redirects ─────────────────────────────────────────────────────────
   const user = await verifySession();
   if (user) {
     const admin = await verifyAdminSession();
@@ -94,7 +103,6 @@ export default async function HomePage() {
           />
         </div>
         <div className="relative max-w-4xl mx-auto text-center">
-          {/* Brand mark */}
           <div className="flex flex-col items-center mb-6">
             <img src="/logo.png" alt="Duka" className="h-14 w-auto object-contain mb-2" />
             <span
@@ -220,10 +228,9 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* ── Features: what you get out of the box ──────── */}
+      {/* ── Features ───────────────────────────────────── */}
       <section className="py-24 px-4" style={{ background: "var(--bg)" }}>
         <div className="max-w-7xl mx-auto">
-          {/* Header */}
           <div className="text-center mb-16">
             <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--accent)" }}>
               Why Duka
@@ -238,7 +245,6 @@ export default async function HomePage() {
             </p>
           </div>
 
-          {/* Two-panel grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* For Shoppers */}
             <div
@@ -292,7 +298,6 @@ export default async function HomePage() {
               className="rounded-3xl p-8 sm:p-10 flex flex-col"
               style={{ background: "var(--accent)", border: "1px solid transparent" }}
             >
-              {/* Decorative circles */}
               <div className="absolute" aria-hidden="true" />
               <div className="flex items-center gap-3 mb-8">
                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl bg-black/10">
@@ -302,9 +307,7 @@ export default async function HomePage() {
                   <p className="text-xs font-bold uppercase tracking-wider text-black/50">
                     For Sellers
                   </p>
-                  <h3 className="text-xl font-black text-black">
-                    Sell without limits
-                  </h3>
+                  <h3 className="text-xl font-black text-black">Sell without limits</h3>
                 </div>
               </div>
 
@@ -328,7 +331,7 @@ export default async function HomePage() {
             </div>
           </div>
 
-          {/* Mini stat bar */}
+          {/* Stat bar */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-10">
             {[
               { value: "14+", label: "Product categories" },

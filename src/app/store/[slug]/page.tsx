@@ -7,6 +7,7 @@ import HeroSlider from "@/components/storefront/HeroSlider";
 import { BadgeCheck } from "lucide-react";
 import type { Product, Category, Store } from "@/types";
 import { clLogo } from "@/lib/cloudinary";
+import { notFound } from "next/navigation";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -39,19 +40,31 @@ async function getStoreProducts(storeId: string, categorySlug?: string, subSlug?
 }
 
 export default async function StorefrontPage({ params, searchParams }: Props) {
-  const { slug } = await params;
+  const { slug: paramSlug } = await params;
   const { category, sub } = await searchParams;
 
   const h = await headers();
   const isSubdomain = h.get("x-is-subdomain") === "1";
+
+  // Prefer the header slug (set by middleware on subdomain requests) over the
+  // URL param — this guards against a failed rewrite serving the wrong slug.
+  const slug = h.get("x-store-slug") ?? paramSlug;
+
   const storeBase = isSubdomain ? "" : `/store/${slug}`;
   const homeHref = storeBase || "/";
 
+  // Fetch store regardless of is_active so we can show a better message
+  // for inactive stores rather than silently falling through to notFound.
   const store = await queryOne<Store>(
-    "SELECT * FROM stores WHERE slug = $1 AND is_active = true",
+    "SELECT * FROM stores WHERE slug = $1",
     [slug]
   );
-  if (!store) return null;
+
+  // Store doesn't exist at all
+  if (!store) return notFound();
+
+  // Store exists but has been deactivated
+  if (!store.is_active) return notFound();
 
   const allCategories = await getOrSet<Category[]>(
     cacheKey.storeCategories(store.id),
@@ -79,7 +92,6 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
            WHERE store_id = $1 AND id = ANY($2::uuid[]) AND is_active = true`,
           [store.id, store.featured_product_ids]
         ).then((rows) => {
-          // Preserve vendor-defined order
           const order = store.featured_product_ids!;
           return rows.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
         })
@@ -114,7 +126,7 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
         </div>
       )}
 
-      {/* ── Old gradient banner (fallback if no images) ─── */}
+      {/* ── Gradient banner (fallback if no images) ─────── */}
       {showBanner && bannerImages.length === 0 && (
         <div className="px-4 pt-6">
           <div
@@ -122,14 +134,20 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
             style={{ background: "linear-gradient(135deg, var(--sf-accent-light) 0%, var(--sf-accent) 100%)" }}
           >
             {store.logo_url && (
-              <img src={clLogo(store.logo_url)} alt={store.name}
-                loading="eager" decoding="sync"
-                className="h-16 w-auto object-contain mx-auto mb-4" />
+              <img
+                src={clLogo(store.logo_url)}
+                alt={store.name}
+                loading="eager"
+                decoding="sync"
+                className="h-16 w-auto object-contain mx-auto mb-4"
+              />
             )}
             <div className="flex items-center justify-center gap-2 mb-2">
               <h1 className="text-2xl sm:text-3xl font-black text-black">{store.name}</h1>
               {store.nin_verified && (
-                <span title="NIN Verified"><BadgeCheck className="w-6 h-6 text-black/60" aria-label="NIN Verified" /></span>
+                <span title="NIN Verified">
+                  <BadgeCheck className="w-6 h-6 text-black/60" aria-label="NIN Verified" />
+                </span>
               )}
             </div>
             {store.description && (
@@ -188,7 +206,6 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
                     alt={cat.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  {/* Gradient overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-3">
                     <p className="text-white font-bold text-sm leading-tight">{cat.name}</p>
@@ -202,41 +219,53 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
         {/* ── Category filter tabs ───────────────────────── */}
         {topCategories.length > 0 && (
           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mt-4">
-            <a href={homeHref}
+            <a
+              href={homeHref}
               className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                 !category ? "text-black" : "bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300"
               }`}
-              style={!category ? { backgroundColor: "var(--sf-accent)" } : {}}>
+              style={!category ? { backgroundColor: "var(--sf-accent)" } : {}}
+            >
               All
             </a>
             {topCategories.map((cat) => (
-              <a key={cat.id} href={`${homeHref}?category=${cat.slug}`}
+              <a
+                key={cat.id}
+                href={`${homeHref}?category=${cat.slug}`}
                 className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                   category === cat.slug ? "text-black" : "bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300"
                 }`}
-                style={category === cat.slug ? { backgroundColor: "var(--sf-accent)" } : {}}>
+                style={category === cat.slug ? { backgroundColor: "var(--sf-accent)" } : {}}
+              >
                 {cat.name}
               </a>
             ))}
           </div>
         )}
 
-        {/* Subcategory pills */}
+        {/* ── Subcategory pills ──────────────────────────── */}
         {subcategories.length > 0 && (
           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mt-8">
-            <a href={`${homeHref}?category=${category}`}
+            <a
+              href={`${homeHref}?category=${category}`}
               className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                !sub ? "bg-surface-800 dark:bg-surface-200 text-white dark:text-black"
-                     : "bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400"
-              }`}>
+                !sub
+                  ? "bg-surface-800 dark:bg-surface-200 text-white dark:text-black"
+                  : "bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400"
+              }`}
+            >
               All {activeCategory?.name}
             </a>
             {subcategories.map((s) => (
-              <a key={s.id} href={`${homeHref}?category=${category}&sub=${s.slug}`}
+              <a
+                key={s.id}
+                href={`${homeHref}?category=${category}&sub=${s.slug}`}
                 className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                  sub === s.slug ? "bg-surface-800 dark:bg-surface-200 text-white dark:text-black"
-                                 : "bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400"
-                }`}>
+                  sub === s.slug
+                    ? "bg-surface-800 dark:bg-surface-200 text-white dark:text-black"
+                    : "bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400"
+                }`}
+              >
                 {s.name}
               </a>
             ))}
@@ -273,7 +302,9 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
       <div className="px-4 pb-8 border-t border-surface-100 dark:border-surface-800 pt-8 text-center">
         <p className="text-xs text-surface-300 dark:text-surface-600">
           Powered by{" "}
-          <a href="https://awarizon.shop" className="font-semibold hover:underline">Duka by Awarizon</a>
+          <a href="https://awarizon.shop" className="font-semibold hover:underline">
+            Duka by Awarizon
+          </a>
         </p>
       </div>
     </div>
