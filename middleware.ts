@@ -2,14 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "awarizon.shop").toLowerCase();
+
+  // Normalise — always bare domain, never www-prefixed
+  const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "awarizon.shop")
+    .toLowerCase()
+    .replace(/^www\./, "");
 
   // ── Subdomain detection ──────────────────────────────────────────
-  // x-forwarded-host preserves the original subdomain on Vercel wildcard domains.
-  const hostname =
-    (req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "")
-      .split(":")[0]
-      .toLowerCase();
+  // x-forwarded-host may contain multiple comma-separated values from
+  // intermediate proxies — take only the first entry.
+  const rawHost =
+    req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "";
+
+  const hostname = rawHost.split(",")[0].trim().split(":")[0].toLowerCase();
 
   const isSubdomain =
     hostname.endsWith(`.${rootDomain}`) &&
@@ -28,16 +33,23 @@ export function middleware(req: NextRequest) {
       return NextResponse.next({ request: { headers: reqHeaders } });
     }
 
-    // Guard: path already has the store prefix (client RSC fetch after Link click).
-    if (pathname.startsWith(`/store/${subdomain}`)) {
+    // Guard: path already has the store prefix (client RSC fetch after Link
+    // click). Use a slash boundary to avoid prefix-collision bugs where
+    // subdomain "foo" would incorrectly match "/store/foobar/…".
+    if (
+      pathname.startsWith(`/store/${subdomain}/`) ||
+      pathname === `/store/${subdomain}`
+    ) {
       return NextResponse.next({ request: { headers: reqHeaders } });
     }
 
-    // Rewrite to the root domain so Vercel treats it as an internal rewrite.
-    // Cloning req.nextUrl keeps the subdomain hostname, which Vercel sees as
-    // external — swapping to rootDomain makes it a proper internal rewrite.
+    // Rewrite to www.<rootDomain> so Vercel treats it as a true internal
+    // rewrite. Using the bare rootDomain risks hitting an external
+    // apex→www redirect which breaks the rewrite chain.
     const url = req.nextUrl.clone();
-    url.hostname = rootDomain;
+    if (process.env.NODE_ENV === "production") {
+      url.hostname = `www.${rootDomain}`;
+    }
     url.pathname = `/store/${subdomain}${pathname}`;
     return NextResponse.rewrite(url, { request: { headers: reqHeaders } });
   }
