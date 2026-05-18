@@ -1,15 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export function middleware(req: NextRequest) {
-  // x-forwarded-host is the original hostname Vercel's edge preserves on
-  // wildcard domains — host can be normalised to the primary domain.
+  const { pathname } = req.nextUrl;
+
+  // ── Cloudflare Worker fast path ──────────────────────────────────
+  // If the CF Worker already parsed the subdomain and injected headers,
+  // trust them directly (verified by shared secret).
+  const workerSecret = req.headers.get("x-worker-secret");
+  const workerSlug   = req.headers.get("x-store-slug");
+  const expectedSecret = process.env.WORKER_SECRET;
+
+  if (workerSlug && expectedSecret && workerSecret === expectedSecret) {
+    const reqHeaders = new Headers(req.headers);
+    reqHeaders.set("x-is-subdomain", "1");
+
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.next({ request: { headers: reqHeaders } });
+    }
+    if (pathname.startsWith(`/store/${workerSlug}`)) {
+      return NextResponse.next({ request: { headers: reqHeaders } });
+    }
+
+    const url = req.nextUrl.clone();
+    url.pathname = `/store/${workerSlug}${pathname}`;
+    return NextResponse.rewrite(url, { request: { headers: reqHeaders } });
+  }
+
+  // ── Hostname-based subdomain detection (Vercel wildcard / Coolify) ──
+  // x-forwarded-host preserves the original subdomain on Vercel wildcard domains.
   const hostname =
     (req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "")
-      .split(":")[0]  // strip port if present (e.g. localhost:3000)
+      .split(":")[0]
       .toLowerCase();
   const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "awarizon.shop").toLowerCase();
 
-  // ── Subdomain detection ──────────────────────────────────────────
   const isSubdomain =
     hostname.endsWith(`.${rootDomain}`) &&
     !hostname.startsWith("www.") &&
@@ -17,9 +41,7 @@ export function middleware(req: NextRequest) {
 
   if (isSubdomain) {
     const subdomain = hostname.slice(0, hostname.length - rootDomain.length - 1);
-    const { pathname } = req.nextUrl;
 
-    // Enrich request headers so server components can detect store context
     const reqHeaders = new Headers(req.headers);
     reqHeaders.set("x-store-slug", subdomain);
     reqHeaders.set("x-is-subdomain", "1");
@@ -30,21 +52,17 @@ export function middleware(req: NextRequest) {
     }
 
     // Guard: path already has the store prefix (client RSC fetch after Link click).
-    // Skip rewrite — serve the internal path directly, just forward the headers.
     if (pathname.startsWith(`/store/${subdomain}`)) {
       return NextResponse.next({ request: { headers: reqHeaders } });
     }
 
-    // Rewrite: deeluxify.awarizon.shop/products/abc → /store/deeluxify/products/abc
+    // Rewrite: blessingstore.awarizon.shop/products/abc → /store/blessingstore/products/abc
     const url = req.nextUrl.clone();
     url.pathname = `/store/${subdomain}${pathname}`;
     return NextResponse.rewrite(url, { request: { headers: reqHeaders } });
   }
 
   // ── Main domain routes ───────────────────────────────────────────
-  const { pathname } = req.nextUrl;
-
-  // Protect dashboard routes
   if (pathname.startsWith("/dashboard")) {
     const session = req.cookies.get("session");
     if (!session?.value) {
@@ -54,12 +72,8 @@ export function middleware(req: NextRequest) {
     }
   }
 
-  // Let landing page handle its own logic
-  if (pathname === "/") {
-    return NextResponse.next();
-  }
+  if (pathname === "/") return NextResponse.next();
 
-  // Redirect /onboarding if no session
   if (pathname === "/onboarding") {
     const session = req.cookies.get("session");
     if (!session?.value) {

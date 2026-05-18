@@ -3,7 +3,11 @@
     "allow": [
       "Bash(xargs grep -l \"paystack\\\\|PAYSTACK\")",
       "Bash(git -C \"c:\\\\Users\\\\USER\\\\Desktop\\\\shopforge-saas\\\\storefront-saas\" status --short)",
-      "Bash(git -C \"c:\\\\Users\\\\USER\\\\Desktop\\\\shopforge-saas\\\\storefront-saas\" log --oneline -5)"
+      "Bash(git -C \"c:\\\\Users\\\\USER\\\\Desktop\\\\shopforge-saas\\\\storefront-saas\" log --oneline -5)",
+      "Bash(mkdir -p \"c:/Users/USER/Desktop/shopforge-saas/storefront-saas/src/app/api/debug\")"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\USER\\Desktop\\shopforge-saas\\storefront-saas\\src\\app\\api"
     ]
   }
 }
