@@ -2,37 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "awarizon.shop").toLowerCase();
 
-  // ── Cloudflare Worker fast path ──────────────────────────────────
-  // If the CF Worker already parsed the subdomain and injected headers,
-  // trust them directly (verified by shared secret).
-  const workerSecret = req.headers.get("x-worker-secret");
-  const workerSlug   = req.headers.get("x-store-slug");
-  const expectedSecret = process.env.WORKER_SECRET;
-
-  if (workerSlug && expectedSecret && workerSecret === expectedSecret) {
-    const reqHeaders = new Headers(req.headers);
-    reqHeaders.set("x-is-subdomain", "1");
-
-    if (pathname.startsWith("/api/")) {
-      return NextResponse.next({ request: { headers: reqHeaders } });
-    }
-    if (pathname.startsWith(`/store/${workerSlug}`)) {
-      return NextResponse.next({ request: { headers: reqHeaders } });
-    }
-
-    const url = req.nextUrl.clone();
-    url.pathname = `/store/${workerSlug}${pathname}`;
-    return NextResponse.rewrite(url, { request: { headers: reqHeaders } });
-  }
-
-  // ── Hostname-based subdomain detection (Vercel wildcard / Coolify) ──
+  // ── Subdomain detection ──────────────────────────────────────────
   // x-forwarded-host preserves the original subdomain on Vercel wildcard domains.
   const hostname =
     (req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "")
       .split(":")[0]
       .toLowerCase();
-  const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "awarizon.shop").toLowerCase();
 
   const isSubdomain =
     hostname.endsWith(`.${rootDomain}`) &&
@@ -56,8 +33,11 @@ export function middleware(req: NextRequest) {
       return NextResponse.next({ request: { headers: reqHeaders } });
     }
 
-    // Rewrite: blessingstore.awarizon.shop/products/abc → /store/blessingstore/products/abc
+    // Rewrite to the root domain so Vercel treats it as an internal rewrite.
+    // Cloning req.nextUrl keeps the subdomain hostname, which Vercel sees as
+    // external — swapping to rootDomain makes it a proper internal rewrite.
     const url = req.nextUrl.clone();
+    url.hostname = rootDomain;
     url.pathname = `/store/${subdomain}${pathname}`;
     return NextResponse.rewrite(url, { request: { headers: reqHeaders } });
   }
