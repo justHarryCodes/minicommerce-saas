@@ -58,17 +58,16 @@ function SidebarContent({
     router.push("/auth/login");
   };
 
-  const storeUrl = store
-    ? process.env.NEXT_PUBLIC_ROOT_DOMAIN
-      ? `https://${store.slug}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`
-      : `/store/${store.slug}`
-    : null;
+const ROOT = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "awarizon.shop")
+  .replace(/^www\./, "");
 
-  const storeDisplayUrl = store
-    ? process.env.NEXT_PUBLIC_ROOT_DOMAIN
-      ? `${store.slug}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`
-      : `awarizon.shop/store/${store.slug}`
-    : null;
+const storeUrl = store
+  ? `https://${store.slug}.${ROOT}`
+  : null;
+
+const storeDisplayUrl = store
+  ? `${store.slug}.${ROOT}`
+  : null;
 
   return (
     <div className="flex h-full flex-col">

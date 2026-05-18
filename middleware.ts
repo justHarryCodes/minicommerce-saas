@@ -1,76 +1,73 @@
 import { NextRequest, NextResponse } from "next/server";
 
+const ROOT_DOMAIN = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "awarizon.shop")
+  .toLowerCase()
+  .replace(/^www\./, "");
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function getHostname(req: NextRequest) {
+  const raw = req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "";
+  return raw.split(",")[0].trim().split(":")[0].toLowerCase();
+}
+
+function getStoreSlug(hostname: string): string | null {
+  if (
+    !hostname.endsWith(`.${ROOT_DOMAIN}`) ||
+    hostname.startsWith("www.") ||
+    hostname.startsWith("localhost")
+  ) return null;
+  return hostname.slice(0, -(ROOT_DOMAIN.length + 1)); // strip ".rootDomain"
+}
+
+function isAuthenticated(req: NextRequest) {
+  return !!req.cookies.get("session")?.value;
+}
+
+function redirectToLogin(req: NextRequest, pathname: string) {
+  const url = new URL("/auth/login", req.url);
+  url.searchParams.set("redirect", pathname);
+  return NextResponse.redirect(url);
+}
+
+// ── Middleware ────────────────────────────────────────────────────────────────
+
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const hostname = getHostname(req);
+  const slug = getStoreSlug(hostname);
 
-  // Normalise — always bare domain, never www-prefixed
-  const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "awarizon.shop")
-    .toLowerCase()
-    .replace(/^www\./, "");
+  // ── Storefront (subdomain) requests ──────────────────────────────────────
+  // deeluxify.awarizon.shop/** → internally served as /store/deeluxify/**
+  // Same view admins see at www.awarizon.shop/store/deeluxify
+  if (slug) {
+    const headers = new Headers(req.headers);
+    headers.set("x-store-slug", slug);
+    headers.set("x-is-subdomain", "1");
 
-  // ── Subdomain detection ──────────────────────────────────────────
-  // x-forwarded-host may contain multiple comma-separated values from
-  // intermediate proxies — take only the first entry.
-  const rawHost =
-    req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "";
-
-  const hostname = rawHost.split(",")[0].trim().split(":")[0].toLowerCase();
-
-  const isSubdomain =
-    hostname.endsWith(`.${rootDomain}`) &&
-    !hostname.startsWith("www.") &&
-    !hostname.startsWith("localhost");
-
-  if (isSubdomain) {
-    const subdomain = hostname.slice(0, hostname.length - rootDomain.length - 1);
-
-    const reqHeaders = new Headers(req.headers);
-    reqHeaders.set("x-store-slug", subdomain);
-    reqHeaders.set("x-is-subdomain", "1");
-
-    // API routes live at the root — never rewrite them, just forward headers.
+    // API calls: forward headers, no rewrite
     if (pathname.startsWith("/api/")) {
-      return NextResponse.next({ request: { headers: reqHeaders } });
+      return NextResponse.next({ request: { headers } });
     }
 
-    // Guard: path already has the store prefix (client RSC fetch after Link
-    // click). Use a slash boundary to avoid prefix-collision bugs where
-    // subdomain "foo" would incorrectly match "/store/foobar/…".
-    if (
-      pathname.startsWith(`/store/${subdomain}/`) ||
-      pathname === `/store/${subdomain}`
-    ) {
-      return NextResponse.next({ request: { headers: reqHeaders } });
+    // Already rewritten (RSC fetch after a Link click): pass through
+    if (pathname.startsWith(`/store/${slug}/`) || pathname === `/store/${slug}`) {
+      return NextResponse.next({ request: { headers } });
     }
 
-    // Rewrite to www.<rootDomain> so Vercel treats it as a true internal
-    // rewrite. Using the bare rootDomain risks hitting an external
-    // apex→www redirect which breaks the rewrite chain.
+    // Rewrite subdomain → /store/[slug] (same route admins use)
     const url = req.nextUrl.clone();
-    if (process.env.NODE_ENV === "production") {
-      url.hostname = `www.${rootDomain}`;
-    }
-    url.pathname = `/store/${subdomain}${pathname}`;
-    return NextResponse.rewrite(url, { request: { headers: reqHeaders } });
+    if (process.env.NODE_ENV === "production") url.hostname = `www.${ROOT_DOMAIN}`;
+    url.pathname = `/store/${slug}${pathname}`;
+    return NextResponse.rewrite(url, { request: { headers } });
   }
 
-  // ── Main domain routes ───────────────────────────────────────────
-  if (pathname.startsWith("/dashboard")) {
-    const session = req.cookies.get("session");
-    if (!session?.value) {
-      const loginUrl = new URL("/auth/login", req.url);
-      loginUrl.searchParams.set("redirect", pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-  }
+  // ── Main domain: protected routes ─────────────────────────────────────────
+  const isProtected =
+    pathname.startsWith("/dashboard") || pathname === "/onboarding";
 
-  if (pathname === "/") return NextResponse.next();
-
-  if (pathname === "/onboarding") {
-    const session = req.cookies.get("session");
-    if (!session?.value) {
-      return NextResponse.redirect(new URL("/auth/login", req.url));
-    }
+  if (isProtected && !isAuthenticated(req)) {
+    return redirectToLogin(req, pathname);
   }
 
   return NextResponse.next();
