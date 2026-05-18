@@ -17,7 +17,7 @@ function getStoreSlug(hostname: string): string | null {
     hostname.startsWith("www.") ||
     hostname.startsWith("localhost")
   ) return null;
-  return hostname.slice(0, -(ROOT_DOMAIN.length + 1)); // strip ".rootDomain"
+  return hostname.slice(0, -(ROOT_DOMAIN.length + 1));
 }
 
 function isAuthenticated(req: NextRequest) {
@@ -34,8 +34,22 @@ function redirectToLogin(req: NextRequest, pathname: string) {
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const rawHost = req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "";
   const hostname = getHostname(req);
   const slug = getStoreSlug(hostname);
+
+  // ── Debug logging (remove once subdomain routing is confirmed working) ────
+  console.log("🔍 MIDDLEWARE", JSON.stringify({
+    rawHost,
+    hostname,
+    pathname,
+    rootDomain: ROOT_DOMAIN,
+    endsWithRoot: hostname.endsWith(`.${ROOT_DOMAIN}`),
+    isWww: hostname.startsWith("www."),
+    isLocalhost: hostname.startsWith("localhost"),
+    slugDetected: slug,
+    nodeEnv: process.env.NODE_ENV,
+  }));
 
   // ── Storefront (subdomain) requests ──────────────────────────────────────
   // deeluxify.awarizon.shop/** → internally served as /store/deeluxify/**
@@ -47,11 +61,13 @@ export function middleware(req: NextRequest) {
 
     // API calls: forward headers, no rewrite
     if (pathname.startsWith("/api/")) {
+      console.log("🔍 MIDDLEWARE → API passthrough", { slug, pathname });
       return NextResponse.next({ request: { headers } });
     }
 
     // Already rewritten (RSC fetch after a Link click): pass through
     if (pathname.startsWith(`/store/${slug}/`) || pathname === `/store/${slug}`) {
+      console.log("🔍 MIDDLEWARE → already rewritten, passthrough", { slug, pathname });
       return NextResponse.next({ request: { headers } });
     }
 
@@ -59,6 +75,14 @@ export function middleware(req: NextRequest) {
     const url = req.nextUrl.clone();
     if (process.env.NODE_ENV === "production") url.hostname = `www.${ROOT_DOMAIN}`;
     url.pathname = `/store/${slug}${pathname}`;
+
+    console.log("🔍 MIDDLEWARE → rewriting", {
+      slug,
+      from: pathname,
+      to: url.pathname,
+      toHostname: url.hostname,
+    });
+
     return NextResponse.rewrite(url, { request: { headers } });
   }
 
@@ -67,9 +91,11 @@ export function middleware(req: NextRequest) {
     pathname.startsWith("/dashboard") || pathname === "/onboarding";
 
   if (isProtected && !isAuthenticated(req)) {
+    console.log("🔍 MIDDLEWARE → redirecting to login", { pathname });
     return redirectToLogin(req, pathname);
   }
 
+  console.log("🔍 MIDDLEWARE → main domain passthrough", { hostname, pathname });
   return NextResponse.next();
 }
 
