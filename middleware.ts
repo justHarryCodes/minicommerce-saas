@@ -34,26 +34,30 @@ function redirectToLogin(req: NextRequest, pathname: string) {
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const rawHost = req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "";
-  const hostname = getHostname(req);
-  const slug = getStoreSlug(hostname);
 
-  // ── Debug logging (remove once subdomain routing is confirmed working) ────
-  console.log("🔍 MIDDLEWARE", JSON.stringify({
-    rawHost,
-    hostname,
-    pathname,
-    rootDomain: ROOT_DOMAIN,
-    endsWithRoot: hostname.endsWith(`.${ROOT_DOMAIN}`),
-    isWww: hostname.startsWith("www."),
-    isLocalhost: hostname.startsWith("localhost"),
-    slugDetected: slug,
-    nodeEnv: process.env.NODE_ENV,
-  }));
+  const xForwardedHost = req.headers.get("x-forwarded-host") ?? "MISSING";
+  const hostHeader     = req.headers.get("host") ?? "MISSING";
+  const rawHost        = xForwardedHost !== "MISSING" ? xForwardedHost : hostHeader;
+  const hostname       = getHostname(req);
+  const slug           = getStoreSlug(hostname);
+
+  // ── Step-by-step diagnostic log ──────────────────────────────────────────
+  console.log([
+    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+    `[MW] REQUEST: ${req.method} ${pathname}`,
+    `[MW] x-forwarded-host : ${xForwardedHost}`,
+    `[MW] host             : ${hostHeader}`,
+    `[MW] resolved hostname: ${hostname}`,
+    `[MW] ROOT_DOMAIN      : ${ROOT_DOMAIN}`,
+    `[MW] endsWith check   : ${hostname.endsWith(`.${ROOT_DOMAIN}`)}`,
+    `[MW] starts www?      : ${hostname.startsWith("www.")}`,
+    `[MW] starts localhost?: ${hostname.startsWith("localhost")}`,
+    `[MW] slug detected    : ${slug ?? "NONE — will hit main domain logic"}`,
+    `[MW] NODE_ENV         : ${process.env.NODE_ENV}`,
+    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+  ].join("\n"));
 
   // ── Storefront (subdomain) requests ──────────────────────────────────────
-  // deeluxify.awarizon.shop/** → internally served as /store/deeluxify/**
-  // Same view admins see at www.awarizon.shop/store/deeluxify
   if (slug) {
     const headers = new Headers(req.headers);
     headers.set("x-store-slug", slug);
@@ -61,27 +65,32 @@ export function middleware(req: NextRequest) {
 
     // API calls: forward headers, no rewrite
     if (pathname.startsWith("/api/")) {
-      console.log("🔍 MIDDLEWARE → API passthrough", { slug, pathname });
+      console.log(`[MW] → API passthrough for slug="${slug}" path="${pathname}"`);
       return NextResponse.next({ request: { headers } });
     }
 
     // Already rewritten (RSC fetch after a Link click): pass through
     if (pathname.startsWith(`/store/${slug}/`) || pathname === `/store/${slug}`) {
-      console.log("🔍 MIDDLEWARE → already rewritten, passthrough", { slug, pathname });
+      console.log(`[MW] → Already rewritten, passthrough slug="${slug}" path="${pathname}"`);
       return NextResponse.next({ request: { headers } });
     }
 
-    // Rewrite subdomain → /store/[slug] (same route admins use)
+    // Rewrite subdomain → /store/[slug]
     const url = req.nextUrl.clone();
-    if (process.env.NODE_ENV === "production") url.hostname = `www.${ROOT_DOMAIN}`;
-    url.pathname = `/store/${slug}${pathname}`;
+    const targetHostname = process.env.NODE_ENV === "production"
+      ? `www.${ROOT_DOMAIN}`
+      : hostname;
+    url.hostname = targetHostname;
+    url.pathname = `/store/${slug}${pathname === "/" ? "" : pathname}`;
 
-    console.log("🔍 MIDDLEWARE → rewriting", {
-      slug,
-      from: pathname,
-      to: url.pathname,
-      toHostname: url.hostname,
-    });
+    console.log([
+      `[MW] → REWRITING subdomain request`,
+      `[MW]   slug        : ${slug}`,
+      `[MW]   from path   : ${pathname}`,
+      `[MW]   to path     : ${url.pathname}`,
+      `[MW]   to hostname : ${url.hostname}`,
+      `[MW]   full url    : ${url.toString()}`,
+    ].join("\n"));
 
     return NextResponse.rewrite(url, { request: { headers } });
   }
@@ -91,11 +100,11 @@ export function middleware(req: NextRequest) {
     pathname.startsWith("/dashboard") || pathname === "/onboarding";
 
   if (isProtected && !isAuthenticated(req)) {
-    console.log("🔍 MIDDLEWARE → redirecting to login", { pathname });
+    console.log(`[MW] → Redirecting to login from "${pathname}"`);
     return redirectToLogin(req, pathname);
   }
 
-  console.log("🔍 MIDDLEWARE → main domain passthrough", { hostname, pathname });
+  console.log(`[MW] → Main domain passthrough hostname="${hostname}" path="${pathname}"`);
   return NextResponse.next();
 }
 
