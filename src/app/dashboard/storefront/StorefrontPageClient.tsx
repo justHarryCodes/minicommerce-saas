@@ -7,9 +7,6 @@ import { Tip } from "@/components/dashboard/Tip";
 import { clBanner, clThumb } from "@/lib/cloudinary";
 import type { Product } from "@/types";
 
-const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
-const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!;
-
 interface Props {
   initialBanners: string[];
   initialFeatured: string[];
@@ -31,21 +28,12 @@ export default function StorefrontPageClient({ initialBanners, initialFeatured, 
     try {
       const fd = new FormData();
       fd.append("file", file);
-      fd.append("upload_preset", UPLOAD_PRESET);
-      // Cap the stored master at 1 600 px wide with smart quality.
-      // Display-time transforms (clBanner) then derive from this smaller master.
-      fd.append("transformation", "c_limit,w_1600,q_auto:good");
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
-        method: "POST", body: fd,
-      });
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
       const data = await res.json();
-      if (data.secure_url) {
-        setBanners((prev) => [...prev, data.secure_url].slice(0, 5));
-      } else {
-        toast.error("Upload failed");
-      }
-    } catch {
-      toast.error("Upload failed");
+      if (!res.ok) throw new Error(data.error ?? "Upload failed");
+      setBanners((prev) => [...prev, data.url].slice(0, 5));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setUploadingBanner(false);
     }

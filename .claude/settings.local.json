@@ -30,7 +30,8 @@
       "Bash(Select-Object FullName)",
       "Bash(ConvertTo-Csv -NoTypeInformation)",
       "Bash(Select-Object -Skip 1)",
-      "Bash(grep -E \"\\\\.\\(tsx|ts|jsx|js\\)$\")"
+      "Bash(grep -E \"\\\\.\\(tsx|ts|jsx|js\\)$\")",
+      "Bash(not exist *)"
     ],
     "additionalDirectories": [
       "c:\\Users\\USER\\Desktop\\shopforge-saas\\storefront-saas\\src\\app\\api\\stores\\[slug]",

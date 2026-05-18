@@ -542,11 +542,16 @@ function OnboardingPage() {
                         {form.name}
                       </span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-zinc-500">URL</span>
-                      <span className="font-semibold text-zinc-900 dark:text-white text-xs font-mono">
-                        /store/{form.slug}
-                      </span>
+                    <div className="flex justify-between items-start gap-2">
+                      <span className="text-zinc-500 shrink-0">URL</span>
+                      <div className="text-right">
+                        <p className="font-semibold text-zinc-900 dark:text-white text-xs font-mono">
+                          {form.slug}.awarizon.shop
+                        </p>
+                        <p className="text-zinc-400 text-xs font-mono">
+                          awarizon.shop/store/{form.slug}
+                        </p>
+                      </div>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-zinc-500">Payments</span>

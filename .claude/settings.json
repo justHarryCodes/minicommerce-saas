@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(xargs grep -l \"paystack\\\\|PAYSTACK\")"
+      "Bash(xargs grep -l \"paystack\\\\|PAYSTACK\")",
+      "Bash(git -C \"c:\\\\Users\\\\USER\\\\Desktop\\\\shopforge-saas\\\\storefront-saas\" status --short)",
+      "Bash(git -C \"c:\\\\Users\\\\USER\\\\Desktop\\\\shopforge-saas\\\\storefront-saas\" log --oneline -5)"
     ]
   }
 }

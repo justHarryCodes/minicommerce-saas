@@ -3,6 +3,13 @@ import { verifySession } from '@/lib/auth'
 import { query, queryOne, toCamel } from '@/lib/db'
 import { z } from 'zod'
 
+const RESERVED_SLUGS = new Set([
+  'api', 'www', 'store', 'admin', 'dashboard', 'auth', 'onboarding',
+  'login', 'logout', 'signup', 'register', 'checkout', 'account',
+  'settings', 'profile', 'help', 'support', 'about', 'terms', 'privacy',
+  'static', 'public', 'assets', 'images', 'media', 'uploads',
+])
+
 const CreateStoreSchema = z.object({
   name:             z.string().min(2).max(100),
   slug:             z.string().min(2).max(60).regex(/^[a-z0-9-]+$/),
@@ -50,6 +57,9 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
 
   const d = parsed.data
+  if (RESERVED_SLUGS.has(d.slug))
+    return NextResponse.json({ error: 'Slug already taken' }, { status: 409 })
+
   const slugConflict = await queryOne('SELECT id FROM stores WHERE slug = $1', [d.slug])
   if (slugConflict) return NextResponse.json({ error: 'Slug already taken' }, { status: 409 })
 

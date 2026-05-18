@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export function middleware(req: NextRequest) {
-  const hostname = req.headers.get("host") ?? "";
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "awarizon.shop";
+  // x-forwarded-host is the original hostname Vercel's edge preserves on
+  // wildcard domains — host can be normalised to the primary domain.
+  const hostname =
+    (req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "")
+      .split(":")[0]  // strip port if present (e.g. localhost:3000)
+      .toLowerCase();
+  const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "awarizon.shop").toLowerCase();
 
   // ── Subdomain detection ──────────────────────────────────────────
   const isSubdomain =
@@ -11,13 +16,18 @@ export function middleware(req: NextRequest) {
     !hostname.startsWith("localhost");
 
   if (isSubdomain) {
-    const subdomain = hostname.replace(`.${rootDomain}`, "");
+    const subdomain = hostname.slice(0, hostname.length - rootDomain.length - 1);
     const { pathname } = req.nextUrl;
 
     // Enrich request headers so server components can detect store context
     const reqHeaders = new Headers(req.headers);
     reqHeaders.set("x-store-slug", subdomain);
     reqHeaders.set("x-is-subdomain", "1");
+
+    // API routes live at the root — never rewrite them, just forward headers.
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.next({ request: { headers: reqHeaders } });
+    }
 
     // Guard: path already has the store prefix (client RSC fetch after Link click).
     // Skip rewrite — serve the internal path directly, just forward the headers.
