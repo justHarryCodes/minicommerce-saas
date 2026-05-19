@@ -26,18 +26,24 @@ function createCartStore(storeId: string) {
         storeId,
 
         addItem: (newItem) => {
+          // PostgreSQL returns NUMERIC as strings — coerce to numbers at the point of entry
+          const item = {
+            ...newItem,
+            price: Number(newItem.price),
+            stock_quantity: Number(newItem.stock_quantity),
+          };
           set((state) => {
-            const existing = state.items.find((i) => i.product_id === newItem.product_id);
+            const existing = state.items.find((i) => i.product_id === item.product_id);
             if (existing) {
               return {
                 items: state.items.map((i) =>
-                  i.product_id === newItem.product_id
-                    ? { ...i, quantity: Math.min(i.quantity + 1, newItem.stock_quantity) }
+                  i.product_id === item.product_id
+                    ? { ...i, quantity: Math.min(i.quantity + 1, item.stock_quantity) }
                     : i
                 ),
               };
             }
-            return { items: [...state.items, { ...newItem, quantity: newItem.quantity ?? 1 }] };
+            return { items: [...state.items, { ...item, quantity: item.quantity ?? 1 }] };
           });
         },
 
@@ -80,8 +86,8 @@ export function useCart() {
   const ctx = useContext(CartContext);
   if (!ctx) throw new Error("useCart must be used within CartProvider");
   const state = useStore(ctx.storeApi);
-  const totalItems = state.items.reduce((sum, i) => sum + i.quantity, 0);
-  const totalAmount = state.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const totalItems = state.items.reduce((sum, i) => sum + Number(i.quantity), 0);
+  const totalAmount = state.items.reduce((sum, i) => sum + Number(i.price) * Number(i.quantity), 0);
   return { ...state, totalItems, totalAmount };
 }
 

@@ -153,8 +153,8 @@ export default function CheckoutClient({
           storeId,
           items: items.map((i: import("@/types").CartItem) => ({
             productId: i.product_id,
-            quantity: i.quantity,
-            unitPrice: i.price,
+            quantity: Number(i.quantity),
+            unitPrice: Number(i.price),
           })),
           paymentMethod: payMethod,
           totalAmount,
