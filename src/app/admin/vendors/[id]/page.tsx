@@ -124,47 +124,6 @@ export default async function VendorDetailPage({ params }: RouteParams) {
             </a>
           </div>
 
-          {/* NIN Verification */}
-          <div className="rounded-2xl border p-6" style={{ background: 'var(--bg)', borderColor: 'var(--border)' }}>
-            <h2 className="font-bold mb-4" style={{ color: 'var(--text-primary)' }}>NIN Verification</h2>
-            {!store.nin_number ? (
-              <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
-                <XCircle className="w-4 h-4" />
-                Vendor has not submitted their NIN
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 p-4 rounded-xl"
-                  style={{ background: 'var(--bg-tertiary)' }}>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide mb-0.5" style={{ color: 'var(--text-muted)' }}>NIN Number</p>
-                    <p className="text-xl font-black tracking-widest" style={{ color: 'var(--text-primary)' }}>
-                      {store.nin_number}
-                    </p>
-                  </div>
-                  <div className="ml-auto">
-                    {store.nin_verified ? (
-                      <div className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: '#16a34a' }}>
-                        <CheckCircle className="w-5 h-5" />
-                        Verified
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: '#d97706' }}>
-                        <Clock className="w-5 h-5" />
-                        Pending
-                      </div>
-                    )}
-                  </div>
-                </div>
-                {store.nin_verified && store.nin_verified_at && (
-                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                    Verified on {new Date(store.nin_verified_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'long', year: 'numeric' })}
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-
           {/* Payment history */}
           <div className="rounded-2xl border p-6" style={{ background: 'var(--bg)', borderColor: 'var(--border)' }}>
             <h2 className="font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Payment History</h2>
@@ -200,7 +159,7 @@ export default async function VendorDetailPage({ params }: RouteParams) {
 
         {/* Right column — actions */}
         <div className="space-y-6">
-          <VendorActions storeId={store.id} currentStatus={store.status} hasNin={!!store.nin_number} ninVerified={store.nin_verified} />
+          <VendorActions storeId={store.id} currentStatus={store.status} />
 
           {/* Subscription info */}
           <div className="rounded-2xl border p-5" style={{ background: 'var(--bg)', borderColor: 'var(--border)' }}>

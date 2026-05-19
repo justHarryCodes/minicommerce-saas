@@ -46,11 +46,9 @@ export default async function VendorsPage({
     status: string
     subscription_status: string
     subscription_expires_at: string | null
-    nin_verified: boolean
-    nin_number: string | null
     created_at: string
   }>(`SELECT id, name, slug, owner_email, primary_category, status, subscription_status,
-             subscription_expires_at, nin_verified, nin_number, created_at
+             subscription_expires_at, created_at
       FROM stores ${where} ORDER BY created_at DESC`, params)
 
   const filters = ['all', 'active', 'suspended', 'restricted', 'pending_payment']
@@ -96,7 +94,7 @@ export default async function VendorsPage({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b" style={{ borderColor: 'var(--border)' }}>
-                  {['Store', 'Email', 'Category', 'Status', 'Subscription', 'NIN', 'Joined', ''].map((h) => (
+                  {['Store', 'Email', 'Category', 'Status', 'Subscription', 'Joined', ''].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide"
                       style={{ color: 'var(--text-muted)' }}>{h}</th>
                   ))}
@@ -131,15 +129,6 @@ export default async function VendorsPage({
                           <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                             until {new Date(v.subscription_expires_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
                           </p>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {v.nin_verified ? (
-                          <CheckCircle className="w-4 h-4" style={{ color: '#22c55e' }} />
-                        ) : v.nin_number ? (
-                          <AlertCircle className="w-4 h-4" style={{ color: '#f59e0b' }} />
-                        ) : (
-                          <XCircle className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
                         )}
                       </td>
                       <td className="px-4 py-3">

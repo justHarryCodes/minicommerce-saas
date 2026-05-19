@@ -16,8 +16,6 @@ interface StoreInfo {
   subscriptionStatus: string;
   subscriptionExpiresAt: string | null;
   setupFeePaidAt: string | null;
-  ninVerified: boolean;
-  ninNumber: string | null;
   currentPlanId: string | null;
   planExpiresAt: string | null;
   registrationConfirmed: boolean;
@@ -274,9 +272,7 @@ export default function BillingClient({
   const [loadingSetupFee, setLoadingSetupFee]   = useState(false);
   const [loadingSubscribe, setLoadingSubscribe] = useState(false);
   const [loadingPlan, setLoadingPlan]           = useState<string | null>(null);
-  const [ninInput, setNinInput]                 = useState(store.ninNumber ?? "");
-  const [savingNin, setSavingNin]               = useState(false);
-  const [pendingTransfer, setPendingTransfer]   = useState<Record<string, boolean>>({});
+  const[pendingTransfer, setPendingTransfer]   = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (success === "paid")         toast.success("Payment confirmed! Your store update is being processed.");
@@ -329,25 +325,6 @@ export default function BillingClient({
       else toast.error(data.error ?? "Failed to initiate payment");
     } catch { toast.error("Network error"); }
     finally { setLoadingPlan(null); }
-  };
-
-  const saveNin = async () => {
-    if (!ninInput.trim() || ninInput.trim().length < 11) {
-      toast.error("Please enter a valid 11-digit NIN");
-      return;
-    }
-    setSavingNin(true);
-    try {
-      const res = await fetch("/api/stores/nin", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nin: ninInput.trim() }),
-      });
-      const data = await res.json();
-      if (res.ok) toast.success("NIN submitted for verification");
-      else toast.error(data.error ?? "Failed to save NIN");
-    } catch { toast.error("Network error"); }
-    finally { setSavingNin(false); }
   };
 
   const isSetupActive = store.subscriptionStatus === "setup_fee_paid" || store.subscriptionStatus === "subscribed";
@@ -578,48 +555,6 @@ export default function BillingClient({
           )}
         </div>
       )}
-
-      {/* ── NIN Verification ── */}
-      <div className="rounded-2xl border p-6 mb-5"
-        style={{ background: "var(--bg)", borderColor: store.ninVerified ? "#22c55e40" : "var(--border)" }}>
-        <div className="flex items-center gap-2 mb-1">
-          <h2 className="font-bold" style={{ color: "var(--text-primary)" }}>NIN Verification</h2>
-          <InfoTip content="Your 11-digit National Identification Number. Once verified, a ✓ badge appears next to your store name, building shopper trust." />
-        </div>
-        <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>
-          Submit your National Identification Number for identity verification.
-        </p>
-
-        {store.ninVerified ? (
-          <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: "#16a34a" }}>
-            <CheckCircle className="w-4 h-4" /> NIN Verified ✓
-          </div>
-        ) : store.ninNumber ? (
-          <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: "#d97706" }}>
-            <Clock className="w-4 h-4" /> NIN submitted — pending admin review
-          </div>
-        ) : (
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Enter your 11-digit NIN"
-              value={ninInput}
-              onChange={(e) => setNinInput(e.target.value.replace(/\D/g, "").slice(0, 11))}
-              maxLength={11}
-              className="flex-1 px-4 py-2.5 rounded-xl border text-sm outline-none"
-              style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text-primary)" }}
-            />
-            <button
-              onClick={saveNin}
-              disabled={savingNin || ninInput.length < 11}
-              className="px-5 py-2.5 rounded-xl text-sm font-semibold text-black transition-all disabled:opacity-60 hover:opacity-90"
-              style={{ background: "var(--accent)" }}
-            >
-              {savingNin ? "Saving…" : "Submit"}
-            </button>
-          </div>
-        )}
-      </div>
 
       {/* ── Payment history ── */}
       {payments.length > 0 && (

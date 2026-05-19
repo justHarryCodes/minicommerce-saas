@@ -9,8 +9,6 @@ import { InfoTip } from "@/app/admin/InfoTip";
 interface Props {
   storeId: string;
   currentStatus: string;
-  hasNin: boolean;
-  ninVerified: boolean;
 }
 
 const ACTION_TIPS = {
@@ -18,11 +16,9 @@ const ACTION_TIPS = {
   activate:   "Makes the store fully live. Products become visible to all shoppers and the vendor can receive orders immediately.",
   suspend:    "Hides the entire store and all its products from shoppers. The vendor can still log in but cannot receive new orders. Use this for payment issues or policy violations.",
   restrict:   "The vendor can log in and manage products, but new orders are blocked. Softer than a full suspension — use when you need to flag an account without taking it fully offline.",
-  verify_nin: "Grants the vendor a verified badge (✓) displayed on their storefront. Before clicking, confirm the NIN is valid on the NIMC verification portal.",
-  reject_nin: "Clears the submitted NIN from the system. The vendor will be asked to re-submit. Use this if the NIN is invalid, unreadable, or doesn't match the vendor's identity.",
 };
 
-export default function VendorActions({ storeId, currentStatus, hasNin, ninVerified }: Props) {
+export default function VendorActions({ storeId, currentStatus }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<string | null>(null);
@@ -185,41 +181,6 @@ export default function VendorActions({ storeId, currentStatus, hasNin, ninVerif
         />
       </div>
 
-      {/* NIN */}
-      {hasNin && (
-        <div className="pt-3 border-t space-y-2" style={{ borderColor: "var(--border)" }}>
-          <p className="text-xs font-semibold uppercase tracking-wide"
-            style={{ color: "var(--text-muted)" }}>NIN Verification</p>
-
-          <ActionButton
-            id="verify_nin"
-            label={ninVerified ? "NIN Already Verified ✓" : "Verify NIN"}
-            icon={CheckCircle}
-            iconColor="#22c55e"
-            disabled={ninVerified}
-            onConfirm={() => doAction("verify_nin", { action: "verify_nin" }, "NIN verified")}
-          />
-          <ActionButton
-            id="reject_nin"
-            label="Reject & Clear NIN"
-            icon={XCircle}
-            iconColor="#ef4444"
-            destructive
-            onConfirm={() => doAction("reject_nin", { action: "reject_nin" }, "NIN rejected & cleared")}
-          />
-        </div>
-      )}
-
-      {!hasNin && (
-        <div className="pt-3 border-t" style={{ borderColor: "var(--border)" }}>
-          <p className="text-xs font-semibold uppercase tracking-wide mb-2"
-            style={{ color: "var(--text-muted)" }}>NIN Verification</p>
-          <p className="text-xs px-3 py-2.5 rounded-xl"
-            style={{ background: "var(--bg-secondary)", color: "var(--text-muted)" }}>
-            This vendor has not submitted their NIN yet. NIN actions will appear here once they do.
-          </p>
-        </div>
-      )}
     </div>
   );
 }

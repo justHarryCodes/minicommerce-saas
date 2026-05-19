@@ -1,7 +1,7 @@
 import { verifyAdminSession } from '@/lib/admin-auth'
 import { query } from '@/lib/db'
 import Link from 'next/link'
-import { Users, TrendingUp, ShieldOff, Clock, Info, ClipboardCheck } from 'lucide-react'
+import { Users, TrendingUp, ShieldOff, Info, ClipboardCheck } from 'lucide-react'
 
 export const metadata = { title: 'Overview' }
 
@@ -12,12 +12,11 @@ function fmt(n: number) {
 export default async function AdminDashboardPage() {
   await verifyAdminSession() // layout already guards, but double-check
 
-  const [totalRow, activeRow, suspendedRow, ninPendingRow, pendingApprovalRow, revenueRow, recentVendors] =
+  const [totalRow, activeRow, suspendedRow, pendingApprovalRow, revenueRow, recentVendors] =
     await Promise.all([
       query<{ count: string }>('SELECT COUNT(*) as count FROM stores WHERE is_active = true', []),
       query<{ count: string }>(`SELECT COUNT(*) as count FROM stores WHERE is_active = true AND status = 'active'`, []),
       query<{ count: string }>(`SELECT COUNT(*) as count FROM stores WHERE is_active = true AND status = 'suspended'`, []),
-      query<{ count: string }>(`SELECT COUNT(*) as count FROM stores WHERE nin_number IS NOT NULL AND nin_verified = false`, []),
       query<{ count: string }>(`SELECT COUNT(*) as count FROM stores WHERE status = 'pending_approval'`, []),
       query<{ total: string }>(`SELECT COALESCE(SUM(amount),0) as total FROM subscription_payments WHERE payment_status = 'paid' AND created_at >= date_trunc('month', NOW())`, []),
       query<{
@@ -38,10 +37,6 @@ export default async function AdminDashboardPage() {
     {
       label: 'Suspended', value: suspendedRow[0]?.count ?? '0', icon: ShieldOff, color: '#ef4444',
       tip: 'Stores you have suspended. Their products are hidden from shoppers. Go to Vendors → Manage to review.',
-    },
-    {
-      label: 'NIN Pending', value: ninPendingRow[0]?.count ?? '0', icon: Clock, color: '#f59e0b',
-      tip: 'Vendors who have submitted a NIN but are awaiting your review. Go to Vendors, filter by NIN status, and verify.',
     },
     {
       label: 'Awaiting Approval', value: pendingApprovalRow[0]?.count ?? '0', icon: ClipboardCheck, color: '#3b82f6',
@@ -81,10 +76,10 @@ export default async function AdminDashboardPage() {
         <div className="space-y-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
           <p className="font-bold" style={{ color: 'var(--text-primary)' }}>How the admin panel works</p>
           <ul className="space-y-1 text-xs leading-relaxed list-none">
-            <li>📋 <strong>Overview</strong> — this page. Check the stat cards daily for anything that needs attention (e.g. NIN Pending &gt; 0).</li>
-            <li>🏪 <strong>Vendors</strong> — browse all stores. Click <em>Manage</em> on any vendor to confirm registration, activate, suspend, restrict, or verify their NIN.</li>
+            <li>📋 <strong>Overview</strong> — this page. Check the stat cards daily for anything that needs attention.</li>
+            <li>🏪 <strong>Vendors</strong> — browse all stores. Click <em>Manage</em> on any vendor to confirm registration, activate, suspend, or restrict.</li>
             <li>📋 <strong>Plans</strong> — create and manage subscription plans vendors pay monthly to list products. Enable plan subscriptions in Settings.</li>
-            <li>⚙️ <strong>Settings</strong> — toggle platform-wide features: setup fees, plan subscriptions, NIN requirements, and new registrations.</li>
+            <li>⚙️ <strong>Settings</strong> — toggle platform-wide features: setup fees, plan subscriptions, and new registrations.</li>
           </ul>
           <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
             All admin actions are audit-logged automatically — you can review them on each vendor's detail page.

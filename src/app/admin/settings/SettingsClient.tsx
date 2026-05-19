@@ -353,8 +353,7 @@ export default function SettingsClient({ initialSettings, initialBankAccounts }:
           <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>What do these settings do?</p>
           <p><strong>Setup Fee</strong> — vendors must pay once before their store goes live. Good to set before launch to filter serious sellers.</p>
           <p><strong>Monthly Subscription</strong> — keeps vendors paying to stay on the platform. Only activates after the setup fee period ends.</p>
-          <p><strong>NIN Verification</strong> — requires vendors to submit their National ID before selling. Adds trust but creates manual review work for you.</p>
-          <p><strong>New Registrations</strong> — turn this off to pause all sign-ups (e.g. during maintenance). Existing vendors are unaffected.</p>
+<p><strong>New Registrations</strong> — turn this off to pause all sign-ups (e.g. during maintenance). Existing vendors are unaffected.</p>
         </div>
       </div>
 
@@ -392,16 +391,6 @@ export default function SettingsClient({ initialSettings, initialBankAccounts }:
           </ToggleRow>
         </Section>
 
-        {/* Verification */}
-        <Section title="Vendor Verification" icon="✅">
-          <ToggleRow
-            label="Require NIN verification"
-            description="Vendors must submit their National Identification Number (NIN) and have it manually verified by an admin before they can sell."
-            enabled={s.require_nin_verification}
-            onChange={(v) => update("require_nin_verification", v)}
-          />
-        </Section>
-
         {/* Plan subscriptions */}
         <Section title="Plan Subscriptions" icon="📋">
           <ToggleRow
@@ -426,6 +415,19 @@ export default function SettingsClient({ initialSettings, initialBankAccounts }:
             enabled={s.allow_new_registrations}
             onChange={(v) => update("allow_new_registrations", v)}
           />
+        </Section>
+
+        {/* Reels */}
+        <Section title="Shoppable Reels" icon="🎬">
+          <NumberInput
+            label="Monthly upload limit"
+            value={s.reels_monthly_limit}
+            onChange={(v) => update("reels_monthly_limit", v)}
+            prefix=""
+          />
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+            Default number of reels each store can upload per calendar month. Individual store limits can be overridden from the vendor detail page.
+          </p>
         </Section>
 
         {/* Bank Accounts */}

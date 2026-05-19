@@ -136,7 +136,7 @@ export default async function DashboardPage() {
 
       {/* Getting-started guide — dismissable */}
       <Tip id="dash-start" variant="info">
-        <strong>How your dashboard works:</strong> Revenue counts only paid orders. Unique visitors are tracked per day (not page views). To go fully live: add products → set up your Store Page (banner + featured) → complete Billing &amp; NIN if required.
+        <strong>How your dashboard works:</strong> Revenue counts only paid orders. Unique visitors are tracked per day (not page views). To go fully live: add products → set up your Store Page (banner + featured) → complete Billing if required.
       </Tip>
 
       {/* Store banner if no products */}

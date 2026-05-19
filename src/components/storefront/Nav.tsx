@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, ShoppingCart, X, ChevronRight, Heart, BadgeCheck, Search } from "lucide-react";
+import { Menu, ShoppingCart, X, ChevronRight, Heart, Search, Film } from "lucide-react";
 import { useCart } from "./CartProvider";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import { useStore } from "@/lib/store-context";
@@ -63,9 +63,6 @@ export default function StorefrontNav({ store, categories }: Props) {
                 {store.name}
               </span>
             )}
-            {store.nin_verified && (
-              <span title="NIN Verified"><BadgeCheck className="w-5 h-5 shrink-0" style={{ color: "var(--sf-accent)" }} aria-label="NIN Verified" /></span>
-            )}
           </Link>
 
           {/* Right actions: search + cart */}
@@ -120,9 +117,6 @@ export default function StorefrontNav({ store, categories }: Props) {
                     {store.name}
                   </span>
                 )}
-                {store.nin_verified && (
-                  <span title="NIN Verified"><BadgeCheck className="w-5 h-5 shrink-0" style={{ color: "var(--sf-accent)" }} aria-label="NIN Verified" /></span>
-                )}
               </div>
               <button
                 onClick={() => setMenuOpen(false)}
@@ -140,6 +134,15 @@ export default function StorefrontNav({ store, categories }: Props) {
                 className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold text-surface-900 dark:text-white hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
               >
                 🏠 All Products
+              </Link>
+
+              <Link
+                href={`${storeBase}/reels`}
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold text-surface-900 dark:text-white hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+              >
+                <Film className="w-4 h-4" />
+                Reels
               </Link>
 
               {bookmarkCount > 0 && (

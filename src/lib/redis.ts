@@ -75,10 +75,20 @@ export const cacheKey = {
 }
 
 export const TTL = {
-  STORE_META:     300,   // 5 min
-  PRODUCT_LIST:   120,   // 2 min
-  CATEGORY_LIST:  600,   // 10 min
-  PRODUCT_DETAIL: 300,   // 5 min
+  STORE_META:      300,   // 5 min
+  PRODUCT_LIST:    120,   // 2 min
+  CATEGORY_LIST:   600,   // 10 min
+  PRODUCT_DETAIL:  300,   // 5 min
+  REEL_FEED:       120,   // 2 min
+  REEL_TRENDING:   300,   // 5 min
+}
+
+// Reel-specific cache/rate-limit keys
+export const reelKey = {
+  storeFeed:   (storeId: string)               => `reels:feed:${storeId}`,
+  trending:    ()                               => `reels:trending`,
+  hourlyRate:  (storeId: string)               => `reels:rate:${storeId}`,
+  monthlyUsed: (storeId: string, y: number, m: number) => `reels:monthly:${storeId}:${y}:${m}`,
 }
 
 export async function getOrSet<T>(

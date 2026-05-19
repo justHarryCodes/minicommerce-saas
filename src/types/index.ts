@@ -50,11 +50,6 @@ export interface Store {
   created_at?: string
   updatedAt?: string
   updated_at?: string
-  // NIN verification
-  nin_verified?: boolean
-  ninVerified?: boolean
-  nin_number?: string
-  ninNumber?: string
   // Storefront customisation
   banner_images?: string[]
   bannerImages?: string[]
@@ -119,6 +114,37 @@ export interface Product {
   created_at?: string
   updatedAt?: string
   updated_at?: string
+}
+
+export interface ReelProduct {
+  product_id: string
+  name: string
+  price: number
+  image_url: string | null
+  slug: string | null
+  stock_quantity: number
+}
+
+export interface Reel {
+  id: string
+  store_id: string
+  title: string | null
+  description: string | null
+  cloudinary_public_id: string
+  video_url: string
+  thumbnail_url: string | null
+  duration_seconds: number | null
+  view_count: number
+  share_count: number
+  is_active: boolean
+  is_featured: boolean
+  created_at: string
+  updated_at: string
+  // Joined
+  products?: ReelProduct[]
+  store_name?: string
+  store_slug?: string
+  store_logo?: string | null
 }
 
 export interface OrderItem {

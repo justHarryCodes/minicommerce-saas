@@ -17,6 +17,7 @@ export interface PlatformSettings {
   require_nin_verification: boolean
   allow_new_registrations: boolean
   require_plan_subscription: boolean
+  reels_monthly_limit: number
 }
 
 const SETTING_DEFAULTS: PlatformSettings = {
@@ -28,6 +29,7 @@ const SETTING_DEFAULTS: PlatformSettings = {
   require_nin_verification: false,
   allow_new_registrations: true,
   require_plan_subscription: false,
+  reels_monthly_limit: 20,
 }
 
 // Emails that are automatically granted super_admin on first login.
@@ -139,5 +141,6 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
       typeof raw.require_plan_subscription === 'boolean'
         ? raw.require_plan_subscription
         : raw.require_plan_subscription === 'true',
+    reels_monthly_limit: Number(raw.reels_monthly_limit ?? SETTING_DEFAULTS.reels_monthly_limit),
   }
 }

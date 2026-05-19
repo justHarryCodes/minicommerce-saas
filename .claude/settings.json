@@ -4,10 +4,18 @@
       "Bash(xargs grep -l \"paystack\\\\|PAYSTACK\")",
       "Bash(git -C \"c:\\\\Users\\\\USER\\\\Desktop\\\\shopforge-saas\\\\storefront-saas\" status --short)",
       "Bash(git -C \"c:\\\\Users\\\\USER\\\\Desktop\\\\shopforge-saas\\\\storefront-saas\" log --oneline -5)",
-      "Bash(mkdir -p \"c:/Users/USER/Desktop/shopforge-saas/storefront-saas/src/app/api/debug\")"
+      "Bash(mkdir -p \"c:/Users/USER/Desktop/shopforge-saas/storefront-saas/src/app/api/debug\")",
+      "Bash(mkdir -p \"c:/Users/USER/Desktop/shopforge-saas/storefront-saas/src/app/api/reels/[reelId]/view\" && echo \"ok\")",
+      "Bash(mkdir -p \"c:/Users/USER/Desktop/shopforge-saas/storefront-saas/src/app/api/storefront/[slug]/reels\" && mkdir -p \"c:/Users/USER/Desktop/shopforge-saas/storefront-saas/src/app/api/discover/reels\" && echo \"ok\")",
+      "Bash(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\USER\\\\Desktop\\\\shopforge-saas\\\\storefront-saas\\\\src\\\\app\\\\store\\\\[slug]\\\\reels\\\\[reelId]\")",
+      "Bash(Out-Null)",
+      "Bash(node -e ' *)"
     ],
     "additionalDirectories": [
-      "c:\\Users\\USER\\Desktop\\shopforge-saas\\storefront-saas\\src\\app\\api"
+      "c:\\Users\\USER\\Desktop\\shopforge-saas\\storefront-saas\\src\\app\\api",
+      "c:\\Users\\USER\\Desktop\\shopforge-saas\\storefront-saas\\src\\app\\api\\reels\\[reelId]",
+      "c:\\Users\\USER\\Desktop\\shopforge-saas\\storefront-saas\\src\\app\\api\\storefront\\[slug]",
+      "c:\\Users\\USER\\Desktop\\shopforge-saas\\storefront-saas\\src\\app\\store\\[slug]\\reels"
     ]
   }
 }

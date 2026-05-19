@@ -33,7 +33,16 @@ const ACCENT_PRESETS = [
 
 export default function SettingsClient({ store: initial }: Props) {
   const router = useRouter();
-  const [store, setStore] = useState(initial);
+  const [store, setStore] = useState(() => ({
+    ...initial,
+    // Normalize theme fields so the selectors always have a concrete value to compare against
+    storefrontThemeMode:
+      initial.storefrontThemeMode ?? initial.themeMode ?? initial.theme_mode ?? "both",
+    storefrontAccentColor:
+      initial.storefrontAccentColor ?? initial.accentColor ?? initial.accent_color ?? "#f59e0b",
+    paymentPreference:
+      initial.paymentPreference ?? initial.payment_preference ?? "paystack",
+  }));
   const [saving, setSaving] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
   const logoRef = useRef<HTMLInputElement>(null);
@@ -264,9 +273,7 @@ export default function SettingsClient({ store: initial }: Props) {
                 key={mode}
                 onClick={() => change("storefrontThemeMode", mode)}
                 className={`py-2.5 rounded-xl text-sm font-medium border-2 transition-all capitalize ${
-                  (store.storefrontThemeMode ??
-                  store.themeMode ??
-                  store.theme_mode === mode)
+                  store.storefrontThemeMode === mode
                     ? "border-accent-400 bg-accent-50 dark:bg-accent-950 text-accent-700 dark:text-accent-300"
                     : "border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800"
                 }`}
@@ -293,17 +300,13 @@ export default function SettingsClient({ store: initial }: Props) {
                 onClick={() => change("storefrontAccentColor", preset.value)}
                 title={preset.label}
                 className={`w-8 h-8 rounded-full border-2 transition-all ${
-                  (store.storefrontAccentColor ??
-                  store.accentColor ??
-                  store.accent_color === preset.value)
+                  store.storefrontAccentColor === preset.value
                     ? "border-surface-900 dark:border-white scale-110"
                     : "border-transparent hover:scale-110"
                 }`}
                 style={{ backgroundColor: preset.value }}
               >
-                {(store.storefrontAccentColor ??
-                  store.accentColor ??
-                  store.accent_color) === preset.value && (
+                {store.storefrontAccentColor === preset.value && (
                   <Check className="w-4 h-4 text-white mx-auto drop-shadow" />
                 )}
               </button>
@@ -312,20 +315,12 @@ export default function SettingsClient({ store: initial }: Props) {
           <div className="flex items-center gap-3">
             <input
               type="color"
-              value={
-                store.storefrontAccentColor ??
-                store.accentColor ??
-                store.accent_color
-              }
+              value={store.storefrontAccentColor ?? "#f59e0b"}
               onChange={(e) => change("storefrontAccentColor", e.target.value)}
               className="w-10 h-10 rounded-lg border border-surface-200 dark:border-surface-700 cursor-pointer"
             />
             <input
-              value={
-                store.storefrontAccentColor ??
-                store.accentColor ??
-                store.accent_color
-              }
+              value={store.storefrontAccentColor ?? "#f59e0b"}
               onChange={(e) => {
                 if (/^#[0-9a-fA-F]{0,6}$/.test(e.target.value)) {
                   change("storefrontAccentColor", e.target.value);
@@ -335,12 +330,7 @@ export default function SettingsClient({ store: initial }: Props) {
             />
             <div
               className="flex-1 h-10 rounded-xl"
-              style={{
-                backgroundColor:
-                  store.storefrontAccentColor ??
-                  store.accentColor ??
-                  store.accent_color,
-              }}
+              style={{ backgroundColor: store.storefrontAccentColor ?? "#f59e0b" }}
             />
           </div>
         </div>
@@ -363,8 +353,7 @@ export default function SettingsClient({ store: initial }: Props) {
                 key={method}
                 onClick={() => change("paymentPreference", method)}
                 className={`py-2.5 px-3 rounded-xl text-sm font-medium border-2 transition-all text-left ${
-                  (store.paymentPreference ?? store.payment_preference) ===
-                  method
+                  store.paymentPreference === method
                     ? "border-accent-400 bg-accent-50 dark:bg-accent-950 text-accent-700 dark:text-accent-300"
                     : "border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800"
                 }`}
@@ -379,9 +368,8 @@ export default function SettingsClient({ store: initial }: Props) {
           </div>
         </div>
 
-        {((store.paymentPreference ?? store.payment_preference) ===
-          "bank_transfer" ||
-          (store.paymentPreference ?? store.payment_preference) === "both") && (
+        {(store.paymentPreference === "bank_transfer" ||
+          store.paymentPreference === "both") && (
           <div className="grid gap-4">
             <div>
               <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
@@ -423,9 +411,8 @@ export default function SettingsClient({ store: initial }: Props) {
           </div>
         )}
 
-        {((store.paymentPreference ?? store.payment_preference) ===
-          "paystack" ||
-          (store.paymentPreference ?? store.payment_preference) === "both") && (
+        {(store.paymentPreference === "paystack" ||
+          store.paymentPreference === "both") && (
           <div>
             <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
               Paystack public key

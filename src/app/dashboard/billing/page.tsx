@@ -21,15 +21,12 @@ export default async function BillingPage({
     subscription_status: string;
     setup_fee_paid_at: string | null;
     subscription_expires_at: string | null;
-    nin_number: string | null;
-    nin_verified: boolean;
     current_plan_id: string | null;
     plan_expires_at: string | null;
     registration_confirmed: boolean;
   }>(
     `SELECT id, name, status,
             subscription_status, setup_fee_paid_at, subscription_expires_at,
-            nin_number, nin_verified,
             current_plan_id, plan_expires_at, registration_confirmed
      FROM stores WHERE owner_id = $1 AND is_active = true`,
     [user.firebaseUid]
@@ -86,8 +83,6 @@ export default async function BillingPage({
         subscriptionStatus: store.subscription_status,
         subscriptionExpiresAt: store.subscription_expires_at,
         setupFeePaidAt: store.setup_fee_paid_at,
-        ninVerified: store.nin_verified,
-        ninNumber: store.nin_number,
         currentPlanId: store.current_plan_id,
         planExpiresAt: store.plan_expires_at,
         registrationConfirmed: store.registration_confirmed,

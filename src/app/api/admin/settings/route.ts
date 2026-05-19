@@ -12,6 +12,7 @@ const SettingsSchema = z.object({
   require_nin_verification:   z.boolean(),
   allow_new_registrations:    z.boolean(),
   require_plan_subscription:  z.boolean(),
+  reels_monthly_limit:        z.number().int().min(1).max(500),
 })
 
 export async function GET() {
@@ -42,6 +43,7 @@ export async function PUT(req: NextRequest) {
     ['require_nin_verification',   s.require_nin_verification],
     ['allow_new_registrations',    s.allow_new_registrations],
     ['require_plan_subscription',  s.require_plan_subscription],
+    ['reels_monthly_limit',        s.reels_monthly_limit],
   ]
 
   for (const [key, value] of entries) {

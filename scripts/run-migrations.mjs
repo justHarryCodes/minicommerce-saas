@@ -20,13 +20,15 @@ if (!process.env.DATABASE_URL) {
 }
 
 const MIGRATIONS = [
-  { name: "admin-migration.sql",    path: join(__dirname, "admin-migration.sql") },
-  { name: "visits-migration.sql",   path: join(__dirname, "visits-migration.sql") },
-  { name: "plans-migration.sql",    path: join(__dirname, "plans-migration.sql") },
-  { name: "storefront-migration.sql", path: join(__dirname, "storefront-migration.sql") },
-  { name: "features-migration.sql", path: join(__dirname, "features-migration.sql") },
+  { name: "admin-migration.sql",            path: join(__dirname, "admin-migration.sql") },
+  { name: "visits-migration.sql",           path: join(__dirname, "visits-migration.sql") },
+  { name: "plans-migration.sql",            path: join(__dirname, "plans-migration.sql") },
+  { name: "storefront-migration.sql",       path: join(__dirname, "storefront-migration.sql") },
+  { name: "features-migration.sql",         path: join(__dirname, "features-migration.sql") },
   { name: "payment-security-migration.sql", path: join(__dirname, "payment-security-migration.sql") },
-  { name: "bank-accounts-migration.sql",    path: join(__dirname, "bank-accounts-migration.sql") },
+  { name: "bank-accounts-migration.sql",      path: join(__dirname, "bank-accounts-migration.sql") },
+  { name: "storefront-theme-migration.sql",   path: join(__dirname, "storefront-theme-migration.sql") },
+  { name: "add_reels.sql",                    path: join(__dirname, "../migrations/add_reels.sql") },
 ];
 
 async function run() {

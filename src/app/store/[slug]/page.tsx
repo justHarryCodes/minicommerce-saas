@@ -4,7 +4,6 @@ import { getOrSet, cacheKey, TTL } from "@/lib/redis";
 import ProductCard from "@/components/storefront/ProductCard";
 import BookmarkSlider from "@/components/storefront/BookmarkSlider";
 import HeroSlider from "@/components/storefront/HeroSlider";
-import { BadgeCheck } from "lucide-react";
 import type { Product, Category, Store } from "@/types";
 import { clLogo } from "@/lib/cloudinary";
 import { notFound } from "next/navigation";
@@ -144,11 +143,6 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
             )}
             <div className="flex items-center justify-center gap-2 mb-2">
               <h1 className="text-2xl sm:text-3xl font-black text-black">{store.name}</h1>
-              {store.nin_verified && (
-                <span title="NIN Verified">
-                  <BadgeCheck className="w-6 h-6 text-black/60" aria-label="NIN Verified" />
-                </span>
-              )}
             </div>
             {store.description && (
               <p className="text-sm text-black/70 max-w-md mx-auto">{store.description}</p>

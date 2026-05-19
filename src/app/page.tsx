@@ -27,7 +27,7 @@ const CATEGORY_META: Record<string, { icon: string; color: string }> = {
 
 const SHOPPER_FEATURES = [
   "Discover thousands of local vendors in one place",
-  "NIN-verified sellers you can trust",
+  "Trusted local vendors in one place",
   "Secure payments via Paystack & bank transfer",
   "14+ product categories — fashion, food, tech & more",
   "Direct WhatsApp contact with sellers",
@@ -39,7 +39,7 @@ const SELLER_FEATURES = [
   "Built-in Paystack & bank transfer checkout",
   "Real-time dashboard — orders, revenue & inventory",
   "Product & category management tools",
-  "NIN-verified badge to build customer trust",
+  "Verified badge to build customer trust",
   "Get promoted in Duka's featured listings & ad campaigns",
   "Start receiving orders in under 10 minutes",
 ];

@@ -7,10 +7,10 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "build": "node scripts/run-migrations.mjs && next build",
+    "start": "node scripts/run-migrations.mjs && next start",
     "lint": "next lint",
-    "db:migrate": "node scripts/migrate.js"
+    "db:migrate": "node scripts/run-migrations.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
