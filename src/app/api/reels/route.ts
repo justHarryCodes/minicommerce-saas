@@ -10,19 +10,18 @@ const MAX_PER_PAGE = 20;
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 async function getStore(uid: string) {
-  return queryOne<{ id: string; reels_monthly_limit: number | null }>(
-    `SELECT s.id, s.reels_monthly_limit
-     FROM stores s WHERE s.owner_id = $1 AND s.is_active = true`,
+  return queryOne<{ id: string }>(
+    `SELECT s.id FROM stores s WHERE s.owner_id = $1 AND s.is_active = true`,
     [uid]
   );
 }
 
 async function getGlobalLimit(): Promise<number> {
-  const row = await queryOne<{ reels_monthly_limit: number }>(
-    "SELECT reels_monthly_limit FROM platform_settings LIMIT 1",
+  const row = await queryOne<{ value: unknown }>(
+    "SELECT value FROM platform_settings WHERE key = 'reels_monthly_limit'",
     []
   );
-  return row?.reels_monthly_limit ?? 20;
+  return Number(row?.value ?? 20);
 }
 
 async function checkRateLimit(storeId: string): Promise<{ allowed: boolean; reason?: string }> {
@@ -33,7 +32,6 @@ async function checkRateLimit(storeId: string): Promise<{ allowed: boolean; reas
   if (count > 3) return { allowed: false, reason: "Too many uploads — please wait before uploading again." };
 
   // Monthly quota
-  const now = new Date();
   const monthlyCount = await queryOne<{ count: string }>(
     `SELECT COUNT(*) as count FROM reels
      WHERE store_id = $1 AND created_at >= date_trunc('month', NOW())`,
@@ -41,12 +39,8 @@ async function checkRateLimit(storeId: string): Promise<{ allowed: boolean; reas
   );
   const used = Number(monthlyCount?.count ?? 0);
 
-  const store = await queryOne<{ reels_monthly_limit: number | null }>(
-    "SELECT reels_monthly_limit FROM stores WHERE id = $1",
-    [storeId]
-  );
   const globalLimit = await getGlobalLimit();
-  const limit = store?.reels_monthly_limit ?? globalLimit;
+  const limit = globalLimit;
 
   if (used >= limit) {
     return { allowed: false, reason: `Monthly reel limit reached (${limit}/month). Upgrade your plan or contact support.` };
@@ -88,17 +82,11 @@ export async function GET(req: NextRequest) {
   );
 
   // Monthly usage
-  const now = new Date();
   const usageRow = await queryOne<{ count: string }>(
     "SELECT COUNT(*) as count FROM reels WHERE store_id = $1 AND created_at >= date_trunc('month', NOW())",
     [store.id]
   );
-  const globalLimit = await getGlobalLimit();
-  const limitRow = await queryOne<{ reels_monthly_limit: number | null }>(
-    "SELECT reels_monthly_limit FROM stores WHERE id = $1",
-    [store.id]
-  );
-  const monthlyLimit = limitRow?.reels_monthly_limit ?? globalLimit;
+  const monthlyLimit = await getGlobalLimit();
 
   return NextResponse.json({
     reels,
