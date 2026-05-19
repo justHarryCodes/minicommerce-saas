@@ -100,7 +100,6 @@ export default function ReelsClient({
       fd.append("timestamp", String(timestamp));
       fd.append("signature", signature);
       fd.append("folder", folder);
-      fd.append("resource_type", "video");
 
       const xhr = new XMLHttpRequest();
       const cloudRes = await new Promise<{ public_id: string; secure_url: string; duration: number }>((resolve, reject) => {

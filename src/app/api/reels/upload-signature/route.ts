@@ -19,7 +19,6 @@ export async function GET() {
   const paramsToSign: Record<string, string | number> = {
     folder,
     timestamp,
-    resource_type: "video",
   };
 
   const signature = cloudinary.utils.api_sign_request(
