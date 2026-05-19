@@ -1,7 +1,7 @@
 "use client";
 
-import { createContext, useContext, type ReactNode } from "react";
-import { create } from "zustand";
+import { createContext, useContext, useRef, type ReactNode } from "react";
+import { create, useStore } from "zustand";
 import { persist } from "zustand/middleware";
 import type { CartItem } from "@/types";
 
@@ -16,6 +16,8 @@ interface CartStore {
   totalAmount: number;
 }
 
+type StoreApi = ReturnType<typeof createCartStore>;
+
 function createCartStore(storeId: string) {
   return create<CartStore>()(
     persist(
@@ -23,37 +25,32 @@ function createCartStore(storeId: string) {
         items: [],
         storeId,
 
-        addItem: (newItem: Omit<CartItem, "quantity"> & { quantity?: number }) => {
-          set((state: CartStore) => {
-            const existing = state.items.find((i: CartItem) => i.product_id === newItem.product_id);
+        addItem: (newItem) => {
+          set((state) => {
+            const existing = state.items.find((i) => i.product_id === newItem.product_id);
             if (existing) {
-              const maxQty = newItem.stock_quantity;
               return {
-                items: state.items.map((i: CartItem) =>
+                items: state.items.map((i) =>
                   i.product_id === newItem.product_id
-                    ? { ...i, quantity: Math.min(i.quantity + 1, maxQty) }
+                    ? { ...i, quantity: Math.min(i.quantity + 1, newItem.stock_quantity) }
                     : i
                 ),
               };
             }
-            return { items: [...state.items, { ...newItem, quantity: 1 }] };
+            return { items: [...state.items, { ...newItem, quantity: newItem.quantity ?? 1 }] };
           });
         },
 
-        removeItem: (productId: string) => {
-          set((state: CartStore) => ({
-            items: state.items.filter((i: CartItem) => i.product_id !== productId),
-          }));
+        removeItem: (productId) => {
+          set((state) => ({ items: state.items.filter((i) => i.product_id !== productId) }));
         },
 
-        updateQuantity: (productId: string, qty: number) => {
+        updateQuantity: (productId, qty) => {
           if (qty <= 0) {
-            set((state: CartStore) => ({
-              items: state.items.filter((i: CartItem) => i.product_id !== productId),
-            }));
+            set((state) => ({ items: state.items.filter((i) => i.product_id !== productId) }));
           } else {
-            set((state: CartStore) => ({
-              items: state.items.map((i: CartItem) =>
+            set((state) => ({
+              items: state.items.map((i) =>
                 i.product_id === productId
                   ? { ...i, quantity: Math.min(qty, i.stock_quantity) }
                   : i
@@ -65,10 +62,10 @@ function createCartStore(storeId: string) {
         clearCart: () => set({ items: [] }),
 
         get totalItems() {
-          return get().items.reduce((sum: number, i: CartItem) => sum + i.quantity, 0);
+          return get().items.reduce((sum, i) => sum + i.quantity, 0);
         },
         get totalAmount() {
-          return get().items.reduce((sum: number, i: CartItem) => sum + i.price * i.quantity, 0);
+          return get().items.reduce((sum, i) => sum + i.price * i.quantity, 0);
         },
       }),
       { name: `cart-${storeId}` }
@@ -76,21 +73,24 @@ function createCartStore(storeId: string) {
   );
 }
 
-type CartContextValue = CartStore & { storeId: string };
+type CartContextValue = { storeApi: StoreApi; storeId: string };
 const CartContext = createContext<CartContextValue | null>(null);
 
-export function useCart(): CartContextValue {
+export function useCart() {
   const ctx = useContext(CartContext);
   if (!ctx) throw new Error("useCart must be used within CartProvider");
-  return ctx;
+  return useStore(ctx.storeApi);
 }
 
 export default function CartProvider({ storeId, children }: { storeId: string; children: ReactNode }) {
-  const store = createCartStore(storeId);
-  const state = store();
+  // Create the store exactly once per storeId, never recreated on re-render
+  const storeRef = useRef<StoreApi | null>(null);
+  if (!storeRef.current) {
+    storeRef.current = createCartStore(storeId);
+  }
 
   return (
-    <CartContext.Provider value={{ ...state, storeId }}>
+    <CartContext.Provider value={{ storeApi: storeRef.current, storeId }}>
       {children}
     </CartContext.Provider>
   );
