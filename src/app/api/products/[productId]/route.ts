@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifySession, getUserStore } from '@/lib/auth'
+import { verifySession, getUserStore, requireSubscription } from '@/lib/auth'
 import { query, queryOne, toCamel } from '@/lib/db'
 import { cacheDelPattern } from '@/lib/redis'
 
@@ -22,6 +22,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const store = await getUserStore(user.firebaseUid)
   if (!store) return NextResponse.json({ error: 'No store' }, { status: 404 })
+  const subErr = await requireSubscription(store)
+  if (subErr) return subErr
 
   const { productId } = await params
   const body = await req.json()

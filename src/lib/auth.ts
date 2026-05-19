@@ -2,8 +2,10 @@
 // Schema uses stores.owner_id = Firebase UID (TEXT) directly.
 // No separate users table.
 import { cookies } from 'next/headers'
+import { NextResponse } from 'next/server'
 import { adminAuth } from './firebase-admin'
 import { queryOne, toCamel } from './db'
+import { getPlatformSettings } from './admin-auth'
 import type { Store } from '@/types'
 
 const SESSION_COOKIE = 'session'
@@ -46,4 +48,21 @@ export async function getUserStore(firebaseUid: string): Promise<Store | null> {
 export async function createSessionCookie(idToken: string): Promise<string> {
   const expiresIn = 60 * 60 * 24 * 14 * 1000 // 14 days
   return adminAuth.createSessionCookie(idToken, { expiresIn })
+}
+
+// Returns a 402 NextResponse if the setup fee is required and unpaid, else null.
+// Use in any dashboard mutation API route after getUserStore().
+export async function requireSubscription(store: Store): Promise<NextResponse | null> {
+  const settings = await getPlatformSettings()
+  if (!settings.require_setup_fee) return null
+  const paid =
+    store.subscriptionStatus === 'setup_fee_paid' ||
+    store.subscriptionStatus === 'subscribed'
+  if (!paid) {
+    return NextResponse.json(
+      { error: 'Setup fee required. Please complete payment before using this feature.' },
+      { status: 402 }
+    )
+  }
+  return null
 }
