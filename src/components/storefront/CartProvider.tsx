@@ -79,7 +79,10 @@ const CartContext = createContext<CartContextValue | null>(null);
 export function useCart() {
   const ctx = useContext(CartContext);
   if (!ctx) throw new Error("useCart must be used within CartProvider");
-  return useStore(ctx.storeApi);
+  const state = useStore(ctx.storeApi);
+  const totalItems = state.items.reduce((sum, i) => sum + i.quantity, 0);
+  const totalAmount = state.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  return { ...state, totalItems, totalAmount };
 }
 
 export default function CartProvider({ storeId, children }: { storeId: string; children: ReactNode }) {
