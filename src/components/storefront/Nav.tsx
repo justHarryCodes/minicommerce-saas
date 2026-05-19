@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, ShoppingCart, X, ChevronRight, Heart, Search, Film } from "lucide-react";
+import { Menu, ShoppingCart, X, ChevronRight, Heart, Search, Film, Package } from "lucide-react";
 import { useCart } from "./CartProvider";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import { useStore } from "@/lib/store-context";
@@ -143,6 +143,15 @@ export default function StorefrontNav({ store, categories }: Props) {
               >
                 <Film className="w-4 h-4" />
                 Reels
+              </Link>
+
+              <Link
+                href={`${storeBase}/track`}
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold text-surface-900 dark:text-white hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+              >
+                <Package className="w-4 h-4" />
+                Track order
               </Link>
 
               {bookmarkCount > 0 && (
