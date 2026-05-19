@@ -45,22 +45,39 @@ const SELLER_FEATURES = [
 ];
 
 export default async function HomePage() {
-  // ── Subdomain guard ────────────────────────────────────────────────────────
-  // If a subdomain request (e.g. deeluxify.awarizon.shop) bypasses the
-  // middleware rewrite and lands here, bail immediately instead of rendering
-  // the homepage — this is the root cause of the "always shows home" bug.
+  // ── Subdomain guard ──────────────────────────────────────────────────────
+  // Don't rely on x-is-subdomain header (requires middleware to work).
+  // Read the hostname directly — if it's not the root domain, bail out.
   const h = await headers();
-  if (h.get("x-is-subdomain") === "1") return notFound();
+  const host = (h.get("x-forwarded-host") ?? h.get("host") ?? "")
+    .split(",")[0].trim().split(":")[0].toLowerCase();
 
-  // ── Auth redirects ─────────────────────────────────────────────────────────
+  const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "awarizon.shop")
+    .toLowerCase()
+    .replace(/^www\./, "");
+
+  const isSubdomain =
+    host.endsWith(`.${rootDomain}`) &&
+    !host.startsWith("www.") &&
+    !host.startsWith("localhost");
+
+  if (isSubdomain) {
+    // Middleware should have rewritten this to /store/[slug] already.
+    // If we're still here, do it manually as a fallback redirect.
+    const slug = host.slice(0, -(rootDomain.length + 1));
+    redirect(`/store/${slug}`);
+  }
+
+  // ── Auth redirects (main domain only) ───────────────────────────────────
   const user = await verifySession();
   if (user) {
     const admin = await verifyAdminSession();
     if (admin) redirect("/admin");
-
     const store = await getUserStore(user.firebaseUid);
     redirect(store ? "/dashboard" : "/onboarding");
   }
+
+
 
   const [categoryStats, products] = await Promise.all([
     query<{ primary_category: string; count: string }>(
