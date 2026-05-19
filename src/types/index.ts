@@ -247,5 +247,5 @@ export interface SessionUser {
 }
 
 export type OrderStatus = 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
-export type PaymentStatus = 'pending' | 'pending_confirmation' | 'paid' | 'failed' | 'refunded'
+export type PaymentStatus = 'pending' | 'pending_confirmation' | 'paid' | 'failed' | 'refunded' | 'rejected'
 

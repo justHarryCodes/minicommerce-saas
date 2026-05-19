@@ -1,7 +1,7 @@
 'use client'
 import { X, Trash2, Minus, Plus, ShoppingBag } from 'lucide-react'
 import Image from 'next/image'
-import { useCart } from '@/hooks/useCart'
+import { useCart } from './CartProvider'
 import { useStore } from '@/lib/store-context'
 import { formatPrice, getStoreUrl, waLink } from '@/lib/utils'
 import type { Store } from '@/types'
@@ -14,7 +14,7 @@ interface CartDrawerProps {
 }
 
 export function CartDrawer({ isOpen, onClose, store }: CartDrawerProps) {
-  const { items, totalItems, totalPrice, updateQuantity, removeItem, clearCart } = useCart(store.id)
+  const { items, totalItems, totalAmount: totalPrice, updateQuantity, removeItem, clearCart } = useCart()
   const { storeBase } = useStore()
 
   return (
