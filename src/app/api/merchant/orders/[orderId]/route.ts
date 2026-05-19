@@ -7,7 +7,7 @@ const Schema = z.object({
   orderStatus: z
     .enum(["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"])
     .optional(),
-  paymentStatus: z.enum(["pending", "pending_confirmation", "paid", "failed", "refunded"]).optional(),
+  paymentStatus: z.enum(["pending", "pending_confirmation", "paid", "failed", "refunded", "rejected"]).optional(),
 });
 
 export async function PATCH(

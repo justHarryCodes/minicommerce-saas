@@ -15,10 +15,11 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 const PAY_STATUS_STYLES: Record<string, string> = {
-  pending: "text-yellow-600",
+  pending:              "text-yellow-600",
   pending_confirmation: "text-orange-600",
-  paid: "text-green-600",
-  failed: "text-red-600",
+  paid:                 "text-green-600",
+  failed:               "text-red-500",
+  rejected:             "text-red-600 font-semibold",
 };
 
 export default async function OrdersPage() {
@@ -92,6 +93,8 @@ export default async function OrdersPage() {
                     >
                       {order.payment_status === "pending_confirmation"
                         ? "⏳ Awaiting confirmation"
+                        : order.payment_status === "rejected"
+                        ? "❌ Payment not received"
                         : order.payment_status}
                     </span>
                   </div>
@@ -167,7 +170,7 @@ export default async function OrdersPage() {
 
               {/* Status management */}
               <div className="px-5 py-4">
-                <OrderStatusManager order={order} />
+                <OrderStatusManager order={order} storeWhatsapp={store!.whatsapp} />
               </div>
             </div>
           ))}
