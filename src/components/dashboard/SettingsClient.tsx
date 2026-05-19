@@ -262,32 +262,6 @@ export default function SettingsClient({ store: initial }: Props) {
           Storefront theme
         </h2>
 
-        {/* Theme mode */}
-        <div>
-          <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-3">
-            Theme mode
-          </label>
-          <div className="grid grid-cols-3 gap-2">
-            {(["light", "dark", "both"] as const).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => change("storefrontThemeMode", mode)}
-                className={`py-2.5 rounded-xl text-sm font-medium border-2 transition-all capitalize ${
-                  store.storefrontThemeMode === mode
-                    ? "border-accent-400 bg-accent-50 dark:bg-accent-950 text-accent-700 dark:text-accent-300"
-                    : "border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800"
-                }`}
-              >
-                {mode === "both"
-                  ? "Auto (both)"
-                  : mode === "light"
-                    ? "☀️ Light"
-                    : "🌙 Dark"}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Accent color */}
         <div>
           <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-3">
