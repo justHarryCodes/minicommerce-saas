@@ -115,40 +115,66 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
 
   const bannerImages: string[] = store.banner_images ?? [];
   const showBanner = !category;
+  const hasBanner  = bannerImages.length > 0;
+
+  // ── Default hero card (always shown when on homepage) ──────────────────────
+  const defaultHero = (
+    <div
+      className="rounded-2xl overflow-hidden flex flex-col justify-center p-7 sm:p-10 h-full min-h-[180px]"
+      style={{ background: "linear-gradient(135deg, var(--sf-accent-light, var(--sf-accent)) 0%, var(--sf-accent) 100%)" }}
+    >
+      {store.logo_url && (
+        <img
+          src={clLogo(store.logo_url)}
+          alt={store.name}
+          loading="eager"
+          decoding="sync"
+          className="h-14 w-auto object-contain mb-4 lg:mx-0 mx-auto"
+        />
+      )}
+      <h1 className="text-2xl sm:text-3xl font-black text-black leading-tight lg:text-left text-center">
+        {store.name}
+      </h1>
+      {store.description && (
+        <p className="text-sm text-black/70 mt-2 max-w-sm lg:text-left text-center">
+          {store.description}
+        </p>
+      )}
+    </div>
+  );
 
   return (
     <div className="max-w-6xl mx-auto">
-      {/* ── Hero Banner Slider ─────────────────────────────── */}
-      {showBanner && bannerImages.length > 0 && (
-        <div className="px-0 sm:px-4 pt-4">
-          <HeroSlider images={bannerImages} storeName={store.name} />
-        </div>
-      )}
 
-      {/* ── Gradient banner (fallback if no images) ─────── */}
-      {showBanner && bannerImages.length === 0 && (
-        <div className="px-4 pt-6">
-          <div
-            className="rounded-2xl overflow-hidden p-8 sm:p-12 text-center"
-            style={{ background: "linear-gradient(135deg, var(--sf-accent-light) 0%, var(--sf-accent) 100%)" }}
-          >
-            {store.logo_url && (
-              <img
-                src={clLogo(store.logo_url)}
-                alt={store.name}
-                loading="eager"
-                decoding="sync"
-                className="h-16 w-auto object-contain mx-auto mb-4"
-              />
-            )}
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <h1 className="text-2xl sm:text-3xl font-black text-black">{store.name}</h1>
+      {/* ── Hero section ───────────────────────────────────── */}
+      {showBanner && (
+        hasBanner ? (
+          /* With uploaded banner images:
+             Mobile  → slider on top, default banner below
+             Desktop → default banner left column, slider right column */
+          <div className="lg:grid lg:grid-cols-2 lg:gap-4 lg:px-4 lg:pt-4 lg:items-stretch">
+            {/* Slider — first in DOM = top on mobile; right column on desktop */}
+            <div className="lg:order-2">
+              {/* Mobile: normal aspect ratio */}
+              <div className="lg:hidden">
+                <HeroSlider images={bannerImages} storeName={store.name} />
+              </div>
+              {/* Desktop: fills grid row height */}
+              <div className="hidden lg:block h-full">
+                <HeroSlider images={bannerImages} storeName={store.name} fillHeight />
+              </div>
             </div>
-            {store.description && (
-              <p className="text-sm text-black/70 max-w-md mx-auto">{store.description}</p>
-            )}
+            {/* Default banner — below slider on mobile; left column on desktop */}
+            <div className="lg:order-1 px-4 pt-4 sm:px-4 lg:px-0 lg:pt-0">
+              {defaultHero}
+            </div>
           </div>
-        </div>
+        ) : (
+          /* No banner: just the default hero, full width */
+          <div className="px-4 pt-6">
+            {defaultHero}
+          </div>
+        )
       )}
 
       <div className="px-4 py-8 space-y-12">

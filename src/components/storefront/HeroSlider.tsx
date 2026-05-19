@@ -7,9 +7,11 @@ import { clBanner } from "@/lib/cloudinary";
 interface Props {
   images: string[];
   storeName: string;
+  /** When true the slider fills its parent height instead of using a fixed aspect ratio */
+  fillHeight?: boolean;
 }
 
-export default function HeroSlider({ images, storeName }: Props) {
+export default function HeroSlider({ images, storeName, fillHeight = false }: Props) {
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
 
@@ -26,8 +28,8 @@ export default function HeroSlider({ images, storeName }: Props) {
 
   return (
     <div
-      className="relative w-full overflow-hidden rounded-none sm:rounded-2xl"
-      style={{ aspectRatio: "21/9" }}
+      className={`relative w-full overflow-hidden rounded-none sm:rounded-2xl ${fillHeight ? "h-full min-h-[220px]" : ""}`}
+      style={fillHeight ? undefined : { aspectRatio: "21/9" }}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
