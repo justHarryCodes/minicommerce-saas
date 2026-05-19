@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { verifySession, getUserStore } from "@/lib/auth";
+import { getPlatformSettings } from "@/lib/admin-auth";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
 
@@ -13,8 +15,23 @@ export default async function DashboardLayout({
   const user = await verifySession();
   if (!user) redirect("/auth/login");
 
-  const store = await getUserStore(user.firebaseUid);
+  const [store, settings, headersList] = await Promise.all([
+    getUserStore(user.firebaseUid),
+    getPlatformSettings(),
+    headers(),
+  ]);
   if (!store) redirect("/onboarding");
+
+  // Enforce setup fee gate — skip for /dashboard/billing itself to avoid redirect loop
+  const pathname = headersList.get("x-pathname") ?? "";
+  const onBillingPage = pathname === "/dashboard/billing" || pathname.startsWith("/dashboard/billing/");
+
+  if (!onBillingPage && settings.require_setup_fee) {
+    const paid =
+      store.subscriptionStatus === "setup_fee_paid" ||
+      store.subscriptionStatus === "subscribed";
+    if (!paid) redirect("/dashboard/billing");
+  }
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">

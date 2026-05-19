@@ -46,6 +46,14 @@ export interface Store {
   paystack_public_key?: string
   isActive?: boolean
   is_active?: boolean
+  // Subscription / billing
+  status?: string
+  subscriptionStatus?: string
+  subscription_status?: string
+  setupFeePaidAt?: string | null
+  setup_fee_paid_at?: string | null
+  subscriptionExpiresAt?: string | null
+  subscription_expires_at?: string | null
   createdAt?: string
   created_at?: string
   updatedAt?: string
