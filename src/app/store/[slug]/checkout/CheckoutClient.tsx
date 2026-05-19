@@ -164,7 +164,10 @@ export default function CheckoutClient({
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to place order");
+      if (!res.ok) {
+        const msg = typeof data.error === "string" ? data.error : "Failed to place order";
+        throw new Error(msg);
+      }
 
       setOrderId(data.orderId);
       setOrderNumber(data.orderNumber);

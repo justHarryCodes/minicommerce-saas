@@ -34,6 +34,15 @@ BEGIN
   END IF;
 END$$;
 
-ALTER TABLE subscription_payments
-  ADD CONSTRAINT subscription_payments_payment_status_check
-  CHECK (payment_status IN ('pending', 'pending_transfer', 'paid', 'failed', 'rejected'));
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.table_constraints
+    WHERE table_name = 'subscription_payments'
+      AND constraint_name = 'subscription_payments_payment_status_check'
+  ) THEN
+    ALTER TABLE subscription_payments
+      ADD CONSTRAINT subscription_payments_payment_status_check
+      CHECK (payment_status IN ('pending', 'pending_transfer', 'paid', 'failed', 'rejected'));
+  END IF;
+END$$;

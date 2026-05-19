@@ -30,6 +30,8 @@ const MIGRATIONS = [
   { name: "bank-accounts-migration.sql",    path: join(__dirname, "bank-accounts-migration.sql") },
   { name: "storefront-theme-migration.sql", path: join(__dirname, "storefront-theme-migration.sql") },
   { name: "add_reels.sql",                  path: join(__dirname, "../migrations/add_reels.sql") },
+  { name: "bank-accounts-dedup.sql",        path: join(__dirname, "bank-accounts-dedup.sql") },
+  { name: "orders-payment-method-fix.sql",  path: join(__dirname, "orders-payment-method-fix.sql") },
 ];
 
 async function run() {

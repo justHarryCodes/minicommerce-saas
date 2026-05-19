@@ -42,7 +42,11 @@ export async function POST(
     const body = await req.json();
     const parsed = OrderSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 });
+      const flat = parsed.error.flatten();
+      const firstField = Object.values(flat.fieldErrors)[0]?.[0];
+      const firstForm  = flat.formErrors[0];
+      const message    = firstField ?? firstForm ?? "Invalid request data";
+      return NextResponse.json({ error: message }, { status: 422 });
     }
 
     const d = parsed.data;
@@ -75,17 +79,18 @@ export async function POST(
       const orderRows = await client.query(
         `INSERT INTO orders (
           store_id, order_number, customer_name, customer_email, customer_phone,
-          delivery_address, delivery_city, delivery_state,
+          delivery_address, delivery_city, delivery_state, delivery_note,
           subtotal, total, payment_method, coupon_code, discount_amount
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id, order_number`,
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING id, order_number`,
         [
           store.id, orderNumber,
           d.customerName,
           d.customerEmail || null,
           d.customerPhone,
           d.deliveryAddress,
-          d.deliveryCity || "N/A",
-          d.deliveryState || "N/A",
+          d.deliveryCity || null,
+          d.deliveryState || null,
+          d.deliveryNote || null,
           d.totalAmount,
           finalTotal,
           dbPaymentMethod,
