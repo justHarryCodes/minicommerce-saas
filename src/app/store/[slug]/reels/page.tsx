@@ -52,8 +52,8 @@ export default async function StoreReelsPage({ params }: Props) {
   const storeBase = isSubdomain ? "" : `/store/${slug}`;
 
   return (
-    // Full-screen feed — remove the pt-16 padding from layout
-    <div className="-mt-16 bg-black">
+    // Mobile: cancel layout's pt-16 for full-screen. Desktop: keep normal nav padding.
+    <div className="-mt-16 lg:mt-0 bg-black">
       <ReelFeed
         initialReels={reels ?? []}
         shareBase={storeBase}

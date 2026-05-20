@@ -177,24 +177,22 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
         )
       )}
 
-      <div className="px-4 py-8 space-y-12">
-        {/* ── Featured Products Slider ───────────────────── */}
+      <div className="px-4 py-8 space-y-10">
+
+        {/* ── Featured Products ───────────────────────────── */}
         {showBanner && featuredProducts.length > 0 && (
           <section>
-            <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-xs font-bold uppercase tracking-widest mb-1"
-                  style={{ color: "var(--sf-accent)" }}>
+                <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--sf-accent)" }}>
                   Hand-picked
                 </p>
-                <h2 className="text-xl font-black text-surface-900 dark:text-white">
-                  Featured Products
-                </h2>
+                <h2 className="text-lg font-black text-surface-900 dark:text-white">Featured</h2>
               </div>
             </div>
-            <div className="flex gap-4 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+            <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
               {featuredProducts.map((product) => (
-                <div key={product.id} className="shrink-0 w-48 sm:w-56">
+                <div key={product.id} className="shrink-0 w-44 sm:w-52">
                   <ProductCard product={product} storeSlug={slug} />
                 </div>
               ))}
@@ -202,33 +200,30 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
           </section>
         )}
 
-        {/* ── Collections / Category Grid ────────────────── */}
+        {/* ── Collections grid ───────────────────────────── */}
         {showBanner && categoryCovers.filter(c => c.cover_image).length > 0 && (
           <section>
-            <div className="mb-5">
-              <p className="text-xs font-bold uppercase tracking-widest mb-1"
-                style={{ color: "var(--sf-accent)" }}>
+            <div className="mb-4">
+              <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--sf-accent)" }}>
                 Browse by collection
               </p>
-              <h2 className="text-xl font-black text-surface-900 dark:text-white">
-                Shop Collections
-              </h2>
+              <h2 className="text-lg font-black text-surface-900 dark:text-white">Collections</h2>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {categoryCovers.filter(c => c.cover_image).map((cat) => (
                 <a
                   key={cat.id}
                   href={`${homeHref}?category=${cat.slug}`}
-                  className="group relative aspect-square rounded-2xl overflow-hidden border border-surface-100 dark:border-surface-800 block"
+                  className="group relative aspect-[4/3] rounded-2xl overflow-hidden block shadow-[0_2px_12px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_24px_rgba(0,0,0,0.12)] transition-shadow duration-200"
                 >
                   <img
                     src={cat.cover_image!}
                     alt={cat.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/5 to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-3">
-                    <p className="text-white font-bold text-sm leading-tight">{cat.name}</p>
+                    <p className="text-white font-bold text-sm leading-tight drop-shadow-sm">{cat.name}</p>
                   </div>
                 </a>
               ))}
@@ -238,11 +233,13 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
 
         {/* ── Category filter tabs ───────────────────────── */}
         {topCategories.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mt-4">
+          <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4" style={{ scrollbarWidth: "none" }}>
             <a
               href={homeHref}
-              className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                !category ? "text-black" : "bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300"
+              className={`shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all whitespace-nowrap ${
+                !category
+                  ? "shadow-[0_2px_8px_rgba(0,0,0,0.12)] text-black"
+                  : "bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 hover:bg-surface-200 dark:hover:bg-surface-700"
               }`}
               style={!category ? { backgroundColor: "var(--sf-accent)" } : {}}
             >
@@ -252,8 +249,10 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
               <a
                 key={cat.id}
                 href={`${homeHref}?category=${cat.slug}`}
-                className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  category === cat.slug ? "text-black" : "bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-300"
+                className={`shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all whitespace-nowrap ${
+                  category === cat.slug
+                    ? "shadow-[0_2px_8px_rgba(0,0,0,0.12)] text-black"
+                    : "bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 hover:bg-surface-200 dark:hover:bg-surface-700"
                 }`}
                 style={category === cat.slug ? { backgroundColor: "var(--sf-accent)" } : {}}
               >
@@ -265,13 +264,13 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
 
         {/* ── Subcategory pills ──────────────────────────── */}
         {subcategories.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mt-8">
+          <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 -mt-6" style={{ scrollbarWidth: "none" }}>
             <a
               href={`${homeHref}?category=${category}`}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${
                 !sub
-                  ? "bg-surface-800 dark:bg-surface-200 text-white dark:text-black"
-                  : "bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400"
+                  ? "bg-surface-900 dark:bg-surface-100 text-white dark:text-black"
+                  : "bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-700"
               }`}
             >
               All {activeCategory?.name}
@@ -280,10 +279,10 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
               <a
                 key={s.id}
                 href={`${homeHref}?category=${category}&sub=${s.slug}`}
-                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${
                   sub === s.slug
-                    ? "bg-surface-800 dark:bg-surface-200 text-white dark:text-black"
-                    : "bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-400"
+                    ? "bg-surface-900 dark:bg-surface-100 text-white dark:text-black"
+                    : "bg-surface-100 dark:bg-surface-800 text-surface-500 dark:text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-700"
                 }`}
               >
                 {s.name}
@@ -295,20 +294,34 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
         {/* ── All Products grid ──────────────────────────── */}
         <section>
           {category && activeCategory && (
-            <h2 className="text-xl font-black text-surface-900 dark:text-white mb-5">
-              {activeCategory.name}
-            </h2>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-black text-surface-900 dark:text-white">{activeCategory.name}</h2>
+              <span className="text-xs text-surface-400">{products.length} item{products.length !== 1 ? "s" : ""}</span>
+            </div>
+          )}
+          {!category && products.length > 0 && (
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--sf-accent)" }}>
+                  Our store
+                </p>
+                <h2 className="text-lg font-black text-surface-900 dark:text-white">All Products</h2>
+              </div>
+              <span className="text-xs text-surface-400">{products.length} item{products.length !== 1 ? "s" : ""}</span>
+            </div>
           )}
           {products.length === 0 ? (
             <div className="py-24 text-center">
-              <p className="text-4xl mb-4">🛍️</p>
-              <p className="font-semibold text-surface-900 dark:text-white mb-1">No products found</p>
+              <div className="w-16 h-16 rounded-2xl bg-surface-100 dark:bg-surface-800 flex items-center justify-center mx-auto mb-4 text-3xl">
+                🛍️
+              </div>
+              <p className="font-bold text-surface-900 dark:text-white mb-1">No products yet</p>
               <p className="text-sm text-surface-400">
-                {category ? "No products in this category yet" : "This store hasn't added products yet"}
+                {category ? "No products in this category" : "This store hasn't added products yet"}
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
               {products.map((product) => (
                 <ProductCard key={product.id} product={product} storeSlug={slug} />
               ))}
@@ -319,7 +332,7 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
         <BookmarkSlider storeSlug={slug} />
       </div>
 
-      <div className="px-4 pb-8 border-t border-surface-100 dark:border-surface-800 pt-8 text-center">
+      <div className="px-4 pb-10 border-t border-surface-100 dark:border-surface-800 pt-8 text-center">
         <p className="text-xs text-surface-300 dark:text-surface-600">
           Powered by{" "}
           <a href="https://awarizon.shop" className="font-semibold hover:underline">

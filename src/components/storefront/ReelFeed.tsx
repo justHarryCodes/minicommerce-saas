@@ -7,7 +7,7 @@ import type { Reel } from "@/types";
 interface Props {
   initialReels: Reel[];
   shareBase: string;
-  storeSlug?: string; // if provided, loads more via pagination
+  storeSlug?: string;
 }
 
 export default function ReelFeed({ initialReels, shareBase, storeSlug }: Props) {
@@ -17,10 +17,11 @@ export default function ReelFeed({ initialReels, shareBase, storeSlug }: Props) 
   );
   const [loading, setLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  // Load more reels when cursor is available and user is near the end
+  // Mobile-only refs
+  const mobileContainerRef = useRef<HTMLDivElement>(null);
+  const mobileItemRefs = useRef<(HTMLDivElement | null)[]>([]);
+
   const loadMore = useCallback(async () => {
     if (!storeSlug || !cursor || loading) return;
     setLoading(true);
@@ -35,22 +36,19 @@ export default function ReelFeed({ initialReels, shareBase, storeSlug }: Props) 
     }
   }, [storeSlug, cursor, loading]);
 
-  // IntersectionObserver: track which reel is snapped into view
+  // Mobile snap-scroll: IntersectionObserver scoped to the mobile container
   useEffect(() => {
-    const container = containerRef.current;
+    const container = mobileContainerRef.current;
     if (!container) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
           if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
-            const idx = itemRefs.current.findIndex((el) => el === entry.target);
+            const idx = mobileItemRefs.current.findIndex((el) => el === entry.target);
             if (idx !== -1) {
               setActiveIndex(idx);
-              // Load more when 2 reels away from the end
-              if (idx >= reels.length - 2) {
-                loadMore();
-              }
+              if (idx >= reels.length - 2) loadMore();
             }
           }
         }
@@ -58,10 +56,7 @@ export default function ReelFeed({ initialReels, shareBase, storeSlug }: Props) 
       { root: container, threshold: 0.6 }
     );
 
-    itemRefs.current.forEach((el) => {
-      if (el) observer.observe(el);
-    });
-
+    mobileItemRefs.current.forEach((el) => { if (el) observer.observe(el); });
     return () => observer.disconnect();
   }, [reels.length, loadMore]);
 
@@ -69,51 +64,82 @@ export default function ReelFeed({ initialReels, shareBase, storeSlug }: Props) 
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] text-center px-6">
         <span className="text-5xl mb-4">🎬</span>
-        <p className="font-semibold text-zinc-900 dark:text-white text-lg">No reels yet</p>
-        <p className="text-zinc-500 dark:text-zinc-400 text-sm mt-1">
-          Check back soon for shoppable videos.
-        </p>
+        <p className="font-semibold text-white text-lg">No reels yet</p>
+        <p className="text-zinc-400 text-sm mt-1">Check back soon for shoppable videos.</p>
       </div>
     );
   }
 
   return (
-    <div
-      ref={containerRef}
-      className="h-[100dvh] overflow-y-scroll snap-y snap-mandatory"
-      style={{ scrollbarWidth: "none" }}
-    >
-      <style>{`
-        div::-webkit-scrollbar { display: none; }
-      `}</style>
+    <>
+      {/* ── Mobile: full-screen vertical snap scroll ─────────────────────── */}
+      <div
+        ref={mobileContainerRef}
+        className="lg:hidden h-[100dvh] overflow-y-scroll snap-y snap-mandatory"
+        style={{ scrollbarWidth: "none" }}
+      >
+        <style>{`div::-webkit-scrollbar { display: none; }`}</style>
 
-      {reels.map((reel, i) => (
-        <div
-          key={reel.id}
-          ref={(el) => { itemRefs.current[i] = el; }}
-          className="h-[100dvh] snap-start snap-always relative"
-        >
-          <ReelCard
-            reel={reel}
-            shareBase={shareBase}
-            isActive={i === activeIndex}
-          />
-        </div>
-      ))}
+        {reels.map((reel, i) => (
+          <div
+            key={reel.id}
+            ref={(el) => { mobileItemRefs.current[i] = el; }}
+            className="h-[100dvh] snap-start snap-always relative"
+          >
+            <ReelCard reel={reel} shareBase={shareBase} isActive={i === activeIndex} />
+          </div>
+        ))}
 
-      {/* Loading indicator */}
-      {loading && (
-        <div className="h-16 flex items-center justify-center snap-start">
-          <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-        </div>
-      )}
+        {loading && (
+          <div className="h-16 flex items-center justify-center snap-start">
+            <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          </div>
+        )}
+        {!cursor && reels.length > 0 && (
+          <div className="h-16 flex items-center justify-center snap-start">
+            <p className="text-white/50 text-xs">You&apos;ve seen all reels</p>
+          </div>
+        )}
+      </div>
 
-      {/* End of feed */}
-      {!cursor && reels.length > 0 && (
-        <div className="h-16 flex items-center justify-center snap-start">
-          <p className="text-white/50 text-xs">You&apos;ve seen all reels</p>
+      {/* ── Desktop: portrait grid, click to activate ────────────────────── */}
+      <div className="hidden lg:block min-h-screen py-10 px-6">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-white font-black text-xl mb-6 tracking-tight">
+            Reels
+            <span className="ml-2 text-sm font-normal text-zinc-500">{reels.length} video{reels.length !== 1 ? "s" : ""}</span>
+          </h2>
+
+          <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
+            {reels.map((reel, i) => (
+              <div
+                key={reel.id}
+                onClick={() => setActiveIndex(i)}
+                className={`relative aspect-[9/16] rounded-2xl overflow-hidden cursor-pointer transition-all duration-200 ${
+                  i === activeIndex
+                    ? "ring-2 ring-white/60 shadow-[0_0_30px_rgba(255,255,255,0.15)] scale-[1.01]"
+                    : "opacity-80 hover:opacity-100 hover:scale-[1.01]"
+                }`}
+              >
+                <ReelCard reel={reel} shareBase={shareBase} isActive={i === activeIndex} />
+              </div>
+            ))}
+          </div>
+
+          {/* Load more on desktop */}
+          {cursor && (
+            <div className="flex justify-center mt-8">
+              <button
+                onClick={loadMore}
+                disabled={loading}
+                className="px-6 py-2.5 rounded-xl text-sm font-bold text-white border border-zinc-700 hover:bg-zinc-800 transition-colors disabled:opacity-50"
+              >
+                {loading ? "Loading…" : "Load more reels"}
+              </button>
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 }
