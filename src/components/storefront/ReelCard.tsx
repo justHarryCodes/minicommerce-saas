@@ -9,17 +9,20 @@ import type { Reel, ReelProduct } from "@/types";
 
 interface Props {
   reel: Reel;
-  shareBase: string; // e.g. "/store/myshop" or "" on subdomain
-  isActive?: boolean; // true when this reel is snapped into view (parent controls)
+  shareBase: string;
+  isActive?: boolean;
+  /** "auto" for adjacent reels so they pre-buffer; "none" for distant ones */
+  preloadHint?: "none" | "metadata" | "auto";
 }
 
-export default function ReelCard({ reel, shareBase, isActive = false }: Props) {
+export default function ReelCard({ reel, shareBase, isActive = false, preloadHint = "metadata" }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(true);
   const [showProducts, setShowProducts] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [viewTracked, setViewTracked] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [buffering, setBuffering] = useState(false);
   const { addItem } = useCart();
 
   const shareUrl =
@@ -42,12 +45,15 @@ export default function ReelCard({ reel, shareBase, isActive = false }: Props) {
     const video = videoRef.current;
     if (!video) return;
     if (isActive) {
-      video.play().then(() => setPlaying(true)).catch(() => {});
+      // If not yet buffered enough, show buffering indicator
+      if (video.readyState < 3) setBuffering(true);
+      video.play().then(() => { setPlaying(true); setBuffering(false); }).catch(() => {});
       trackView();
     } else {
       video.pause();
       video.currentTime = 0;
       setPlaying(false);
+      setBuffering(false);
     }
   }, [isActive, trackView]);
 
@@ -92,12 +98,22 @@ export default function ReelCard({ reel, shareBase, isActive = false }: Props) {
         loop
         muted={muted}
         playsInline
-        preload="metadata"
+        preload={isActive ? "auto" : preloadHint}
+        onWaiting={() => { if (isActive) setBuffering(true); }}
+        onPlaying={() => setBuffering(false)}
+        onCanPlay={() => { if (isActive) setBuffering(false); }}
         onClick={togglePlay}
       />
 
-      {/* Tap-to-play overlay (shown briefly when paused) */}
-      {!playing && (
+      {/* Buffering spinner */}
+      {buffering && (
+        <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+          <div className="w-12 h-12 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+        </div>
+      )}
+
+      {/* Tap-to-play overlay (shown when paused and not buffering) */}
+      {!playing && !buffering && (
         <button
           className="absolute inset-0 flex items-center justify-center z-10"
           onClick={togglePlay}

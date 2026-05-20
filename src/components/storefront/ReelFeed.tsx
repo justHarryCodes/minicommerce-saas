@@ -10,6 +10,10 @@ interface Props {
   storeSlug?: string;
 }
 
+function preloadFor(i: number, active: number): "auto" | "none" {
+  return Math.abs(i - active) <= 1 ? "auto" : "none";
+}
+
 export default function ReelFeed({ initialReels, shareBase, storeSlug }: Props) {
   const [reels, setReels] = useState<Reel[]>(initialReels);
   const [cursor, setCursor] = useState<string | null>(
@@ -86,7 +90,7 @@ export default function ReelFeed({ initialReels, shareBase, storeSlug }: Props) 
             ref={(el) => { mobileItemRefs.current[i] = el; }}
             className="h-[100dvh] snap-start snap-always relative"
           >
-            <ReelCard reel={reel} shareBase={shareBase} isActive={i === activeIndex} />
+            <ReelCard reel={reel} shareBase={shareBase} isActive={i === activeIndex} preloadHint={preloadFor(i, activeIndex)} />
           </div>
         ))}
 
@@ -121,7 +125,7 @@ export default function ReelFeed({ initialReels, shareBase, storeSlug }: Props) 
                     : "opacity-80 hover:opacity-100 hover:scale-[1.01]"
                 }`}
               >
-                <ReelCard reel={reel} shareBase={shareBase} isActive={i === activeIndex} />
+                <ReelCard reel={reel} shareBase={shareBase} isActive={i === activeIndex} preloadHint={preloadFor(i, activeIndex)} />
               </div>
             ))}
           </div>
