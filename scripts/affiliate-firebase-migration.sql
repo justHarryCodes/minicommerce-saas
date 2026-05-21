@@ -1,0 +1,2 @@
+ALTER TABLE affiliates ADD COLUMN IF NOT EXISTS firebase_uid TEXT UNIQUE;
+ALTER TABLE affiliates ALTER COLUMN password_hash DROP NOT NULL;

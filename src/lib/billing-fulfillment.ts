@@ -63,9 +63,12 @@ export async function fulfillSubscriptionPayment(
       [now.toISOString(), expiresAt.toISOString(), reference]
     )
 
-    // Reward referrer with 1 free month
-    const referredStore = await queryOne<{ referred_by_store_id: string | null }>(
-      'SELECT referred_by_store_id FROM stores WHERE id = $1',
+    // Reward vendor referrer with 1 free month
+    const referredStore = await queryOne<{
+      referred_by_store_id: string | null
+      referred_by_affiliate_id: string | null
+    }>(
+      'SELECT referred_by_store_id, referred_by_affiliate_id FROM stores WHERE id = $1',
       [payment.store_id]
     )
     if (referredStore?.referred_by_store_id) {
@@ -81,6 +84,26 @@ export async function fulfillSubscriptionPayment(
          VALUES ($1, $2, 'rewarded')
          ON CONFLICT DO NOTHING`,
         [referredStore.referred_by_store_id, payment.store_id]
+      )
+    }
+
+    // Credit affiliate ₦1,000 commission
+    if (referredStore?.referred_by_affiliate_id) {
+      const COMMISSION = 1000
+      await query(
+        `UPDATE affiliates
+         SET payout_balance   = payout_balance + $1,
+             earnings_total   = earnings_total + $1,
+             active_referrals = active_referrals + 1,
+             updated_at       = NOW()
+         WHERE id = $2`,
+        [COMMISSION, referredStore.referred_by_affiliate_id]
+      )
+      await query(
+        `UPDATE affiliate_referrals
+         SET status = 'active', commission_amount = $1, rewarded_at = NOW()
+         WHERE store_id = $2 AND status = 'pending'`,
+        [COMMISSION, payment.store_id]
       )
     }
   }

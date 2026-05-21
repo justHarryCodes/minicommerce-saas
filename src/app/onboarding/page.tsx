@@ -264,7 +264,7 @@ function OnboardingPage() {
             {/* Referral notice */}
             {referralCode && (
               <div className="mb-6 flex items-center gap-2 px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-sm text-amber-800 dark:text-amber-300 font-medium">
-                🎁 Referred by <strong className="font-mono">{referralCode}</strong> — your friend earns 1 free month when you pay your setup fee!
+                🎁 Referred by <strong className="font-mono">{referralCode}</strong> — your referrer earns a reward when you pay your setup fee!
               </div>
             )}
 

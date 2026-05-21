@@ -67,23 +67,33 @@ export async function POST(req: NextRequest) {
   const bankAccountNumber = d.bankAccountNumber || d.accountNumber || null
   const bankAccountName = d.bankAccountName || d.accountName || null
 
-  // Resolve referral code → referrer store id
+  // Resolve referral code — check vendor stores first, then affiliates
   let referredByStoreId: string | null = null
+  let referredByAffiliateId: string | null = null
   if (d.referralCode) {
-    const referrer = await queryOne<{ id: string }>(
+    const upperCode = d.referralCode.toUpperCase()
+    const referrerStore = await queryOne<{ id: string }>(
       'SELECT id FROM stores WHERE referral_code = $1',
-      [d.referralCode.toUpperCase()]
+      [upperCode]
     )
-    if (referrer) referredByStoreId = referrer.id
+    if (referrerStore) {
+      referredByStoreId = referrerStore.id
+    } else {
+      const referrerAffiliate = await queryOne<{ id: string }>(
+        'SELECT id FROM affiliates WHERE referral_code = $1 AND is_active = true',
+        [upperCode]
+      )
+      if (referrerAffiliate) referredByAffiliateId = referrerAffiliate.id
+    }
   }
 
   const rows = await query(`
     INSERT INTO stores (
       owner_id, name, slug, description, logo_url, phone, whatsapp,
       primary_category, payment_preference, bank_name, bank_account_number, bank_account_name,
-      referred_by_store_id,
+      referred_by_store_id, referred_by_affiliate_id,
       referral_code
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,
       UPPER(SUBSTRING(MD5(gen_random_uuid()::text) FROM 1 FOR 8))
     )
     RETURNING *
@@ -92,18 +102,32 @@ export async function POST(req: NextRequest) {
     d.logoUrl || null, d.phone || null, d.whatsapp || null,
     d.primaryCategory || 'other', paymentPreference,
     d.bankName || null, bankAccountNumber, bankAccountName,
-    referredByStoreId,
+    referredByStoreId, referredByAffiliateId,
   ])
 
   const newStore = rows[0] as Record<string, unknown>
 
-  // Record referral signup (rewarded later when setup fee is paid)
+  // Record vendor-to-vendor referral (rewarded later when setup fee is paid)
   if (referredByStoreId) {
     await query(
       `INSERT INTO referrals (referrer_store_id, referred_store_id, status)
        VALUES ($1, $2, 'signed_up')
        ON CONFLICT DO NOTHING`,
       [referredByStoreId, newStore.id]
+    )
+  }
+
+  // Record affiliate referral (rewarded later when setup fee is paid)
+  if (referredByAffiliateId) {
+    await query(
+      `INSERT INTO affiliate_referrals (affiliate_id, store_id, status)
+       VALUES ($1, $2, 'pending')
+       ON CONFLICT DO NOTHING`,
+      [referredByAffiliateId, newStore.id]
+    )
+    await query(
+      'UPDATE affiliates SET total_referrals = total_referrals + 1, updated_at = NOW() WHERE id = $1',
+      [referredByAffiliateId]
     )
   }
 
