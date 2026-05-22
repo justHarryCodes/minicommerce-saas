@@ -12,7 +12,9 @@
       "Bash(node -e ' *)",
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\USER\\\\Desktop\\\\shopforge-saas\\\\storefront-saas\" -Recurse -Directory)",
       "Bash(Select-Object -ExpandProperty FullName)",
-      "Bash(npm list *)"
+      "Bash(npm list *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\USER\\\\Desktop\\\\shopforge-saas\\\\storefront-saas\" -Recurse -Directory)",
+      "Read(//c/Users/USER/Desktop/shopforge-saas/src/app/api/storefront/[slug]/**)"
     ],
     "additionalDirectories": [
       "c:\\Users\\USER\\Desktop\\shopforge-saas\\storefront-saas\\src\\app\\api",

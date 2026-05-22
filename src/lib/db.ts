@@ -1,6 +1,10 @@
 // ─── PostgreSQL connection pool ──────────────────────────────────
 import { Pool, PoolClient } from 'pg'
 
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL environment variable is not set.')
+}
+
 declare global {
   var _pgPool: Pool | undefined
 }
@@ -8,11 +12,14 @@ declare global {
 function createPool(): Pool {
   return new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: false,
+    // Enable SSL in production; allow self-signed certs on managed hosts (e.g. Railway, Neon)
+    ssl: process.env.NODE_ENV === 'production'
+      ? { rejectUnauthorized: false }
+      : false,
     max: 20,
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 2_000,
-  });
+  })
 }
 
 export const pool: Pool =
@@ -28,7 +35,7 @@ export async function query<T = Record<string, unknown>>(
   const start = Date.now()
   const res = await pool.query(text, params)
   if (process.env.NODE_ENV === 'development') {
-    console.log('[DB]', { text: text.slice(0, 80), duration: Date.now() - start, rows: res.rowCount })
+    console.log('[DB]', { query: text.slice(0, 80), ms: Date.now() - start, rows: res.rowCount })
   }
   return res.rows as T[]
 }
@@ -72,5 +79,4 @@ export function rowsToCamel<T>(rows: Record<string, unknown>[]): T[] {
   return rows.map(r => toCamel<T>(r))
 }
 
-// Alias — queryMany is just query (returns array always)
 export const queryMany = query

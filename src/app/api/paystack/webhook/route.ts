@@ -3,18 +3,36 @@ import { query, queryOne } from "@/lib/db";
 import { fulfillSubscriptionPayment } from "@/lib/billing-fulfillment";
 import crypto from "crypto";
 
+const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
+
 export async function POST(req: NextRequest) {
+  // Hard fail at startup if secret is missing — never fall back to empty string
+  if (!PAYSTACK_SECRET) {
+    console.error("[paystack/webhook] PAYSTACK_SECRET_KEY is not set");
+    return NextResponse.json({ error: "Server misconfiguration" }, { status: 500 });
+  }
+
   try {
     const body = await req.text();
     const signature = req.headers.get("x-paystack-signature");
 
-    // Reject requests that fail HMAC signature verification
+    if (!signature) {
+      return NextResponse.json({ error: "Missing signature" }, { status: 401 });
+    }
+
     const hash = crypto
-      .createHmac("sha512", process.env.PAYSTACK_SECRET_KEY ?? "")
+      .createHmac("sha512", PAYSTACK_SECRET)
       .update(body)
       .digest("hex");
 
-    if (hash !== signature) {
+    // Use timingSafeEqual to prevent timing attacks on signature comparison
+    const hashBuf = Buffer.from(hash, "hex");
+    const sigBuf  = Buffer.from(signature, "hex");
+    const valid   =
+      hashBuf.length === sigBuf.length &&
+      crypto.timingSafeEqual(hashBuf, sigBuf);
+
+    if (!valid) {
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
@@ -32,7 +50,6 @@ export async function POST(req: NextRequest) {
     // ── Order payments ──────────────────────────────────────────────
     const orderId = metadata?.orderId as string | undefined;
     if (orderId) {
-      // Verify reference matches the stored payment_reference before updating
       const order = await queryOne<{
         id: string;
         payment_reference: string | null;
@@ -59,8 +76,6 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Subscription payments (setup_fee / monthly / plan) ──────────
-    // Fallback: fires when the callback URL didn't reach the browser
-    // (network failure, tab closed before redirect completed, etc.)
     const subPayment = await queryOne<{
       type: string;
       payment_status: string;
@@ -80,8 +95,9 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ received: true });
-  } catch (err) {
-    console.error("[paystack/webhook] error:", err);
+  } catch {
+    // Log only a generic message — no stack traces or payload details in prod
+    console.error("[paystack/webhook] Unhandled error processing event");
     return NextResponse.json({ error: "Webhook error" }, { status: 500 });
   }
 }

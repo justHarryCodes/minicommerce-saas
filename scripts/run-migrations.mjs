@@ -34,6 +34,7 @@ const MIGRATIONS = [
   { name: "orders-payment-method-fix.sql",  path: join(__dirname, "orders-payment-method-fix.sql") },
   { name: "affiliate-migration.sql",           path: join(__dirname, "affiliate-migration.sql") },
   { name: "affiliate-firebase-migration.sql",  path: join(__dirname, "affiliate-firebase-migration.sql") },
+  { name: "plans-dedup-migration.sql",         path: join(__dirname, "plans-dedup-migration.sql") },
 ];
 
 async function run() {

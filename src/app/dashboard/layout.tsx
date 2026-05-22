@@ -6,6 +6,7 @@ import { Sidebar } from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
 import { SubscriptionGuard } from "@/components/dashboard/SubscriptionGuard";
 import TutorialBanner from "@/components/dashboard/TutorialBanner";
+import TawkChat from "@/components/dashboard/TawkChat";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +53,7 @@ export default async function DashboardLayout({
           <SubscriptionGuard />
           <TutorialBanner />
           {children}
+          <TawkChat />
         </main>
       </div>
     </div>

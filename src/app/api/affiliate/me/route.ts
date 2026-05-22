@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server'
 import { verifyAffiliateSession } from '@/lib/affiliate-auth'
 import { queryOne } from '@/lib/db'
+import { z } from 'zod'
+
+const BankSchema = z.object({
+  bankName:      z.string().min(1).max(100).nullable().optional(),
+  accountNumber: z.string().min(10).max(20).nullable().optional(),
+  accountName:   z.string().min(1).max(150).nullable().optional(),
+})
 
 interface AffiliateProfile {
   id: string
@@ -37,7 +44,12 @@ export async function PATCH(req: Request) {
   const session = await verifyAffiliateSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { bankName, accountNumber, accountName } = await req.json()
+  const body = await req.json()
+  const parsed = BankSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
+  }
+  const { bankName, accountNumber, accountName } = parsed.data
 
   await queryOne(
     `UPDATE affiliates SET bank_name = $1, account_number = $2, account_name = $3, updated_at = NOW()

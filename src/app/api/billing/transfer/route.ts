@@ -23,8 +23,12 @@ export async function POST(req: NextRequest) {
   const store = await queryOne<{
     id: string
     subscription_status: string
+    subscription_expires_at: string | null
     status: string
-  }>('SELECT id, subscription_status, status FROM stores WHERE owner_id = $1', [user.firebaseUid])
+  }>(
+    'SELECT id, subscription_status, subscription_expires_at, status FROM stores WHERE owner_id = $1',
+    [user.firebaseUid]
+  )
 
   if (!store) return NextResponse.json({ error: 'Store not found' }, { status: 404 })
 
@@ -42,6 +46,35 @@ export async function POST(req: NextRequest) {
   if (type === 'monthly') {
     if (!settings.require_subscription) {
       return NextResponse.json({ error: 'Subscription not required' }, { status: 400 })
+    }
+
+    // Setup fee must be paid first
+    const setupPaid = (
+      store.subscription_status === 'setup_fee_paid' ||
+      store.subscription_status === 'subscribed' ||
+      store.subscription_status === 'expired'
+    )
+    if (settings.require_setup_fee && !setupPaid) {
+      return NextResponse.json({ error: 'Pay the one-time setup fee first.' }, { status: 400 })
+    }
+
+    // Renewal window enforcement: only allow when day ≥ 25 or within 7 days of expiry or already expired
+    const now = new Date()
+    const expiresAt = store.subscription_expires_at ? new Date(store.subscription_expires_at) : null
+    const isExpired = expiresAt ? expiresAt < now : false
+
+    if (store.subscription_status === 'subscribed' && !isExpired) {
+      const today = now.getDate()
+      const msUntilExpiry = expiresAt ? expiresAt.getTime() - now.getTime() : Infinity
+      const daysUntilExpiry = msUntilExpiry / (1000 * 60 * 60 * 24)
+      const inRenewalWindow = today >= 25 || daysUntilExpiry <= 7
+
+      if (!inRenewalWindow) {
+        return NextResponse.json(
+          { error: 'Renewal opens on the 25th of each month or within 7 days of your expiry date.' },
+          { status: 400 }
+        )
+      }
     }
   }
 
@@ -66,7 +99,10 @@ export async function POST(req: NextRequest) {
     [store.id, type]
   )
   if (existing) {
-    return NextResponse.json({ error: 'You already have a pending transfer for this payment. Admin will confirm it shortly.' }, { status: 409 })
+    return NextResponse.json(
+      { error: 'You already have a pending transfer for this payment. Admin will confirm it shortly.' },
+      { status: 409 }
+    )
   }
 
   const amounts: Record<string, number> = {

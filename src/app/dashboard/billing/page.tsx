@@ -34,6 +34,25 @@ export default async function BillingPage({
 
   if (!store) redirect("/onboarding");
 
+  // Auto-expire subscriptions server-side so the UI always reflects truth.
+  // Only update if the DB still says 'subscribed' but the expiry has passed.
+  if (
+    store.subscription_status === "subscribed" &&
+    store.subscription_expires_at &&
+    new Date(store.subscription_expires_at) < new Date()
+  ) {
+    await query(
+      `UPDATE stores
+       SET subscription_status = 'expired',
+           status              = 'suspended',
+           updated_at          = NOW()
+       WHERE id = $1`,
+      [store.id]
+    );
+    store.subscription_status = "expired";
+    store.status = "suspended";
+  }
+
   const [settings, payments, plans, bankAccounts, sp] = await Promise.all([
     getPlatformSettings(),
     query<{
@@ -50,6 +69,7 @@ export default async function BillingPage({
        FROM subscription_payments WHERE store_id = $1 ORDER BY created_at DESC LIMIT 20`,
       [store.id]
     ),
+    // DISTINCT ON name guards against duplicate rows surviving the dedup migration
     query<{
       id: string;
       name: string;
@@ -57,19 +77,33 @@ export default async function BillingPage({
       price_monthly: number;
       max_products: number;
       is_active: boolean;
-    }>('SELECT id, name, description, price_monthly, max_products, is_active FROM plans WHERE is_active = true ORDER BY sort_order, created_at', []),
+    }>(
+      `SELECT DISTINCT ON (name) id, name, description, price_monthly, max_products, is_active
+       FROM plans WHERE is_active = true ORDER BY name, sort_order, created_at`,
+      []
+    ),
     query<{
       id: string;
       bank_name: string;
       account_number: string;
       account_name: string;
-    }>('SELECT id, bank_name, account_number, account_name FROM platform_bank_accounts WHERE is_active = true ORDER BY sort_order', []),
+    }>(
+      "SELECT id, bank_name, account_number, account_name FROM platform_bank_accounts WHERE is_active = true ORDER BY sort_order",
+      []
+    ),
     searchParams,
   ]);
 
   const currentPlan = store.current_plan_id
-    ? await queryOne<{ id: string; name: string; description: string | null; price_monthly: number; max_products: number; is_active: boolean }>(
-        'SELECT id, name, description, price_monthly, max_products, is_active FROM plans WHERE id = $1',
+    ? await queryOne<{
+        id: string;
+        name: string;
+        description: string | null;
+        price_monthly: number;
+        max_products: number;
+        is_active: boolean;
+      }>(
+        "SELECT id, name, description, price_monthly, max_products, is_active FROM plans WHERE id = $1",
         [store.current_plan_id]
       )
     : null;

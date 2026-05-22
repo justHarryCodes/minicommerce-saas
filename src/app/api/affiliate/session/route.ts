@@ -3,9 +3,19 @@ import { adminAuth } from '@/lib/firebase-admin'
 import { queryOne } from '@/lib/db'
 import { createAffiliateSessionCookie, setAffiliateCookieHeader, clearAffiliateCookieHeader } from '@/lib/affiliate-auth'
 import { verifyRecaptcha } from '@/lib/recaptcha'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 // POST — exchange Firebase ID token for a session cookie (login)
 export async function POST(req: NextRequest) {
+  // 10 attempts per 15 minutes per IP
+  const limited = await checkRateLimit(req, {
+    key: 'rl:affiliate-login',
+    max: 10,
+    window: 900,
+    message: 'Too many login attempts. Please wait 15 minutes before trying again.',
+  })
+  if (limited) return limited
+
   const { idToken, recaptchaToken } = await req.json()
   if (!idToken) return NextResponse.json({ error: 'Missing idToken' }, { status: 400 })
 
@@ -49,7 +59,7 @@ export async function POST(req: NextRequest) {
   const c = setAffiliateCookieHeader(sessionCookie)
   res.cookies.set(c.name, c.value, {
     httpOnly: c.httpOnly,
-    secure: c.secure,
+    secure: true, // always secure
     sameSite: c.sameSite,
     path: c.path,
     maxAge: c.maxAge,

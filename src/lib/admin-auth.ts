@@ -33,11 +33,12 @@ const SETTING_DEFAULTS: PlatformSettings = {
 }
 
 // Emails that are automatically granted super_admin on first login.
-// Add ADMIN_EMAIL to your .env to override without touching code.
+// Set ADMIN_EMAILS (comma-separated) in your .env — never hardcode here.
 const ADMIN_EMAILS = new Set(
-  [process.env.ADMIN_EMAIL, 'support@awarizon.com']
+  (process.env.ADMIN_EMAILS ?? process.env.ADMIN_EMAIL ?? '')
+    .split(',')
+    .map(e => e.trim().toLowerCase())
     .filter(Boolean)
-    .map((e) => e!.toLowerCase())
 )
 
 // Verify the current session belongs to an active admin.

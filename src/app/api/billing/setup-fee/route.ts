@@ -34,6 +34,15 @@ export async function POST(_req: NextRequest) {
     return NextResponse.json({ error: 'Setup fee already paid' }, { status: 409 })
   }
 
+  // Don't create a second pending payment if one is already in flight
+  const existingPending = await queryOne(
+    `SELECT id FROM subscription_payments WHERE store_id = $1 AND type = 'setup_fee' AND payment_status = 'pending'`,
+    [store.id]
+  )
+  if (existingPending) {
+    return NextResponse.json({ error: 'A setup fee payment is already pending. Complete or cancel it first.' }, { status: 409 })
+  }
+
   const reference = `SETUP-${store.id}-${uuidv4().slice(0, 8).toUpperCase()}`
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 

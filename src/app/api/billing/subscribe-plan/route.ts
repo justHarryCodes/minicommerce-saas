@@ -9,8 +9,12 @@ export async function POST(req: NextRequest) {
   const user = await verifySession()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { plan_id } = await req.json()
-  if (!plan_id) return NextResponse.json({ error: 'plan_id is required' }, { status: 400 })
+  const body = await req.json()
+  const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  const plan_id: string | undefined = body?.plan_id
+  if (!plan_id || !uuidRe.test(plan_id)) {
+    return NextResponse.json({ error: 'plan_id must be a valid UUID' }, { status: 400 })
+  }
 
   const [store, plan] = await Promise.all([
     queryOne<{ id: string; name: string; status: string }>(

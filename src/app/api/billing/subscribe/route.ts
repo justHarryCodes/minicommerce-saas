@@ -13,10 +13,12 @@ export async function POST(_req: NextRequest) {
     id: string
     name: string
     subscription_status: string
+    subscription_expires_at: string | null
     setup_fee_paid_at: string | null
-  }>('SELECT id, name, subscription_status, setup_fee_paid_at FROM stores WHERE owner_id = $1', [
-    user.firebaseUid,
-  ])
+  }>(
+    'SELECT id, name, subscription_status, subscription_expires_at, setup_fee_paid_at FROM stores WHERE owner_id = $1',
+    [user.firebaseUid]
+  )
 
   if (!store) return NextResponse.json({ error: 'Store not found' }, { status: 404 })
 
@@ -26,14 +28,35 @@ export async function POST(_req: NextRequest) {
     return NextResponse.json({ error: 'Subscription is not required' }, { status: 400 })
   }
 
-  // If setup fee is still required and unpaid, block monthly subscription
-  if (
-    settings.require_setup_fee &&
-    store.subscription_status !== 'setup_fee_paid' &&
-    store.subscription_status !== 'subscribed' &&
-    store.subscription_status !== 'expired'
-  ) {
-    return NextResponse.json({ error: 'Pay setup fee first' }, { status: 400 })
+  // Setup fee must be paid first
+  const setupPaid = (
+    store.subscription_status === 'setup_fee_paid' ||
+    store.subscription_status === 'subscribed' ||
+    store.subscription_status === 'expired'
+  )
+  if (settings.require_setup_fee && !setupPaid) {
+    return NextResponse.json({ error: 'Pay the one-time setup fee first before subscribing.' }, { status: 400 })
+  }
+
+  // If subscription is currently active, only allow renewal during the window (day 25–end of month)
+  // or within 7 days of expiry — whichever is earlier.
+  const now = new Date()
+  const expiresAt = store.subscription_expires_at ? new Date(store.subscription_expires_at) : null
+  const isExpired = expiresAt ? expiresAt < now : false
+
+  if (store.subscription_status === 'subscribed' && !isExpired) {
+    const today = now.getDate()
+    const msUntilExpiry = expiresAt ? expiresAt.getTime() - now.getTime() : Infinity
+    const daysUntilExpiry = msUntilExpiry / (1000 * 60 * 60 * 24)
+
+    // Allow if in last 7 days of subscription OR in calendar renewal window (day 25+)
+    const inRenewalWindow = today >= 25 || daysUntilExpiry <= 7
+    if (!inRenewalWindow) {
+      return NextResponse.json(
+        { error: 'Your subscription is still active. Renewal opens on the 25th of each month or within 7 days of your expiry date.' },
+        { status: 400 }
+      )
+    }
   }
 
   const reference = `SUB-${store.id}-${uuidv4().slice(0, 8).toUpperCase()}`
