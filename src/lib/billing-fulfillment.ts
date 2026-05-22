@@ -89,7 +89,7 @@ export async function fulfillSubscriptionPayment(
 
     // Credit affiliate ₦1,000 commission
     if (referredStore?.referred_by_affiliate_id) {
-      const COMMISSION = 1000
+      const COMMISSION = 2000
       await query(
         `UPDATE affiliates
          SET payout_balance   = payout_balance + $1,

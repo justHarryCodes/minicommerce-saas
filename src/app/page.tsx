@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { headers } from "next/headers";
-import { redirect, notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { verifySession, getUserStore } from "@/lib/auth";
 import { verifyAdminSession } from "@/lib/admin-auth";
 import { query } from "@/lib/db";
@@ -112,66 +112,97 @@ export default async function HomePage() {
       <HomeNav />
 
       {/* ── Hero ───────────────────────────────────────── */}
-      <section className="relative overflow-hidden pt-20 pb-28 px-4">
+      <section className="relative overflow-hidden pt-20 pb-24 px-4">
         <div className="absolute inset-0 pointer-events-none">
           <div
             className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[600px] rounded-full opacity-[0.15] blur-3xl"
             style={{ background: "radial-gradient(ellipse, #f59e0b 0%, transparent 70%)" }}
           />
         </div>
-        <div className="relative max-w-4xl mx-auto text-center">
-          <div className="flex flex-col items-center mb-6">
-            <img src="/logo.png" alt="Duka" className="h-14 w-auto object-contain mb-2" />
-            <span
-              className="text-xs font-bold uppercase tracking-widest"
-              style={{ color: "var(--text-muted)" }}
-            >
-              by Awarizon
-            </span>
-          </div>
+        <div className="relative max-w-6xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
 
-          <div
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-6 text-black"
-            style={{ background: "var(--accent-light)" }}
-          >
-            {totalStores > 0
-              ? `${totalStores}+ stores live on Duka`
-              : "Nigeria's marketplace platform"}
-          </div>
+            {/* Left: text */}
+            <div className="text-center lg:text-left">
+              <div className="flex flex-col items-center lg:items-start mb-6">
+                <img src="/logo.png" alt="Duka" className="h-14 w-auto object-contain mb-2" />
+                <span
+                  className="text-xs font-bold uppercase tracking-widest"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  by Awarizon
+                </span>
+              </div>
 
-          <h1
-            className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight mb-6 leading-[1.1]"
-            style={{ color: "var(--text-primary)" }}
-          >
-            Discover the best
-            <br />
-            <span style={{ color: "var(--accent)" }}>local vendors</span> online
-          </h1>
+              <div
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-6 text-black"
+                style={{ background: "var(--accent-light)" }}
+              >
+                {totalStores > 0
+                  ? `${totalStores}+ stores live on Duka`
+                  : "Nigeria's marketplace platform"}
+              </div>
 
-          <p
-            className="text-xl max-w-2xl mx-auto mb-10 leading-relaxed"
-            style={{ color: "var(--text-secondary)" }}
-          >
-            Duka connects you with thousands of verified sellers across fashion,
-            electronics, food, and more. Or launch your own store in minutes.
-          </p>
+              <h1
+                className="text-5xl sm:text-6xl font-black tracking-tight mb-6 leading-[1.1]"
+                style={{ color: "var(--text-primary)" }}
+              >
+                Discover the best
+                <br />
+                <span style={{ color: "var(--accent)" }}>local vendors</span> online
+              </h1>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/discover"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold text-black text-lg transition-all hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]"
-              style={{ background: "var(--accent)" }}
-            >
-              Discover Stores
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-            <Link
-              href="/auth/signup"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold text-lg border transition-all hover:opacity-80"
-              style={{ color: "var(--text-primary)", borderColor: "var(--border-strong)" }}
-            >
-              Become a Vendor
-            </Link>
+              <p
+                className="text-xl max-w-2xl mx-auto lg:mx-0 mb-10 leading-relaxed"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                Duka connects you with thousands of verified sellers across fashion,
+                electronics, food, and more. Or launch your own store in minutes.
+              </p>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+                <Link
+                  href="/discover"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold text-black text-lg transition-all hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]"
+                  style={{ background: "var(--accent)" }}
+                >
+                  Discover Stores
+                  <ArrowRight className="w-5 h-5" />
+                </Link>
+                <Link
+                  href="/auth/signup"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold text-lg border transition-all hover:opacity-80"
+                  style={{ color: "var(--text-primary)", borderColor: "var(--border-strong)" }}
+                >
+                  Become a Vendor
+                </Link>
+              </div>
+            </div>
+
+            {/* Right: category image grid */}
+            <div className="hidden lg:grid grid-cols-2 gap-3">
+              {[
+                { src: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400&h=260&fit=crop&q=80", label: "Fashion & Clothing", href: "/discover?category=Fashion+and+Clothing" },
+                { src: "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=260&fit=crop&q=80", label: "Food & Catering", href: "/discover?category=Food+and+Catering" },
+                { src: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=400&h=260&fit=crop&q=80", label: "Electronics & Gadgets", href: "/discover?category=Electronics+and+Gadgets" },
+                { src: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400&h=260&fit=crop&q=80", label: "Beauty & Makeup", href: "/discover?category=Beauty+and+Makeup" },
+              ].map(({ src, label, href }) => (
+                <Link
+                  key={label}
+                  href={href}
+                  className="group relative rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all"
+                >
+                  <img
+                    src={src}
+                    alt={label}
+                    className="w-full h-36 object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
+                  <p className="absolute bottom-2.5 left-3 text-white text-xs font-bold drop-shadow">{label}</p>
+                </Link>
+              ))}
+            </div>
+
           </div>
         </div>
       </section>
@@ -411,6 +442,35 @@ export default async function HomePage() {
         </section>
       )}
 
+      {/* ── Affiliate banner ───────────────────────────── */}
+      <section className="py-14 px-4" style={{ background: "var(--bg)" }}>
+        <div className="max-w-7xl mx-auto">
+          <div className="rounded-3xl border px-8 py-10 sm:px-14 sm:py-12 flex flex-col sm:flex-row items-center gap-6 sm:gap-10"
+            style={{ background: "var(--bg-secondary)", borderColor: "var(--border)" }}>
+            <div className="w-14 h-14 shrink-0 rounded-2xl flex items-center justify-center text-2xl"
+              style={{ background: "var(--accent-light)" }}>
+              💰
+            </div>
+            <div className="flex-1 text-center sm:text-left">
+              <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: "var(--accent)" }}>
+                Affiliate Program
+              </p>
+              <h3 className="text-xl sm:text-2xl font-black mb-1" style={{ color: "var(--text-primary)" }}>
+                Earn ₦2,000 for every vendor you refer
+              </h3>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                Share your link. When a vendor activates, you get paid. No cap on earnings.
+              </p>
+            </div>
+            <Link href="/affiliate"
+              className="shrink-0 inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all hover:opacity-90 hover:scale-[1.02]"
+              style={{ background: "var(--accent)", color: "#000" }}>
+              Join free <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* ── Vendor CTA ─────────────────────────────────── */}
       <section className="py-20 px-4">
         <div className="max-w-7xl mx-auto">
@@ -472,6 +532,9 @@ export default async function HomePage() {
             </Link>
             <Link href="/auth/signup" className="text-xs hover:underline" style={{ color: "var(--text-secondary)" }}>
               Sign Up
+            </Link>
+            <Link href="/affiliate" className="text-xs hover:underline" style={{ color: "var(--text-secondary)" }}>
+              Affiliates
             </Link>
           </div>
         </div>

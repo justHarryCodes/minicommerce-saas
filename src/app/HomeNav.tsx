@@ -5,8 +5,9 @@ import Link from "next/link";
 import { Menu, X, ArrowRight } from "lucide-react";
 
 const NAV_LINKS = [
-  { href: "/discover",     label: "Discover Stores" },
-  { href: "/auth/login",   label: "Login" },
+  { href: "/discover",   label: "Discover Stores", accent: false },
+  { href: "/affiliate",  label: "Earn — Affiliates", accent: true },
+  { href: "/auth/login", label: "Login", accent: false },
 ];
 
 export default function HomeNav() {
@@ -56,6 +57,13 @@ export default function HomeNav() {
                 style={{ color: "var(--text-secondary)" }}
               >
                 Discover
+              </Link>
+              <Link
+                href="/affiliate"
+                className="text-sm font-semibold px-3 py-1 rounded-full transition-opacity hover:opacity-80"
+                style={{ color: "#92400e", backgroundColor: "#fef3c7" }}
+              >
+                Earn ₦2k / referral
               </Link>
             </div>
 
@@ -121,7 +129,10 @@ export default function HomeNav() {
               href={link.href}
               onClick={() => setOpen(false)}
               className="flex items-center justify-between px-4 py-3.5 rounded-xl text-sm font-semibold transition-colors hover:opacity-80"
-              style={{ color: "var(--text-primary)" }}
+              style={link.accent
+                ? { color: "#92400e", backgroundColor: "#fef3c7" }
+                : { color: "var(--text-primary)" }
+              }
             >
               {link.label}
               <ArrowRight className="w-4 h-4 opacity-40" />

@@ -21,6 +21,7 @@ export async function verifyAffiliateSession(): Promise<AffiliateSession | null>
     if (!sessionCookie) return null
 
     const decoded = await adminAuth.verifySessionCookie(sessionCookie, true)
+    if (!decoded.email_verified) return null
 
     const affiliate = await queryOne<{
       id: string

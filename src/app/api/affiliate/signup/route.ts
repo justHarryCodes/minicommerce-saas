@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminAuth } from '@/lib/firebase-admin'
 import { query, queryOne } from '@/lib/db'
-import {
-  generateReferralCode,
-  createAffiliateSessionCookie,
-  setAffiliateCookieHeader,
-} from '@/lib/affiliate-auth'
+import { generateReferralCode } from '@/lib/affiliate-auth'
 import { z } from 'zod'
 
 const Schema = z.object({
@@ -47,15 +43,7 @@ export async function POST(req: NextRequest) {
     [decoded.uid, (decoded.email ?? '').toLowerCase(), name, referralCode]
   )
 
-  const sessionCookie = await createAffiliateSessionCookie(idToken)
-  const res = NextResponse.json({ ok: true }, { status: 201 })
-  const c = setAffiliateCookieHeader(sessionCookie)
-  res.cookies.set(c.name, c.value, {
-    httpOnly: c.httpOnly,
-    secure: c.secure,
-    sameSite: c.sameSite,
-    path: c.path,
-    maxAge: c.maxAge,
-  })
-  return res
+  // No session cookie yet — the client sends a verification email and the
+  // user must click it before they can log in.
+  return NextResponse.json({ ok: true }, { status: 201 })
 }

@@ -15,6 +15,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
   }
 
+  // Require email verification before issuing a session
+  if (!decoded.email_verified) {
+    return NextResponse.json(
+      { error: 'Please verify your email address before signing in. Check your inbox for the verification link.' },
+      { status: 403 }
+    )
+  }
+
   // Verify this Firebase user is registered as an affiliate
   const affiliate = await queryOne(
     'SELECT id FROM affiliates WHERE firebase_uid = $1 AND is_active = true',
