@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { adminAuth } from '@/lib/firebase-admin'
 import { queryOne } from '@/lib/db'
 import { createAffiliateSessionCookie, setAffiliateCookieHeader, clearAffiliateCookieHeader } from '@/lib/affiliate-auth'
+import { verifyRecaptcha } from '@/lib/recaptcha'
 
 // POST — exchange Firebase ID token for a session cookie (login)
 export async function POST(req: NextRequest) {
-  const { idToken } = await req.json()
+  const { idToken, recaptchaToken } = await req.json()
   if (!idToken) return NextResponse.json({ error: 'Missing idToken' }, { status: 400 })
 
   let decoded: Awaited<ReturnType<typeof adminAuth.verifyIdToken>>
@@ -21,6 +22,17 @@ export async function POST(req: NextRequest) {
       { error: 'Please verify your email address before signing in. Check your inbox for the verification link.' },
       { status: 403 }
     )
+  }
+
+  // Require reCAPTCHA for email/password sign-ins
+  if (decoded.firebase?.sign_in_provider === 'password') {
+    if (!recaptchaToken) {
+      return NextResponse.json({ error: 'Please complete the reCAPTCHA' }, { status: 400 })
+    }
+    const valid = await verifyRecaptcha(recaptchaToken)
+    if (!valid) {
+      return NextResponse.json({ error: 'reCAPTCHA verification failed. Please try again.' }, { status: 400 })
+    }
   }
 
   // Verify this Firebase user is registered as an affiliate

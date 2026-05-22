@@ -5,6 +5,7 @@ import { getPlatformSettings } from "@/lib/admin-auth";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
 import { SubscriptionGuard } from "@/components/dashboard/SubscriptionGuard";
+import TutorialBanner from "@/components/dashboard/TutorialBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +50,7 @@ export default async function DashboardLayout({
         <Topbar user={user} store={store} />
         <main className="flex-1 p-4 sm:p-6 lg:p-8 pt-16 lg:pt-6">
           <SubscriptionGuard />
+          <TutorialBanner />
           {children}
         </main>
       </div>
