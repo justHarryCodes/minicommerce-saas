@@ -12,10 +12,8 @@ declare global {
 function createPool(): Pool {
   return new Pool({
     connectionString: process.env.DATABASE_URL,
-    // Enable SSL in production; allow self-signed certs on managed hosts (e.g. Railway, Neon)
-    ssl: process.env.NODE_ENV === 'production'
-      ? { rejectUnauthorized: false }
-      : false,
+    // Set DATABASE_SSL=true in env if your Postgres host requires SSL (e.g. Neon, Supabase)
+    ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
     max: 20,
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 2_000,
