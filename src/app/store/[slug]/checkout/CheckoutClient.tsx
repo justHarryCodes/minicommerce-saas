@@ -12,6 +12,8 @@ import {
   ChevronDown,
   ChevronUp,
   X,
+  Copy,
+  Check,
 } from "lucide-react";
 import { useCart } from "@/components/storefront/CartProvider";
 import { useStore } from "@/lib/store-context";
@@ -54,8 +56,9 @@ export default function CheckoutClient({
   const [payMethod, setPayMethod] = useState<"paystack" | "transfer">(
     paymentMethods.includes("paystack") ? "paystack" : "transfer"
   );
-  const [orderId, setOrderId] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
+  const [showBankModal, setShowBankModal] = useState(false);
+  const [copied, setCopied] = useState(false);
   // Capture total before cart is cleared so success screen shows correct amount
   const [placedTotal, setPlacedTotal] = useState(0);
 
@@ -118,7 +121,7 @@ export default function CheckoutClient({
     setCouponCode("");
   }
 
-  async function handleSubmitDetails(e: React.FormEvent) {
+  async function handleSubmitDetails(e: React.SyntheticEvent) {
     e.preventDefault();
     if (!form.customerName || !form.customerPhone || !form.deliveryAddress) {
       toast.error("Please fill in all required fields");
@@ -154,7 +157,6 @@ export default function CheckoutClient({
         throw new Error(msg);
       }
 
-      setOrderId(data.orderId);
       setOrderNumber(data.orderNumber);
 
       if (payMethod === "paystack") {
@@ -256,6 +258,14 @@ export default function CheckoutClient({
     );
   }
 
+  function copyAccount() {
+    if (!accountNumber) return;
+    navigator.clipboard.writeText(accountNumber).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
   // ── CTA button (shared between mobile bar and desktop summary) ────────────────
   const ctaButton =
     step === "details" ? (
@@ -269,7 +279,7 @@ export default function CheckoutClient({
       </button>
     ) : (
       <button
-        onClick={placeOrder}
+        onClick={payMethod === "transfer" ? () => setShowBankModal(true) : placeOrder}
         disabled={loading}
         className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm text-black hover:opacity-90 transition-all disabled:opacity-60"
         style={{ backgroundColor: "var(--sf-accent)" }}
@@ -574,6 +584,104 @@ export default function CheckoutClient({
           {ctaButton}
         </div>
       </div>
+
+      {/* ── Bank transfer confirmation modal ── */}
+      {showBankModal && (
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4">
+          {/* backdrop */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowBankModal(false)}
+          />
+
+          <div className="relative w-full max-w-md bg-white dark:bg-surface-900 rounded-2xl shadow-2xl overflow-hidden">
+            {/* header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-surface-100 dark:border-surface-800">
+              <div className="flex items-center gap-2">
+                <Building2 className="w-5 h-5" style={{ color: "var(--sf-accent)" }} />
+                <h3 className="font-black text-surface-900 dark:text-white text-base">Bank Transfer Details</h3>
+              </div>
+              <button
+                onClick={() => setShowBankModal(false)}
+                className="p-1.5 rounded-lg text-surface-400 hover:text-surface-700 dark:hover:text-white hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* body */}
+            <div className="px-5 py-5 space-y-4">
+              {/* amount banner */}
+              <div
+                className="rounded-xl px-4 py-3 text-center"
+                style={{ backgroundColor: "var(--sf-accent)" }}
+              >
+                <p className="text-xs font-semibold text-black/60 mb-0.5">Amount to pay</p>
+                <p className="text-3xl font-black text-black">{formatCurrency(finalTotal)}</p>
+              </div>
+
+              {/* account details */}
+              <div className="rounded-xl border border-surface-200 dark:border-surface-700 divide-y divide-surface-100 dark:divide-surface-800 overflow-hidden">
+                {bankName && (
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-sm text-surface-500 dark:text-surface-400 shrink-0">Bank</span>
+                    <span className="text-sm font-semibold text-surface-900 dark:text-white text-right">{bankName}</span>
+                  </div>
+                )}
+                {accountNumber && (
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-sm text-surface-500 dark:text-surface-400 shrink-0">Account No</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-base font-black font-mono tracking-widest text-surface-900 dark:text-white">
+                        {accountNumber}
+                      </span>
+                      <button
+                        onClick={copyAccount}
+                        className="p-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                        title="Copy account number"
+                      >
+                        {copied
+                          ? <Check className="w-4 h-4 text-green-500" />
+                          : <Copy className="w-4 h-4 text-surface-400" />}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {accountName && (
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-sm text-surface-500 dark:text-surface-400 shrink-0">Account Name</span>
+                    <span className="text-sm font-semibold text-surface-900 dark:text-white text-right">{accountName}</span>
+                  </div>
+                )}
+              </div>
+
+              <p className="text-xs text-surface-400 text-center leading-relaxed">
+                Transfer the exact amount above to this account, then tap the button below to place your order.
+              </p>
+            </div>
+
+            {/* footer */}
+            <div className="px-5 pb-5 space-y-2">
+              <button
+                onClick={() => { setShowBankModal(false); placeOrder(); }}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-black text-sm text-black hover:opacity-90 transition-all disabled:opacity-60"
+                style={{ backgroundColor: "var(--sf-accent)" }}
+              >
+                {loading
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Placing order...</>
+                  : "✓ I have made the payment"}
+              </button>
+              <button
+                onClick={() => setShowBankModal(false)}
+                className="w-full py-3 rounded-xl text-sm font-semibold text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-white hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+              >
+                Go back
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
