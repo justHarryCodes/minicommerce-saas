@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifySession, getUserStore } from '@/lib/auth'
-import { query, queryOne, rowsToCamel, withTransaction } from '@/lib/db'
-import { generateOrderNumber } from '@/lib/utils'
+import { query } from '@/lib/db'
 
 export async function GET(req: NextRequest) {
   const user = await verifySession()
@@ -17,6 +16,7 @@ export async function GET(req: NextRequest) {
 
   let sql = `
     SELECT o.*,
+      COALESCE(o.total_amount, o.total, o.subtotal) AS total_amount,
       json_agg(json_build_object(
         'id', oi.id, 'product_id', oi.product_id, 'product_name', oi.product_name,
         'product_image', oi.product_image, 'price', oi.price,

@@ -34,8 +34,12 @@ export async function GET() {
     ),
     query(
       `SELECT o.id, o.order_number, o.customer_name, o.customer_phone,
-              o.total_amount, o.order_status, o.payment_status, o.payment_method,
-              o.created_at, o.updated_at
+              COALESCE(o.total_amount, o.total, o.subtotal) AS total_amount,
+              o.order_status, o.payment_status, o.payment_method,
+              o.created_at, o.updated_at,
+              (SELECT oi.product_image FROM order_items oi
+               WHERE oi.order_id = o.id ORDER BY oi.id LIMIT 1) AS first_image,
+              (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) AS item_count
        FROM orders o WHERE o.store_id = $1
        ORDER BY o.created_at DESC LIMIT 10`,
       [store.id]
