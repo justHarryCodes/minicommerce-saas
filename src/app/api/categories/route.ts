@@ -26,11 +26,11 @@ export async function GET() {
   const rows = cats as Record<string, unknown>[];
   const topLevel = rows.filter((r) => !r.parent_id);
   const nested = topLevel.map((cat) => ({
-    ...cat,
-    subcategories: rows.filter((r) => r.parent_id === cat.id),
+    ...toCamel<Record<string, unknown>>(cat),
+    subcategories: rowsToCamel(rows.filter((r) => r.parent_id === cat.id)),
   }));
 
-  return NextResponse.json({ data: rowsToCamel(nested) });
+  return NextResponse.json({ data: nested });
 }
 
 export async function POST(req: NextRequest) {
