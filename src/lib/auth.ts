@@ -1,7 +1,7 @@
 // ─── Auth helpers (server) ────────────────────────────────────────
 // Schema uses stores.owner_id = Firebase UID (TEXT) directly.
 // No separate users table.
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { adminAuth } from './firebase-admin'
 import { queryOne, toCamel } from './db'
@@ -16,22 +16,38 @@ export interface SessionUser {
   displayName?: string
 }
 
-// Verify session cookie → returns SessionUser or null
+// Verify session cookie OR Bearer token (mobile app) → returns SessionUser or null
 export async function verifySession(): Promise<SessionUser | null> {
+  // 1. Try session cookie (web dashboard)
   try {
-    const cookieStore = await cookies(); // add await here
+    const cookieStore = await cookies();
     const sessionCookie = cookieStore.get(SESSION_COOKIE)?.value;
-    if (!sessionCookie) return null;
+    if (sessionCookie) {
+      const decoded = await adminAuth.verifySessionCookie(sessionCookie, true);
+      return {
+        firebaseUid: decoded.uid,
+        email: decoded.email ?? '',
+        displayName: decoded.name,
+      };
+    }
+  } catch {}
 
-    const decoded = await adminAuth.verifySessionCookie(sessionCookie, true);
-    return {
-      firebaseUid: decoded.uid,
-      email: decoded.email ?? "",
-      displayName: decoded.name,
-    };
-  } catch {
-    return null;
-  }
+  // 2. Try Bearer token (mobile app)
+  try {
+    const headerStore = await headers();
+    const auth = headerStore.get('authorization') ?? headerStore.get('Authorization');
+    if (auth?.startsWith('Bearer ')) {
+      const idToken = auth.slice(7);
+      const decoded = await adminAuth.verifyIdToken(idToken);
+      return {
+        firebaseUid: decoded.uid,
+        email: decoded.email ?? '',
+        displayName: decoded.name,
+      };
+    }
+  } catch {}
+
+  return null;
 }
 
 // Get store owned by this Firebase UID
