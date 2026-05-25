@@ -24,7 +24,7 @@ export async function GET() {
          JOIN stores s ON s.id = r.store_id AND s.is_active = true
          LEFT JOIN reel_products rp ON rp.reel_id = r.id
          LEFT JOIN products p ON p.id = rp.product_id
-         WHERE r.is_active = true AND r.is_featured = true
+         WHERE r.is_active = true
          GROUP BY r.id, s.name, s.slug, s.logo_url
          ORDER BY r.view_count DESC, r.created_at DESC
          LIMIT 30`,
