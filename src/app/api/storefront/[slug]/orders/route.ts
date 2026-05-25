@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query, queryOne, withTransaction } from "@/lib/db";
+import { notifyStoreNewOrder } from "@/lib/push";
 import { z } from "zod";
 
 const OrderSchema = z.object({
@@ -132,6 +133,15 @@ export async function POST(
 
       return order;
     });
+
+    // Fire-and-forget — don't await so push never delays the response
+    notifyStoreNewOrder(
+      store.id,
+      result.id,
+      result.order_number,
+      d.customerName,
+      d.totalAmount
+    ).catch(() => {});
 
     return NextResponse.json(
       { orderId: result.id, orderNumber: result.order_number },
