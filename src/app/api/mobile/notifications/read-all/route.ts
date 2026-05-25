@@ -11,12 +11,17 @@ export async function PATCH() {
   const store = await getUserStore(user.firebaseUid);
   if (!store) return NextResponse.json({ error: "No store" }, { status: 404 });
 
-  await query(
-    `UPDATE vendor_notifications
-        SET is_read = TRUE
-      WHERE store_id = $1 AND is_read = FALSE`,
-    [store.id]
-  );
+  // Table may not exist yet on first run — guard against that
+  try {
+    await query(
+      `UPDATE vendor_notifications
+          SET is_read = TRUE
+        WHERE store_id = $1 AND is_read = FALSE`,
+      [store.id]
+    );
+  } catch {
+    // Table doesn't exist yet — nothing to mark read
+  }
 
   return NextResponse.json({ ok: true });
 }
