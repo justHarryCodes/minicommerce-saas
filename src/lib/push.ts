@@ -8,7 +8,7 @@ interface ExpoMessage {
   title: string;
   body: string;
   data?: Record<string, string>;
-  sound?: "default";
+  sound?: string;
   channelId?: string;
   priority?: "high" | "normal" | "default";
   badge?: number;
@@ -62,7 +62,7 @@ export async function notifyStoreNewOrder(
       title,
       body,
       data: { type: "order", orderId, orderNumber },
-      sound: "default" as const,
+      sound: "default",
       channelId: "orders",
       priority: "high" as const,
     }))
