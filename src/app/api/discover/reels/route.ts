@@ -3,11 +3,44 @@ import { query } from "@/lib/db";
 import { getOrSet, reelKey, TTL } from "@/lib/redis";
 import type { Reel } from "@/types";
 
-// Public trending/featured reels for the discovery page.
-// Only surfaces is_featured = true reels — admin curates what appears here
-// to avoid system overload from surfacing all reels globally.
+// Group reels by store, shuffle the store order, then interleave round-robin.
+// Result: store A reel 1 → store B reel 1 → store C reel 1 → store A reel 2 → …
+// Store order is randomised per request so the feed feels fresh even from cache.
+function interleaveByStore(reels: Reel[]): Reel[] {
+  const map = new Map<string, Reel[]>();
+  for (const reel of reels) {
+    if (!map.has(reel.store_id)) map.set(reel.store_id, []);
+    map.get(reel.store_id)!.push(reel);
+  }
+
+  const stores = Array.from(map.values());
+
+  // Fisher-Yates shuffle of store order
+  for (let i = stores.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [stores[i], stores[j]] = [stores[j], stores[i]];
+  }
+
+  const result: Reel[] = [];
+  let round = 0;
+  while (result.length < reels.length) {
+    let added = false;
+    for (const storeReels of stores) {
+      if (storeReels[round]) {
+        result.push(storeReels[round]);
+        added = true;
+      }
+    }
+    if (!added) break;
+    round++;
+  }
+
+  return result;
+}
+
 export async function GET() {
-  const reels = await getOrSet<Reel[]>(
+  // Cache raw list (sorted by popularity); interleave + shuffle per-request in memory.
+  const raw = await getOrSet<Reel[]>(
     reelKey.trending(),
     async () =>
       query<Reel>(
@@ -33,5 +66,5 @@ export async function GET() {
     TTL.REEL_TRENDING
   );
 
-  return NextResponse.json({ reels: reels ?? [] });
+  return NextResponse.json({ reels: interleaveByStore(raw ?? []) });
 }
