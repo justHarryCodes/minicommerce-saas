@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { query } from "@/lib/db";
 import DiscoverClient from "./DiscoverClient";
 
@@ -6,8 +7,8 @@ interface DiscoverPageProps {
 }
 
 export const metadata = {
-  title: "Discover Stores",
-  description: "Browse verified vendors on Duka across fashion, electronics, food, and more.",
+  title: "Discover",
+  description: "Browse verified vendors and products on Duka across fashion, electronics, food, and more.",
 };
 
 export default async function DiscoverPage({ searchParams }: DiscoverPageProps) {
@@ -49,12 +50,14 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
   const totalCount = categoryCounts.reduce((sum, c) => sum + parseInt(c.count), 0);
 
   return (
-    <DiscoverClient
-      stores={stores}
-      categoryCounts={categoryCounts}
-      activeCategory={category ?? "all"}
-      initialSearch={q ?? ""}
-      totalCount={totalCount}
-    />
+    <Suspense>
+      <DiscoverClient
+        stores={stores}
+        categoryCounts={categoryCounts}
+        activeCategory={category ?? "all"}
+        initialSearch={q ?? ""}
+        totalCount={totalCount}
+      />
+    </Suspense>
   );
 }

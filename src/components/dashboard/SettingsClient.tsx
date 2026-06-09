@@ -10,8 +10,16 @@ import {
   Loader2,
   Upload,
   ExternalLink,
+  Mail,
+  KeyRound,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import {
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  verifyBeforeUpdateEmail,
+} from "firebase/auth";
+import { auth } from "@/lib/firebase-client";
 import type { Store as StoreType } from "@/types";
 import { Tip } from "@/components/dashboard/Tip";
 import { clLogo } from "@/lib/cloudinary";
@@ -46,6 +54,49 @@ export default function SettingsClient({ store: initial }: Props) {
   const [saving, setSaving] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
   const logoRef = useRef<HTMLInputElement>(null);
+
+  // Email change state
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [emailForm, setEmailForm] = useState({ currentPassword: "", newEmail: "", confirmEmail: "" });
+  const [emailChanging, setEmailChanging] = useState(false);
+
+  async function handleEmailChange(e: React.FormEvent) {
+    e.preventDefault();
+    if (emailForm.newEmail !== emailForm.confirmEmail) {
+      toast.error("New emails do not match");
+      return;
+    }
+    if (!emailForm.newEmail.includes("@")) {
+      toast.error("Enter a valid email address");
+      return;
+    }
+    setEmailChanging(true);
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser || !currentUser.email) throw new Error("Not signed in");
+
+      const credential = EmailAuthProvider.credential(currentUser.email, emailForm.currentPassword);
+      await reauthenticateWithCredential(currentUser, credential);
+      await verifyBeforeUpdateEmail(currentUser, emailForm.newEmail);
+
+      toast.success("Verification email sent to " + emailForm.newEmail + ". Click the link to confirm your new address.");
+      setShowEmailForm(false);
+      setEmailForm({ currentPassword: "", newEmail: "", confirmEmail: "" });
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code;
+      if (code === "auth/wrong-password" || code === "auth/invalid-credential") {
+        toast.error("Incorrect current password");
+      } else if (code === "auth/email-already-in-use") {
+        toast.error("That email is already in use");
+      } else if (code === "auth/too-many-requests") {
+        toast.error("Too many attempts. Try again later.");
+      } else {
+        toast.error("Email change failed. Try again.");
+      }
+    } finally {
+      setEmailChanging(false);
+    }
+  }
 
   const change = (key: keyof StoreType, value: unknown) =>
     setStore((s) => ({ ...s, [key]: value }));
@@ -422,6 +473,96 @@ export default function SettingsClient({ store: initial }: Props) {
           />
           <p className="text-xs text-surface-400 mt-1">Shown to customers at checkout.</p>
         </div>
+      </section>
+
+      {/* Account security — email change */}
+      <section className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-6 space-y-5">
+        <h2 className="font-bold text-surface-900 dark:text-white flex items-center gap-2">
+          <Mail className="w-4 h-4" />
+          Account email
+        </h2>
+
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm text-surface-500 dark:text-surface-400">Current email</p>
+            <p className="text-sm font-medium text-surface-900 dark:text-white mt-0.5">
+              {auth.currentUser?.email ?? "—"}
+            </p>
+          </div>
+          {!showEmailForm && (
+            <button
+              onClick={() => setShowEmailForm(true)}
+              className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl border border-surface-200 dark:border-surface-700 text-sm font-medium text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+            >
+              <KeyRound className="w-4 h-4" />
+              Change email
+            </button>
+          )}
+        </div>
+
+        {showEmailForm && (
+          <form onSubmit={handleEmailChange} className="space-y-4 pt-2 border-t border-surface-100 dark:border-surface-800">
+            <p className="text-xs text-surface-500 dark:text-surface-400">
+              Re-enter your current password to verify it&apos;s you, then enter the new email. A verification link will be sent to the new address.
+            </p>
+            <div>
+              <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
+                Current password
+              </label>
+              <input
+                type="password"
+                required
+                value={emailForm.currentPassword}
+                onChange={(e) => setEmailForm((f) => ({ ...f, currentPassword: e.target.value }))}
+                autoComplete="current-password"
+                className="w-full px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-transparent text-surface-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-400 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
+                New email address
+              </label>
+              <input
+                type="email"
+                required
+                value={emailForm.newEmail}
+                onChange={(e) => setEmailForm((f) => ({ ...f, newEmail: e.target.value }))}
+                autoComplete="email"
+                className="w-full px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-transparent text-surface-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-400 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
+                Confirm new email
+              </label>
+              <input
+                type="email"
+                required
+                value={emailForm.confirmEmail}
+                onChange={(e) => setEmailForm((f) => ({ ...f, confirmEmail: e.target.value }))}
+                autoComplete="email"
+                className="w-full px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-transparent text-surface-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-400 text-sm"
+              />
+            </div>
+            <div className="flex gap-3 pt-1">
+              <button
+                type="submit"
+                disabled={emailChanging}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm bg-accent-400 hover:bg-accent-500 text-black transition-all disabled:opacity-60"
+              >
+                {emailChanging ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                Send verification
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowEmailForm(false); setEmailForm({ currentPassword: "", newEmail: "", confirmEmail: "" }); }}
+                className="px-5 py-2.5 rounded-xl font-semibold text-sm border border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
       </section>
 
       {/* Save button */}

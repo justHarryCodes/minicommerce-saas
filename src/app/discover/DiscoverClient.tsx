@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Search } from "lucide-react";
-import { getStoreUrl } from "@/lib/utils";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Search, Loader2, ShoppingBag, Store as StoreIcon } from "lucide-react";
+import { getStoreUrl, getProductUrl, formatPrice } from "@/lib/utils";
 
 interface StoreRow {
   id: string;
@@ -19,6 +19,21 @@ interface StoreRow {
 interface CategoryCount {
   primary_category: string;
   count: string;
+}
+
+interface DiscoverProduct {
+  product_id: string;
+  product_name: string;
+  product_slug: string;
+  price: number;
+  compare_price: number | null;
+  image_url: string | null;
+  category_name: string | null;
+  store_id: string;
+  store_name: string;
+  store_slug: string;
+  store_logo: string | null;
+  store_category: string | null;
 }
 
 interface Props {
@@ -53,8 +68,40 @@ export default function DiscoverClient({
   initialSearch,
   totalCount,
 }: Props) {
+  const searchParamsHook = useSearchParams();
+  const tab = searchParamsHook.get("tab") === "products" ? "products" : "stores";
   const [search, setSearch] = useState(initialSearch);
   const router = useRouter();
+
+  // Products state
+  const [products, setProducts] = useState<DiscoverProduct[]>([]);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [productsTotal, setProductsTotal] = useState(0);
+
+  const fetchProducts = useCallback(async (cat: string, q: string) => {
+    setProductsLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (cat && cat !== "all") params.set("category", cat);
+      if (q) params.set("q", q);
+      params.set("limit", "48");
+      const res = await fetch(`/api/discover/products?${params.toString()}`);
+      const data = await res.json();
+      setProducts(data.products ?? []);
+      setProductsTotal(data.total ?? 0);
+    } catch {
+      setProducts([]);
+    } finally {
+      setProductsLoading(false);
+    }
+  }, []);
+
+  // Fetch products whenever tab, category, or search changes
+  useEffect(() => {
+    if (tab === "products") {
+      fetchProducts(activeCategory, search);
+    }
+  }, [tab, activeCategory, search, fetchProducts]);
 
   const filteredStores = useMemo(() => {
     if (!search.trim()) return stores;
@@ -69,7 +116,15 @@ export default function DiscoverClient({
   const handleCategoryChange = (cat: string) => {
     const params = new URLSearchParams();
     if (cat !== "all") params.set("category", cat);
+    if (tab === "products") params.set("tab", "products");
     router.push(`/discover${params.toString() ? "?" + params.toString() : ""}`);
+  };
+
+  const handleTabChange = (newTab: "stores" | "products") => {
+    const params = new URLSearchParams();
+    if (activeCategory !== "all") params.set("category", activeCategory);
+    if (newTab === "products") params.set("tab", "products");
+    router.replace(`/discover${params.toString() ? "?" + params.toString() : ""}`, { scroll: false });
   };
 
   return (
@@ -106,18 +161,48 @@ export default function DiscoverClient({
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Page header */}
-        <div className="mb-8">
+        <div className="mb-6">
           <h1
             className="text-4xl font-black mb-2"
             style={{ color: "var(--text-primary)" }}
           >
-            Discover Stores
+            Discover
           </h1>
           <p className="text-lg" style={{ color: "var(--text-secondary)" }}>
-            {totalCount > 0
-              ? `${totalCount} vendor${totalCount === 1 ? "" : "s"} and growing`
-              : "Browse vendors on Duka"}
+            {tab === "stores"
+              ? totalCount > 0
+                ? `${totalCount} vendor${totalCount === 1 ? "" : "s"} and growing`
+                : "Browse vendors on Duka"
+              : productsTotal > 0
+              ? `${productsTotal} product${productsTotal === 1 ? "" : "s"} available`
+              : "Browse products on Duka"}
           </p>
+        </div>
+
+        {/* Stores / Products tabs */}
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => handleTabChange("stores")}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
+            style={{
+              background: tab === "stores" ? "var(--accent)" : "var(--bg-tertiary)",
+              color: tab === "stores" ? "#000" : "var(--text-secondary)",
+            }}
+          >
+            <StoreIcon className="w-4 h-4" />
+            Stores
+          </button>
+          <button
+            onClick={() => handleTabChange("products")}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
+            style={{
+              background: tab === "products" ? "var(--accent)" : "var(--bg-tertiary)",
+              color: tab === "products" ? "#000" : "var(--text-secondary)",
+            }}
+          >
+            <ShoppingBag className="w-4 h-4" />
+            Products
+          </button>
         </div>
 
         {/* Search */}
@@ -128,7 +213,11 @@ export default function DiscoverClient({
           />
           <input
             type="text"
-            placeholder="Search stores by name or description..."
+            placeholder={
+              tab === "stores"
+                ? "Search stores by name or description..."
+                : "Search products or stores..."
+            }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-12 pr-4 py-3.5 rounded-xl border text-sm font-medium outline-none transition-all"
@@ -178,110 +267,236 @@ export default function DiscoverClient({
           })}
         </div>
 
-        {/* Results count when searching */}
-        {search.trim() && (
-          <p className="text-sm mb-6" style={{ color: "var(--text-muted)" }}>
-            {filteredStores.length === 0
-              ? `No results for "${search}"`
-              : `${filteredStores.length} result${filteredStores.length === 1 ? "" : "s"} for "${search}"`}
-          </p>
+        {/* ── Stores tab ── */}
+        {tab === "stores" && (
+          <>
+            {search.trim() && (
+              <p className="text-sm mb-6" style={{ color: "var(--text-muted)" }}>
+                {filteredStores.length === 0
+                  ? `No results for "${search}"`
+                  : `${filteredStores.length} result${filteredStores.length === 1 ? "" : "s"} for "${search}"`}
+              </p>
+            )}
+
+            {filteredStores.length === 0 ? (
+              <div className="py-32 text-center">
+                <p className="text-5xl mb-4">🏪</p>
+                <p className="text-xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>
+                  No stores found
+                </p>
+                <p className="text-base" style={{ color: "var(--text-secondary)" }}>
+                  {search
+                    ? `No stores match "${search}"`
+                    : activeCategory !== "all"
+                    ? "No stores in this category yet"
+                    : "No stores listed yet"}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                {filteredStores.map((store) => {
+                  const meta =
+                    store.primary_category
+                      ? (CATEGORY_META[store.primary_category] ?? CATEGORY_META["Other"])
+                      : CATEGORY_META["Other"];
+
+                  return (
+                    <a
+                      key={store.id}
+                      href={getStoreUrl(store.slug)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex flex-col rounded-2xl border overflow-hidden transition-all hover:shadow-lg hover:-translate-y-0.5"
+                      style={{ background: "var(--bg)", borderColor: "var(--border)" }}
+                    >
+                      <div
+                        className="h-24 flex items-center justify-center"
+                        style={{ background: `${meta.color}18` }}
+                      >
+                        {store.logo_url ? (
+                          <img
+                            src={store.logo_url}
+                            alt={store.name}
+                            className="h-16 w-16 object-cover rounded-xl shadow-sm"
+                          />
+                        ) : (
+                          <div
+                            className="h-16 w-16 rounded-xl flex items-center justify-center text-3xl font-black text-white shadow-sm"
+                            style={{ background: meta.color }}
+                          >
+                            {store.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex-1 p-4">
+                        <h3
+                          className="font-bold text-base leading-tight mb-1 group-hover:underline"
+                          style={{ color: "var(--text-primary)" }}
+                        >
+                          {store.name}
+                        </h3>
+                        {store.description && (
+                          <p
+                            className="text-xs leading-relaxed mb-3 line-clamp-2"
+                            style={{ color: "var(--text-secondary)" }}
+                          >
+                            {store.description}
+                          </p>
+                        )}
+                        {store.primary_category && (
+                          <span
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
+                            style={{
+                              background: `${meta.color}18`,
+                              color: meta.color,
+                            }}
+                          >
+                            {meta.icon} {store.primary_category}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="px-4 pb-4">
+                        <div
+                          className="w-full text-center py-2.5 rounded-xl text-sm font-semibold transition-opacity group-hover:opacity-90"
+                          style={{ background: "var(--accent)", color: "#000" }}
+                        >
+                          Visit Store →
+                        </div>
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+            )}
+          </>
         )}
 
-        {/* Store grid */}
-        {filteredStores.length === 0 ? (
-          <div className="py-32 text-center">
-            <p className="text-5xl mb-4">🏪</p>
-            <p className="text-xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>
-              No stores found
-            </p>
-            <p className="text-base" style={{ color: "var(--text-secondary)" }}>
-              {search
-                ? `No stores match "${search}"`
-                : activeCategory !== "all"
-                ? "No stores in this category yet"
-                : "No stores listed yet"}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {filteredStores.map((store) => {
-              const meta =
-                store.primary_category
-                  ? (CATEGORY_META[store.primary_category] ?? CATEGORY_META["Other"])
-                  : CATEGORY_META["Other"];
+        {/* ── Products tab ── */}
+        {tab === "products" && (
+          <>
+            {productsLoading ? (
+              <div className="py-32 flex flex-col items-center gap-3">
+                <Loader2 className="w-8 h-8 animate-spin" style={{ color: "var(--text-muted)" }} />
+                <p className="text-sm" style={{ color: "var(--text-muted)" }}>Loading products…</p>
+              </div>
+            ) : products.length === 0 ? (
+              <div className="py-32 text-center">
+                <p className="text-5xl mb-4">📦</p>
+                <p className="text-xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>
+                  No products found
+                </p>
+                <p className="text-base" style={{ color: "var(--text-secondary)" }}>
+                  {search
+                    ? `No products match "${search}"`
+                    : activeCategory !== "all"
+                    ? "No products in this category yet"
+                    : "No products listed yet"}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {products.map((product) => {
+                  const meta =
+                    product.store_category
+                      ? (CATEGORY_META[product.store_category] ?? CATEGORY_META["Other"])
+                      : CATEGORY_META["Other"];
+                  const productUrl = getProductUrl(product.store_slug, product.product_slug);
+                  const storeUrl = getStoreUrl(product.store_slug);
 
-              return (
-                <a
-                  key={store.id}
-                  href={getStoreUrl(store.slug)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group flex flex-col rounded-2xl border overflow-hidden transition-all hover:shadow-lg hover:-translate-y-0.5"
-                  style={{ background: "var(--bg)", borderColor: "var(--border)" }}
-                >
-                  {/* Store banner / avatar area */}
-                  <div
-                    className="h-24 flex items-center justify-center"
-                    style={{ background: `${meta.color}18` }}
-                  >
-                    {store.logo_url ? (
-                      <img
-                        src={store.logo_url}
-                        alt={store.name}
-                        className="h-16 w-16 object-cover rounded-xl shadow-sm"
-                      />
-                    ) : (
-                      <div
-                        className="h-16 w-16 rounded-xl flex items-center justify-center text-3xl font-black text-white shadow-sm"
-                        style={{ background: meta.color }}
-                      >
-                        {store.name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Store info */}
-                  <div className="flex-1 p-4">
-                    <h3
-                      className="font-bold text-base leading-tight mb-1 group-hover:underline"
-                      style={{ color: "var(--text-primary)" }}
-                    >
-                      {store.name}
-                    </h3>
-                    {store.description && (
-                      <p
-                        className="text-xs leading-relaxed mb-3 line-clamp-2"
-                        style={{ color: "var(--text-secondary)" }}
-                      >
-                        {store.description}
-                      </p>
-                    )}
-                    {store.primary_category && (
-                      <span
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
-                        style={{
-                          background: `${meta.color}18`,
-                          color: meta.color,
-                        }}
-                      >
-                        {meta.icon} {store.primary_category}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* CTA */}
-                  <div className="px-4 pb-4">
+                  return (
                     <div
-                      className="w-full text-center py-2.5 rounded-xl text-sm font-semibold transition-opacity group-hover:opacity-90"
-                      style={{ background: "var(--accent)", color: "#000" }}
+                      key={product.product_id}
+                      className="group flex flex-col rounded-2xl border overflow-hidden transition-all hover:shadow-lg hover:-translate-y-0.5"
+                      style={{ background: "var(--bg)", borderColor: "var(--border)" }}
                     >
-                      Visit Store →
+                      {/* Product image */}
+                      <a href={productUrl} target="_blank" rel="noopener noreferrer" className="block">
+                        <div
+                          className="aspect-square w-full overflow-hidden"
+                          style={{ background: `${meta.color}18` }}
+                        >
+                          {product.image_url ? (
+                            <img
+                              src={product.image_url}
+                              alt={product.product_name}
+                              className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-4xl">
+                              {meta.icon}
+                            </div>
+                          )}
+                        </div>
+                      </a>
+
+                      {/* Product info */}
+                      <div className="flex-1 p-3">
+                        <a href={productUrl} target="_blank" rel="noopener noreferrer">
+                          <p
+                            className="text-sm font-semibold leading-tight line-clamp-2 mb-1 hover:underline"
+                            style={{ color: "var(--text-primary)" }}
+                          >
+                            {product.product_name}
+                          </p>
+                        </a>
+
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <span className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
+                            {formatPrice(product.price)}
+                          </span>
+                          {product.compare_price && product.compare_price > product.price && (
+                            <span className="text-xs line-through" style={{ color: "var(--text-muted)" }}>
+                              {formatPrice(product.compare_price)}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Store link — links to official store */}
+                        <a
+                          href={storeUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs font-medium hover:underline"
+                          style={{ color: meta.color }}
+                        >
+                          {product.store_logo ? (
+                            <img
+                              src={product.store_logo}
+                              alt={product.store_name}
+                              className="w-4 h-4 rounded-full object-cover"
+                            />
+                          ) : (
+                            <span
+                              className="w-4 h-4 rounded-full flex items-center justify-center text-white text-[9px] font-black shrink-0"
+                              style={{ background: meta.color }}
+                            >
+                              {product.store_name.charAt(0).toUpperCase()}
+                            </span>
+                          )}
+                          {product.store_name}
+                        </a>
+                      </div>
+
+                      {/* Buy CTA */}
+                      <div className="px-3 pb-3">
+                        <a
+                          href={productUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block w-full text-center py-2 rounded-xl text-xs font-semibold transition-opacity hover:opacity-90"
+                          style={{ background: "var(--accent)", color: "#000" }}
+                        >
+                          Buy Now →
+                        </a>
+                      </div>
                     </div>
-                  </div>
-                </a>
-              );
-            })}
-          </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
         )}
       </div>
 

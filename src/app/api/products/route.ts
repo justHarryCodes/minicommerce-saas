@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifySession, getUserStore, requireSubscription } from '@/lib/auth'
 import { query, queryOne, rowsToCamel, toCamel } from '@/lib/db'
 import { cacheDelPattern } from '@/lib/redis'
+import { ensureUncategorized } from '@/lib/categories'
 import { slugify } from '@/lib/utils'
 import { z } from 'zod'
 
@@ -74,13 +75,16 @@ export async function POST(req: NextRequest) {
 
   const imageUrl = d.imageUrl || d.images[0] || null
 
+  // Fall back to Uncategorized when no category is provided
+  const categoryId = d.categoryId || await ensureUncategorized(store.id)
+
   const rows = await query(`
     INSERT INTO products (
       store_id, category_id, subcategory_id, name, slug, description, short_description,
       price, compare_price, stock_quantity, image_url, images, is_active, is_featured
     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *
   `, [
-    store.id, d.categoryId || null, d.subcategoryId || null, d.name, slug,
+    store.id, categoryId, d.subcategoryId || null, d.name, slug,
     d.description || null, d.shortDescription || null, d.price, d.comparePrice || null,
     d.stockQuantity, imageUrl, d.images, d.isActive, d.isFeatured
   ])

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifySession } from '@/lib/auth'
 import { query, queryOne, toCamel } from '@/lib/db'
+import { ensureUncategorized } from '@/lib/categories'
 import { z } from 'zod'
 
 const RESERVED_SLUGS = new Set([
@@ -106,6 +107,9 @@ export async function POST(req: NextRequest) {
   ])
 
   const newStore = rows[0] as Record<string, unknown>
+
+  // Seed the default Uncategorized category for the new store
+  await ensureUncategorized(newStore.id as string)
 
   // Record vendor-to-vendor referral (rewarded later when setup fee is paid)
   if (referredByStoreId) {
