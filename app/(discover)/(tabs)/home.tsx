@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   Image,
   Pressable,
@@ -16,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronRight, ShoppingBag } from 'lucide-react-native';
 import { API_BASE } from '@/lib/api';
 import { Colors } from '@/constants/theme';
+import { ProductCardSkeleton, SectionHeaderSkeleton } from '@/components/Skeleton';
 import type { MarketProduct } from '@/types/discover';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -187,30 +187,42 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.root}>
-      <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+      <StatusBar backgroundColor="#f97316" barStyle="dark-content" />
 
       {/* ── Header ─────────────────────────────────────────────────── */}
-      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-        <Image source={logo} style={styles.headerLogo} resizeMode="contain" />
-        <View style={styles.headerTextWrap}>
-          <Text style={styles.headerTitle}>Shop</Text>
-          <Text style={styles.headerSub}>Discover products near you</Text>
+      <View style={[styles.header, { paddingTop: insets.top + 14 }]}>
+        <View style={styles.headerTop}>
+          <Image source={logo} style={styles.headerLogo} resizeMode="contain" />
+          <Pressable
+            style={({ pressed }) => [styles.signInBtn, { opacity: pressed ? 0.8 : 1 }]}
+            onPress={() => router.push('/(auth)/login' as Parameters<typeof router.push>[0])}
+          >
+            <Text style={styles.signInLabel}>Sign in</Text>
+          </Pressable>
         </View>
-        <Pressable
-          style={({ pressed }) => [styles.signInBtn, { opacity: pressed ? 0.8 : 1 }]}
-          onPress={() => router.push('/(auth)/login' as Parameters<typeof router.push>[0])}
-        >
-          <Text style={styles.signInLabel}>Sign in</Text>
-        </Pressable>
+        <Text style={styles.headerTitle}>Discover</Text>
+        <Text style={styles.headerSub}>Products &amp; connect with vendors</Text>
       </View>
-      <View style={styles.accent} />
 
       {/* ── Content ────────────────────────────────────────────────── */}
       {loading ? (
-        <View style={styles.loadingWrap}>
-          <ActivityIndicator color={Colors.brand} size="large" />
-          <Text style={styles.loadingText}>Loading products…</Text>
-        </View>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
+          {Array.from({ length: 3 }).map((_, si) => (
+            <View key={si} style={styles.section}>
+              <SectionHeaderSkeleton />
+              <FlatList
+                data={Array.from({ length: 5 })}
+                keyExtractor={(_, i) => String(i)}
+                horizontal
+                scrollEnabled={false}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.cardRow}
+                renderItem={() => <ProductCardSkeleton />}
+              />
+              <View style={styles.sectionDivider} />
+            </View>
+          ))}
+        </ScrollView>
       ) : sections.length === 0 ? (
         <View style={styles.emptyWrap}>
           <ShoppingBag size={52} color={Colors.surface[300]} />
@@ -250,43 +262,46 @@ const styles = StyleSheet.create({
 
   // Header
   header: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+    backgroundColor: '#f97316',
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
   headerLogo: {
     width: 34,
     height: 34,
     borderRadius: 8,
-    backgroundColor: Colors.surface[100],
-    borderWidth: 1,
-    borderColor: Colors.surface[200],
+    backgroundColor: 'rgba(0,0,0,0.12)',
     flexShrink: 0,
   },
-  headerTextWrap: { flex: 1 },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 40,
     fontWeight: '900',
-    color: Colors.dark,
-    letterSpacing: -0.4,
+    color: '#000',
+    letterSpacing: -1.5,
+    lineHeight: 44,
   },
-  headerSub: { fontSize: 11, color: Colors.surface[400], fontWeight: '500', marginTop: 1 },
+  headerSub: {
+    fontSize: 14,
+    color: 'rgba(0,0,0,0.65)',
+    fontWeight: '500',
+    marginTop: 4,
+  },
   signInBtn: {
-    backgroundColor: Colors.brand,
+    backgroundColor: 'rgba(0,0,0,0.15)',
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
     flexShrink: 0,
   },
-  signInLabel: { fontSize: 13, fontWeight: '800', color: Colors.dark },
-  accent: { height: 3, backgroundColor: Colors.brand },
+  signInLabel: { fontSize: 13, fontWeight: '800', color: '#000' },
 
   // States
-  loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  loadingText: { color: Colors.surface[500], fontSize: 14 },
   emptyWrap: {
     flex: 1,
     alignItems: 'center',
