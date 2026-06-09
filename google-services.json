@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "125988477703",
+    "project_id": "awarizon-ltd",
+    "storage_bucket": "awarizon-ltd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:125988477703:android:1ccec6a6b4e34f6bbe43a2",
+        "android_client_info": {
+          "package_name": "com.awarizon.dukavendors"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "125988477703-uvjak39h54nkrhtonfouvi1eeq3mqbd0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.awarizon.dukavendors",
+            "certificate_hash": "6699bdf0a9a154115af51ed21e44a3c267bfeff5"
+          }
+        },
+        {
+          "client_id": "125988477703-1i02pmgk5bklihdvdr5atn8jcu78m160.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDxmxPRJd6bwFjXbz-1JQMCmvCohDN3QNA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "125988477703-1i02pmgk5bklihdvdr5atn8jcu78m160.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "125988477703-8u5pqs7t3c40rdp2rpgro6io3ia3h2mp.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.awarizon.dukavendors"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
