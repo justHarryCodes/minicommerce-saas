@@ -1,15 +1,13 @@
-import { Image, Linking, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import { Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import * as Clipboard from 'expo-clipboard';
 import { Bell, Copy, ExternalLink, Inbox, Store } from 'lucide-react-native';
 import { useNotificationsStore } from '@/store/notifications';
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const logo = require('../../../assets/logo.png') as number;
-
+import { AppHeader } from '@/components/AppHeader';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth';
 import { Colors } from '@/constants/theme';
@@ -20,17 +18,9 @@ import { RevenueChart } from '@/components/RevenueChart';
 import type { DashboardStats } from '@/types';
 
 function fmt(n: number) {
-  if (n >= 1_000_000) return '₦' + (n / 1_000_000).toFixed(1) + 'M';
-  if (n >= 1_000)     return '₦' + (n / 1_000).toFixed(1) + 'K';
-  return '₦' + n.toLocaleString();
+  return '₦' + n.toLocaleString('en-US', { minimumFractionDigits: 0 });
 }
 
-function greeting() {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
-}
 
 function mapOrder(o: Record<string, unknown>): DashboardStats['recentOrders'][number] {
   const firstImage = (o.first_image as string) ?? null;
@@ -61,8 +51,6 @@ function mapOrder(o: Record<string, unknown>): DashboardStats['recentOrders'][nu
 
 export default function DashboardScreen() {
   const { user } = useAuthStore();
-  const insets = useSafeAreaInsets();
-  const firstName = user?.displayName?.split(' ')[0] ?? 'Vendor';
   const unreadCount = useNotificationsStore(s => s.unreadCount);
 
   const { data: store } = useQuery<StoreType>({
@@ -118,40 +106,24 @@ export default function DashboardScreen() {
     );
   }
 
+  const bellBtn = (
+    <Pressable
+      style={({ pressed }) => [styles.bellBtn, { opacity: pressed ? 0.75 : 1 }]}
+      onPress={() => router.push('/(app)/notifications' as never)}
+      hitSlop={8}
+    >
+      <Bell size={20} color="#fff" strokeWidth={2} />
+      {unreadCount > 0 && (
+        <View style={styles.bellBadge}>
+          <Text style={styles.bellBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+        </View>
+      )}
+    </Pressable>
+  );
+
   return (
     <View style={styles.root}>
-      <StatusBar backgroundColor={Colors.dark} barStyle="light-content" />
-
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <View style={styles.headerInner}>
-          <Image source={logo} style={styles.logo} resizeMode="contain" />
-          <View style={styles.headerText}>
-            <Text style={styles.greeting}>{greeting()},</Text>
-            <Text style={styles.name}>{firstName}</Text>
-          </View>
-          <View style={styles.dateBadge}>
-            <Text style={styles.dateText}>
-              {new Date().toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' })}
-            </Text>
-          </View>
-          <Pressable
-            style={({ pressed }) => [styles.bellBtn, { opacity: pressed ? 0.75 : 1 }]}
-            onPress={() => router.push('/(app)/notifications')}
-            hitSlop={8}
-          >
-            <Bell size={22} color="#fff" strokeWidth={2} />
-            {unreadCount > 0 && (
-              <View style={styles.bellBadge}>
-                <Text style={styles.bellBadgeText}>
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </Text>
-              </View>
-            )}
-          </Pressable>
-        </View>
-        <View style={styles.headerAccent} />
-      </View>
+      <AppHeader right={bellBtn} />
 
       <ScrollView
         contentContainerStyle={styles.scroll}
@@ -251,43 +223,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.surface[100],
   },
-  header: {
-    backgroundColor: Colors.dark,
-    paddingHorizontal: 20,
-  },
-  headerInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingBottom: 18,
-    gap: 12,
-  },
-  logo: {
-    width: 44,
-    height: 44,
-    borderRadius: 11,
-    backgroundColor: Colors.white,
-    flexShrink: 0,
-  },
-  headerText: {
-    flex: 1,
-  },
-  greeting: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.darkMuted,
-  },
-  name: {
-    fontSize: 26,
-    fontWeight: '900',
-    color: Colors.white,
-    letterSpacing: -0.5,
-    marginTop: 2,
-  },
   bellBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.darkCard,
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.08)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -295,9 +235,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -2,
     right: -2,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: '#EF4444',
     alignItems: 'center',
     justifyContent: 'center',
@@ -306,24 +246,9 @@ const styles = StyleSheet.create({
     borderColor: Colors.dark,
   },
   bellBadgeText: {
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: '800',
     color: '#fff',
-  },
-  dateBadge: {
-    backgroundColor: Colors.darkCard,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  dateText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.darkMuted,
-  },
-  headerAccent: {
-    height: 3,
-    backgroundColor: Colors.brand,
   },
   scroll: {
     padding: 16,
