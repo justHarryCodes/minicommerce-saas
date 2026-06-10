@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { getOrSet } from "@/lib/redis";
+import { mobileProductImage, mobileStoreLogo } from "@/lib/cloudinary-transform";
 
 export interface DiscoverProduct {
   product_id: string;
@@ -86,7 +87,12 @@ export async function GET(req: NextRequest) {
       ]);
 
       const total = parseInt(countRows[0]?.total ?? "0", 10);
-      return { products: products ?? [], total, page, limit };
+      const optimized = (products ?? []).map(p => ({
+        ...p,
+        image_url:  mobileProductImage(p.image_url),
+        store_logo: mobileStoreLogo(p.store_logo),
+      }));
+      return { products: optimized, total, page, limit };
     },
     CACHE_TTL
   );

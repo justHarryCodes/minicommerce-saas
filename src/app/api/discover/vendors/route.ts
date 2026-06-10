@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { getOrSet } from "@/lib/redis";
+import { mobileStoreLogo } from "@/lib/cloudinary-transform";
 
 const CACHE_KEY = "discover:vendors";
 const CACHE_TTL = 300; // 5 minutes
@@ -38,5 +39,9 @@ export async function GET() {
     CACHE_TTL
   );
 
-  return NextResponse.json({ vendors: vendors ?? [] });
+  const optimized = (vendors ?? []).map(v => ({
+    ...v,
+    store_logo: mobileStoreLogo(v.store_logo),
+  }));
+  return NextResponse.json({ vendors: optimized });
 }

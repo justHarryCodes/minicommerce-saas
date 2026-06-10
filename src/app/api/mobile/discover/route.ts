@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { getOrSet } from "@/lib/redis";
+import { mobileProductImage, mobileStoreLogo } from "@/lib/cloudinary-transform";
 
 // GET /api/mobile/discover
 // Public endpoint — no auth required.
@@ -138,8 +139,15 @@ export async function GET(req: NextRequest) {
         type,
         page,
         limit,
-        stores: storesResult,
-        products: productsResult,
+        stores: storesResult.map(s => ({
+          ...s,
+          store_logo: mobileStoreLogo(s.store_logo),
+        })),
+        products: productsResult.map(p => ({
+          ...p,
+          image_url:  mobileProductImage(p.image_url),
+          store_logo: mobileStoreLogo(p.store_logo),
+        })),
       };
     },
     CACHE_TTL

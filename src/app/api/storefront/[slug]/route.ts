@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { queryOne, query, rowsToCamel, toCamel } from '@/lib/db'
 import { cacheGet, cacheSet, CacheKey } from '@/lib/redis'
+import { mobileProductImage, mobileStoreLogo } from '@/lib/cloudinary-transform'
 
 export async function GET(
   _: NextRequest,
@@ -26,10 +27,20 @@ export async function GET(
     [s.id]
   )
 
+  const storeObj = toCamel(s) as Record<string, unknown>
+  storeObj.logoUrl = mobileStoreLogo(storeObj.logoUrl as string | null)
+
+  const productsOptimized = rowsToCamel(products as Record<string, unknown>[]).map(
+    (p: Record<string, unknown>) => ({
+      ...p,
+      imageUrl: mobileProductImage(p.imageUrl as string | null),
+    })
+  )
+
   const data = {
-    store:      toCamel(s),
+    store:      storeObj,
     categories: rowsToCamel(cats as Record<string, unknown>[]),
-    products:   rowsToCamel(products as Record<string, unknown>[]),
+    products:   productsOptimized,
   }
 
   await cacheSet(cacheKey, data, 300)
