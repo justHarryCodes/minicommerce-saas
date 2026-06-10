@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, Text, View, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
+import { Alert, Pressable, ScrollView, Text, View, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -231,7 +232,7 @@ export default function OrderDetailScreen() {
             >
               <View style={{ width: 56, height: 56, borderRadius: 12, backgroundColor: Colors.surface[100], alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                 {item.imageUrl ? (
-                  <Image source={{ uri: item.imageUrl }} style={{ width: 56, height: 56 }} resizeMode="cover" />
+                  <Image source={{ uri: item.imageUrl }} style={{ width: 56, height: 56 }} contentFit="cover" />
                 ) : (
                   <Package size={20} color={Colors.surface[400]} />
                 )}

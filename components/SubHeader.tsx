@@ -1,4 +1,5 @@
-import { Image, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import { Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft } from 'lucide-react-native';
@@ -27,7 +28,7 @@ export function SubHeader({ title, onBack, right }: Props) {
         >
           <ArrowLeft size={20} color="#FFFFFF" />
         </Pressable>
-        <Image source={logo} style={styles.logo} resizeMode="contain" />
+        <Image source={logo} style={styles.logo} contentFit="contain" />
         <Text style={styles.title} numberOfLines={1}>{title}</Text>
         {right && <View style={styles.right}>{right}</View>}
       </View>

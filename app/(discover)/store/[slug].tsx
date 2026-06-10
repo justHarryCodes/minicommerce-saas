@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
+import { Image } from 'expo-image';
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   Pressable,
   StatusBar,
   StyleSheet,

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Image } from 'expo-image';
 import {
   FlatList,
-  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -63,7 +63,7 @@ function ProductCard({ item, accent }: { item: MarketProduct; accent: string }) 
       {/* Product image */}
       <View style={styles.cardImageWrap}>
         {item.image_url ? (
-          <Image source={{ uri: item.image_url }} style={styles.cardImage} resizeMode="cover" />
+          <Image source={{ uri: item.image_url }} style={styles.cardImage} contentFit="cover" />
         ) : (
           <View style={[styles.cardImagePlaceholder, { backgroundColor: accent + '18' }]}>
             <Text style={styles.cardImagePlaceholderIcon}>{icon}</Text>
@@ -127,7 +127,7 @@ function CategorySection({ name, items }: { name: string; items: MarketProduct[]
           style={({ pressed }) => [styles.viewAllBtn, { opacity: pressed ? 0.7 : 1 }]}
           onPress={() =>
             router.push(
-              `/products/${encodeURIComponent(name)}` as Parameters<typeof router.push>[0]
+              `/(discover)/products/${encodeURIComponent(name)}` as Parameters<typeof router.push>[0]
             )
           }
         >
@@ -192,7 +192,7 @@ export default function HomeScreen() {
       {/* ── Header ─────────────────────────────────────────────────── */}
       <View style={[styles.header, { paddingTop: insets.top + 14 }]}>
         <View style={styles.headerTop}>
-          <Image source={logo} style={styles.headerLogo} resizeMode="contain" />
+          <Image source={logo} style={styles.headerLogo} contentFit="contain" />
           <Pressable
             style={({ pressed }) => [styles.signInBtn, { opacity: pressed ? 0.8 : 1 }]}
             onPress={() => router.push('/(auth)/login' as Parameters<typeof router.push>[0])}

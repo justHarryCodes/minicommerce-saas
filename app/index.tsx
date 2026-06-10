@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { ActivityIndicator, Image, StatusBar, StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
+import { ActivityIndicator, StatusBar, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '@/store/auth';
 import { Colors } from '@/constants/theme';
@@ -19,7 +20,7 @@ export default function RootIndex() {
   return (
     <View style={styles.root}>
       <StatusBar backgroundColor={Colors.dark} barStyle="light-content" />
-      <Image source={logo} style={styles.logo} resizeMode="contain" />
+      <Image source={logo} style={styles.logo} contentFit="contain" />
       <ActivityIndicator color={Colors.brand} style={styles.spinner} />
     </View>
   );

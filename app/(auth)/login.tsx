@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Link, router } from 'expo-router';
 import { signInWithEmailAndPassword, signInWithCredential, GoogleAuthProvider } from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
@@ -78,7 +79,7 @@ export default function LoginScreen() {
           <Image
             source={require('@/assets/logo.png')}
             style={styles.logo}
-            resizeMode="contain"
+            contentFit="contain"
           />
           <Text style={styles.appName}>Duka Vendors</Text>
           <Text style={styles.powered}>Powered by Awarizon</Text>

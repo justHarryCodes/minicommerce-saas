@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Image } from 'expo-image';
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   Pressable,
   StatusBar,
   StyleSheet,
@@ -66,7 +66,7 @@ function ProductGridCard({ item }: { item: MarketProduct }) {
       {/* Image */}
       <View style={styles.imageWrap}>
         {item.image_url ? (
-          <Image source={{ uri: item.image_url }} style={styles.image} resizeMode="cover" />
+          <Image source={{ uri: item.image_url }} style={styles.image} contentFit="cover" />
         ) : (
           <View style={styles.imageFallback}>
             <Text style={styles.imageFallbackIcon}>{catIcon}</Text>

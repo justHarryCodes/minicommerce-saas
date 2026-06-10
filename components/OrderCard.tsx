@@ -1,4 +1,5 @@
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import { StyleSheet, Text, View } from 'react-native';
 import { Package } from 'lucide-react-native';
 import { Colors } from '@/constants/theme';
 import { Card } from './ui/Card';
@@ -31,7 +32,7 @@ export function OrderCard({ order, onPress }: OrderCardProps) {
     <Card onPress={onPress} padding={14}>
       <View style={styles.row}>
         {firstImage ? (
-          <Image source={{ uri: firstImage }} style={styles.image} resizeMode="cover" />
+          <Image source={{ uri: firstImage }} style={styles.image} contentFit="cover" />
         ) : (
           <View style={styles.imagePlaceholder}>
             <Package size={20} color={Colors.surface[400]} />

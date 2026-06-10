@@ -1,4 +1,5 @@
-import { Alert, FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -106,7 +107,7 @@ export default function ReelsScreen() {
         renderItem={({ item }) => (
           <View style={styles.reelCard}>
             {item.thumbnail_url ? (
-              <Image source={{ uri: item.thumbnail_url }} style={styles.reelThumb} resizeMode="cover" />
+              <Image source={{ uri: item.thumbnail_url }} style={styles.reelThumb} contentFit="cover" />
             ) : (
               <View style={styles.reelThumbPlaceholder}>
                 <Film size={32} color={Colors.surface[500]} />

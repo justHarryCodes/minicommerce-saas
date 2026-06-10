@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { Image } from 'expo-image';
 import {
   Dimensions,
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -75,7 +75,7 @@ export function ReelCard({ reel, isActive, height }: Props) {
         <Image
           source={{ uri: reel.thumbnail_url }}
           style={StyleSheet.absoluteFill}
-          resizeMode="cover"
+          contentFit="cover"
         />
       )}
 

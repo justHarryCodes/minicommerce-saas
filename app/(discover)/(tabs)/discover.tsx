@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Image } from 'expo-image';
 import {
-  ActivityIndicator,
-  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -17,6 +16,7 @@ import { ChevronRight, Eye, Globe, Store } from 'lucide-react-native';
 import { API_BASE } from '@/lib/api';
 import { Colors } from '@/constants/theme';
 import { getCachedVendors, isVendorCacheStale, setCachedVendors } from '@/lib/discover-cache';
+import { SectionHeaderSkeleton, StoryRingSkeleton, VendorCardSkeleton } from '@/components/Skeleton';
 import type { DiscoverVendor } from '@/types/discover';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -144,7 +144,7 @@ export default function DiscoverVendors() {
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <View style={styles.headerRow}>
-          <Image source={logo} style={styles.headerLogo} resizeMode="contain" />
+          <Image source={logo} style={styles.headerLogo} contentFit="contain" />
           <View style={styles.headerTextWrap}>
             <Text style={styles.headerTitle}>Discover Stores</Text>
             <Text style={styles.headerSub}>
@@ -162,10 +162,26 @@ export default function DiscoverVendors() {
       </View>
 
       {loading && vendors.length === 0 ? (
-        <View style={styles.loadingCenter}>
-          <ActivityIndicator color={Colors.brand} size="large" />
-          <Text style={styles.loadingText}>Loading vendors…</Text>
-        </View>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+          {/* Story ring skeletons */}
+          <View style={styles.storiesBlock}>
+            <View style={{ width: 80, height: 9, backgroundColor: '#CBD5E1', borderRadius: 4, marginHorizontal: 16, marginBottom: 14, opacity: 0.5 }} />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storiesList} scrollEnabled={false}>
+              {Array.from({ length: 6 }).map((_, i) => <StoryRingSkeleton key={i} />)}
+            </ScrollView>
+          </View>
+          <View style={styles.divider} />
+          {/* Vendor card section skeletons */}
+          {Array.from({ length: 2 }).map((_, si) => (
+            <View key={si} style={styles.catSection}>
+              <SectionHeaderSkeleton />
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.vendorRow} scrollEnabled={false}>
+                {Array.from({ length: 4 }).map((_, i) => <VendorCardSkeleton key={i} />)}
+              </ScrollView>
+              <View style={styles.catDivider} />
+            </View>
+          ))}
+        </ScrollView>
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -283,9 +299,6 @@ const styles = StyleSheet.create({
   signInBtn: { backgroundColor: Colors.brand, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 },
   signInLabel: { fontSize: 13, fontWeight: '800', color: Colors.dark },
   accent: { height: 3, backgroundColor: Colors.brand },
-
-  loadingCenter: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  loadingText: { color: Colors.surface[500], fontSize: 14 },
 
   scrollContent: { paddingTop: 4 },
   divider: { height: 8, backgroundColor: Colors.surface[50], borderTopWidth: 1, borderTopColor: Colors.surface[100] },
