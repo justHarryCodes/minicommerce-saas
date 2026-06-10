@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { verifyAdminSession } from '@/lib/admin-auth'
 import AdminSidebar from './AdminSidebar'
+import AdminMobileNav from './AdminMobileNav'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,9 +37,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-secondary)' }}>
+      {/* Desktop sidebar */}
       <AdminSidebar admin={admin} />
+      {/* Mobile header + drawer + bottom tab bar */}
+      <AdminMobileNav admin={admin} />
       <div className="lg:pl-60 flex flex-col min-h-screen">
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+        {/* pt-[56px] on mobile = header height; pb-[60px] on mobile = bottom nav height */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 pt-[72px] lg:pt-8 pb-[76px] lg:pb-8">
+          {children}
+        </main>
       </div>
     </div>
   )
