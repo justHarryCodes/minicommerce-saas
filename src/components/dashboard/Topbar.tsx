@@ -1,10 +1,10 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import Link from "next/link";
-import { ExternalLink, Store } from "lucide-react";
+import { ExternalLink, Menu, Store } from "lucide-react";
 import type { Store as StoreType } from "@/types";
 import type { SessionUser } from "@/lib/auth";
+import { useDashboardDrawer } from "@/lib/dashboard-drawer-store";
 
 interface Props {
   user: SessionUser;
@@ -28,9 +28,7 @@ const PAGE_LABELS: Record<string, string> = {
 };
 
 function getPageLabel(pathname: string): string {
-  // Exact match first
   if (PAGE_LABELS[pathname]) return PAGE_LABELS[pathname];
-  // Prefix match for nested routes (e.g. /dashboard/products/new)
   const match = Object.keys(PAGE_LABELS)
     .filter((k) => k !== "/dashboard" && pathname.startsWith(k))
     .sort((a, b) => b.length - a.length)[0];
@@ -53,48 +51,85 @@ export default function DashboardTopbar({ user, store }: Props) {
   const pathname = usePathname();
   const pageLabel = getPageLabel(pathname);
   const storeUrl = `https://${store.slug}.${ROOT}`;
+  const { setOpen } = useDashboardDrawer();
 
   return (
-    <header className="hidden lg:flex h-16 sticky top-0 z-20 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-surface-100 dark:border-surface-800 items-center justify-between px-8 gap-4">
+    <>
+      {/* ── Mobile header (hidden lg+) ──────────────────────────── */}
+      <header className="lg:hidden fixed top-0 inset-x-0 z-30 h-14 flex items-center px-4 gap-3 bg-white dark:bg-zinc-950 border-b border-zinc-100 dark:border-zinc-800">
+        {/* Hamburger */}
+        <button
+          onClick={() => setOpen(true)}
+          className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 shrink-0"
+          aria-label="Open menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
 
-      {/* Left — page title */}
-      <div className="flex items-center gap-3 min-w-0">
-        <h1 className="text-base font-bold text-surface-900 dark:text-white truncate">
-          {pageLabel}
-        </h1>
-      </div>
+        {/* Center — brand */}
+        <div className="flex-1 flex items-center justify-center gap-2">
+          <div className="h-7 w-7 rounded-lg bg-accent-400 flex items-center justify-center shrink-0">
+            <Store className="h-3.5 w-3.5 text-black" />
+          </div>
+          <span className="font-extrabold text-sm text-zinc-900 dark:text-white tracking-tight">
+            Duka
+          </span>
+        </div>
 
-      {/* Right — actions + user */}
-      <div className="flex items-center gap-2 shrink-0">
-
-        {/* View store pill */}
+        {/* Right — view storefront */}
         <a
           href={storeUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-400 hover:border-accent-400 hover:text-accent-600 dark:hover:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-950/30 transition-all"
+          className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 shrink-0"
+          aria-label="View storefront"
         >
-          <Store className="w-3.5 h-3.5" />
-          {store.slug}.{ROOT}
-          <ExternalLink className="w-3 h-3 opacity-60" />
+          <ExternalLink className="w-5 h-5" />
         </a>
+      </header>
 
-        {/* Divider */}
-        <div className="hidden xl:block w-px h-5 bg-surface-200 dark:bg-surface-700" />
+      {/* ── Desktop header (hidden below lg) ───────────────────── */}
+      <header className="hidden lg:flex h-16 sticky top-0 z-20 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-surface-100 dark:border-surface-800 items-center justify-between px-8 gap-4">
 
-        {/* User chip */}
-        <div className="flex items-center gap-2.5 pl-1">
-          <InitialsAvatar name={user.displayName} email={user.email} />
-          <div className="flex flex-col leading-tight">
-            <span className="text-sm font-semibold text-surface-900 dark:text-white max-w-[140px] truncate">
-              {user.displayName ?? user.email.split("@")[0]}
-            </span>
-            <span className="text-xs text-surface-400 max-w-[140px] truncate">
-              {store.name}
-            </span>
+        {/* Left — page title */}
+        <div className="flex items-center gap-3 min-w-0">
+          <h1 className="text-base font-bold text-surface-900 dark:text-white truncate">
+            {pageLabel}
+          </h1>
+        </div>
+
+        {/* Right — actions + user */}
+        <div className="flex items-center gap-2 shrink-0">
+
+          {/* View store pill */}
+          <a
+            href={storeUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-400 hover:border-accent-400 hover:text-accent-600 dark:hover:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-950/30 transition-all"
+          >
+            <Store className="w-3.5 h-3.5" />
+            {store.slug}.{ROOT}
+            <ExternalLink className="w-3 h-3 opacity-60" />
+          </a>
+
+          {/* Divider */}
+          <div className="hidden xl:block w-px h-5 bg-surface-200 dark:bg-surface-700" />
+
+          {/* User chip */}
+          <div className="flex items-center gap-2.5 pl-1">
+            <InitialsAvatar name={user.displayName} email={user.email} />
+            <div className="flex flex-col leading-tight">
+              <span className="text-sm font-semibold text-surface-900 dark:text-white max-w-[140px] truncate">
+                {user.displayName ?? user.email.split("@")[0]}
+              </span>
+              <span className="text-xs text-surface-400 max-w-[140px] truncate">
+                {store.name}
+              </span>
+            </div>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
+    </>
   );
 }

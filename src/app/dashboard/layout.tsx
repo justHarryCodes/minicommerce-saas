@@ -4,6 +4,7 @@ import { verifySession, getUserStore } from "@/lib/auth";
 import { getPlatformSettings } from "@/lib/admin-auth";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
+import DashboardBottomNav from "@/components/dashboard/DashboardBottomNav";
 import { SubscriptionGuard } from "@/components/dashboard/SubscriptionGuard";
 import TutorialBanner from "@/components/dashboard/TutorialBanner";
 import TawkChat from "@/components/dashboard/TawkChat";
@@ -49,13 +50,17 @@ export default async function DashboardLayout({
       {/* Main — offset by sidebar width on desktop, full width on mobile */}
       <div className="lg:pl-64 flex flex-col min-h-screen">
         <Topbar user={user} store={store} />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 pt-16 lg:pt-6">
+        {/* pt-14 = mobile header height; pb-16 = mobile bottom nav height */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 pt-14 lg:pt-6 pb-20 lg:pb-8">
           <SubscriptionGuard />
           <TutorialBanner />
           {children}
           <TawkChat />
         </main>
       </div>
+
+      {/* Mobile bottom nav + FAB */}
+      <DashboardBottomNav />
     </div>
   );
 }

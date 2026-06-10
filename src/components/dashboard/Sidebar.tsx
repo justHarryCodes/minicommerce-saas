@@ -1,7 +1,7 @@
 "use client";
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useDashboardDrawer } from "@/lib/dashboard-drawer-store";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -175,23 +175,15 @@ const storeDisplayUrl = store
 }
 
 export function Sidebar({ store }: SidebarProps) {
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const { open, setOpen } = useDashboardDrawer();
 
   return (
     <>
-      {/* Mobile hamburger */}
-      <button
-        onClick={() => setMobileOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-40 p-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 shadow-sm text-zinc-600 dark:text-zinc-300"
-      >
-        <Menu className="h-5 w-5" />
-      </button>
-
       {/* Mobile overlay */}
-      {mobileOpen && (
+      {open && (
         <div
           className="lg:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
-          onClick={() => setMobileOpen(false)}
+          onClick={() => setOpen(false)}
         />
       )}
 
@@ -199,10 +191,10 @@ export function Sidebar({ store }: SidebarProps) {
       <aside
         className={cn(
           "lg:hidden fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-zinc-950 border-r border-zinc-100 dark:border-zinc-800 shadow-xl transition-transform duration-300",
-          mobileOpen ? "translate-x-0" : "-translate-x-full",
+          open ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <SidebarContent store={store} onClose={() => setMobileOpen(false)} />
+        <SidebarContent store={store} onClose={() => setOpen(false)} />
       </aside>
 
       {/* Desktop fixed sidebar */}
