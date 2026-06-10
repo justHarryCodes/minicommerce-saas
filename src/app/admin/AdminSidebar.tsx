@@ -1,8 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Users, Settings, LogOut, Shield, CreditCard, ArrowLeftRight, UserCheck } from "lucide-react";
+import { LayoutDashboard, Users, Settings, LogOut, CreditCard, ArrowLeftRight, UserCheck } from "lucide-react";
 import { auth } from "@/lib/firebase-client";
 import { signOut } from "firebase/auth";
 import type { AdminUser } from "@/lib/admin-auth";
@@ -31,16 +32,8 @@ export default function AdminSidebar({ admin }: { admin: AdminUser }) {
       style={{ background: "var(--bg)", borderColor: "var(--border)" }}>
       {/* Brand */}
       <div className="px-5 py-5 border-b" style={{ borderColor: "var(--border)" }}>
-        <div className="flex items-center gap-2.5 mb-1">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ background: "var(--accent)" }}>
-            <Shield className="w-4 h-4 text-black" />
-          </div>
-          <span className="font-black text-base" style={{ color: "var(--text-primary)" }}>
-            Admin Panel
-          </span>
-        </div>
-        <p className="text-xs pl-10" style={{ color: "var(--text-muted)" }}>Duka by Awarizon</p>
+        <Image src="/logo.png" alt="Duka" width={96} height={32} style={{ height: 32, width: "auto" }} priority />
+        <p className="text-xs mt-1.5" style={{ color: "var(--text-muted)" }}>Admin Panel</p>
       </div>
 
       {/* Nav */}

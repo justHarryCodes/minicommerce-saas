@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { ExternalLink, Menu, Store } from "lucide-react";
 import type { Store as StoreType } from "@/types";
@@ -66,14 +67,9 @@ export default function DashboardTopbar({ user, store }: Props) {
           <Menu className="w-5 h-5" />
         </button>
 
-        {/* Center — brand */}
-        <div className="flex-1 flex items-center justify-center gap-2">
-          <div className="h-7 w-7 rounded-lg bg-accent-400 flex items-center justify-center shrink-0">
-            <Store className="h-3.5 w-3.5 text-black" />
-          </div>
-          <span className="font-extrabold text-sm text-zinc-900 dark:text-white tracking-tight">
-            Duka
-          </span>
+        {/* Center — logo */}
+        <div className="flex-1 flex items-center justify-center">
+          <Image src="/logo.png" alt="Duka" width={72} height={24} style={{ height: 24, width: "auto" }} priority />
         </div>
 
         {/* Right — view storefront */}

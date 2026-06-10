@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -10,7 +11,6 @@ import {
   LogOut,
   Menu,
   Settings,
-  Shield,
   UserCheck,
   Users,
   X,
@@ -69,20 +69,9 @@ export default function AdminMobileNav({ admin }: { admin: AdminUser }) {
           <Menu className="w-5 h-5" style={{ color: "var(--text-primary)" }} />
         </button>
 
-        {/* Center — shield + title */}
-        <div className="flex-1 flex items-center justify-center gap-2">
-          <div
-            className="w-7 h-7 flex items-center justify-center rounded-lg flex-shrink-0"
-            style={{ background: "var(--accent)" }}
-          >
-            <Shield className="w-3.5 h-3.5 text-black" />
-          </div>
-          <span
-            className="font-black text-sm"
-            style={{ color: "var(--text-primary)" }}
-          >
-            Admin Panel
-          </span>
+        {/* Center — logo */}
+        <div className="flex-1 flex items-center justify-center">
+          <Image src="/logo.png" alt="Duka" width={72} height={24} style={{ height: 24, width: "auto" }} priority />
         </div>
 
         {/* Right — admin avatar */}
@@ -113,20 +102,7 @@ export default function AdminMobileNav({ admin }: { admin: AdminUser }) {
               className="flex items-center justify-between px-5 py-4 border-b"
               style={{ borderColor: "var(--border)" }}
             >
-              <div className="flex items-center gap-2.5">
-                <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center"
-                  style={{ background: "var(--accent)" }}
-                >
-                  <Shield className="w-4 h-4 text-black" />
-                </div>
-                <span
-                  className="font-black"
-                  style={{ color: "var(--text-primary)" }}
-                >
-                  Admin Panel
-                </span>
-              </div>
+              <Image src="/logo.png" alt="Duka" width={80} height={28} style={{ height: 28, width: "auto" }} />
               <button
                 onClick={() => setOpen(false)}
                 className="w-8 h-8 flex items-center justify-center rounded-lg"

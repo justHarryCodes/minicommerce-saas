@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useDashboardDrawer } from "@/lib/dashboard-drawer-store";
@@ -10,10 +11,8 @@ import {
   ShoppingBag,
   Settings,
   LogOut,
-  Store,
   ChevronRight,
   X,
-  Menu,
   ExternalLink,
   CreditCard,
   Layout,
@@ -74,16 +73,8 @@ const storeDisplayUrl = store
   return (
     <div className="flex h-full flex-col">
       {/* Brand */}
-      <div className="flex items-center justify-between px-6 py-6 border-b border-zinc-100 dark:border-zinc-800">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-xl bg-accent-400 flex items-center justify-center">
-            <Store className="h-5 w-5 text-black" />
-          </div>
-          <div>
-            <span className="text-base font-extrabold text-zinc-900 dark:text-white tracking-tight leading-none">Duka</span>
-            <span className="block text-xs font-medium text-zinc-400 leading-none mt-0.5">by Awarizon</span>
-          </div>
-        </div>
+      <div className="flex items-center justify-between px-6 py-5 border-b border-zinc-100 dark:border-zinc-800">
+        <Image src="/logo.png" alt="Duka" width={96} height={32} style={{ height: 32, width: "auto" }} priority />
         {onClose && (
           <button
             onClick={onClose}
