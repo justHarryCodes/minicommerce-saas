@@ -30,8 +30,8 @@ export async function GET(
   const storeObj = toCamel(s) as Record<string, unknown>
   storeObj.logoUrl = mobileStoreLogo(storeObj.logoUrl as string | null)
 
-  const productsOptimized = rowsToCamel(products as Record<string, unknown>[]).map(
-    (p: Record<string, unknown>) => ({
+  const productsOptimized = (rowsToCamel(products as Record<string, unknown>[]) as Record<string, unknown>[]).map(
+    p => ({
       ...p,
       imageUrl: mobileProductImage(p.imageUrl as string | null),
     })
