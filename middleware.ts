@@ -34,6 +34,13 @@ function redirectToLogin(req: NextRequest, pathname: string) {
   return NextResponse.redirect(url);
 }
 
+// Middleware runs on every single request (matcher below excludes only
+// static assets), so this logging — which includes request headers and
+// hostnames — must never ship to production logs unconditionally.
+function devLog(message: string): void {
+  if (process.env.NODE_ENV === "development") console.log(message);
+}
+
 // ── Middleware ────────────────────────────────────────────────────────────────
 
 export function middleware(req: NextRequest) {
@@ -42,7 +49,7 @@ export function middleware(req: NextRequest) {
   const slug = getStoreSlug(hostname);
 
   // ── Boot log — confirms ROOT_DOMAIN resolved correctly ───────────────────
-  console.log([
+  devLog([
     "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
     `[MW] REQUEST          : ${req.method} ${pathname}`,
     `[MW] x-forwarded-host : ${req.headers.get("x-forwarded-host") ?? "MISSING"}`,
@@ -65,12 +72,12 @@ export function middleware(req: NextRequest) {
     headers.set("x-is-subdomain", "1");
 
     if (pathname.startsWith("/api/")) {
-      console.log(`[MW] → API passthrough slug="${slug}" path="${pathname}"`);
+      devLog(`[MW] → API passthrough slug="${slug}" path="${pathname}"`);
       return NextResponse.next({ request: { headers } });
     }
 
     if (pathname.startsWith(`/store/${slug}/`) || pathname === `/store/${slug}`) {
-      console.log(`[MW] → Already rewritten, passthrough slug="${slug}" path="${pathname}"`);
+      devLog(`[MW] → Already rewritten, passthrough slug="${slug}" path="${pathname}"`);
       return NextResponse.next({ request: { headers } });
     }
 
@@ -78,7 +85,7 @@ export function middleware(req: NextRequest) {
     if (process.env.NODE_ENV === "production") url.hostname = `www.${ROOT_DOMAIN}`;
     url.pathname = `/store/${slug}${pathname === "/" ? "" : pathname}`;
 
-    console.log([
+    devLog([
       `[MW] → REWRITING`,
       `[MW]   slug     : ${slug}`,
       `[MW]   from     : ${pathname}`,
@@ -94,11 +101,11 @@ export function middleware(req: NextRequest) {
     pathname.startsWith("/dashboard") || pathname === "/onboarding";
 
   if (isProtected && !isAuthenticated(req)) {
-    console.log(`[MW] → Redirecting to login from "${pathname}"`);
+    devLog(`[MW] → Redirecting to login from "${pathname}"`);
     return redirectToLogin(req, pathname);
   }
 
-  console.log(`[MW] → Main domain passthrough hostname="${hostname}" path="${pathname}"`);
+  devLog(`[MW] → Main domain passthrough hostname="${hostname}" path="${pathname}"`);
   return NextResponse.next();
 }
 
