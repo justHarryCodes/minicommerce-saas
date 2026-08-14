@@ -82,7 +82,7 @@ export default async function AdminDashboardPage() {
             <li>⚙️ <strong>Settings</strong> — toggle platform-wide features: setup fees, plan subscriptions, and new registrations.</li>
           </ul>
           <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-            All admin actions are audit-logged automatically — you can review them on each vendor's detail page.
+            All admin actions are audit-logged automatically — you can review them on each vendor&apos;s detail page.
           </p>
         </div>
       </div>

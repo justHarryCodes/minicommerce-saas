@@ -68,6 +68,12 @@ export async function POST(req: NextRequest) {
   const bankAccountNumber = d.bankAccountNumber || d.accountNumber || null
   const bankAccountName = d.bankAccountName || d.accountName || null
 
+  // Auto-grant the Free plan so vendors can start selling immediately, no payment
+  const freePlan = await queryOne<{ id: string }>(
+    `SELECT id FROM plans WHERE price_monthly = 0 AND is_active = true ORDER BY sort_order LIMIT 1`,
+    []
+  )
+
   // Resolve referral code — check vendor stores first, then affiliates
   let referredByStoreId: string | null = null
   let referredByAffiliateId: string | null = null
@@ -93,8 +99,9 @@ export async function POST(req: NextRequest) {
       owner_id, name, slug, description, logo_url, phone, whatsapp,
       primary_category, payment_preference, bank_name, bank_account_number, bank_account_name,
       referred_by_store_id, referred_by_affiliate_id,
+      current_plan_id, plan_expires_at,
       referral_code
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,
       UPPER(SUBSTRING(MD5(gen_random_uuid()::text) FROM 1 FOR 8))
     )
     RETURNING *
@@ -104,6 +111,7 @@ export async function POST(req: NextRequest) {
     d.primaryCategory || 'other', paymentPreference,
     d.bankName || null, bankAccountNumber, bankAccountName,
     referredByStoreId, referredByAffiliateId,
+    freePlan?.id ?? null, freePlan ? new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000).toISOString() : null,
   ])
 
   const newStore = rows[0] as Record<string, unknown>

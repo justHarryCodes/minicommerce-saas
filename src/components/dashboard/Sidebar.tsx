@@ -26,28 +26,31 @@ import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 
 const navItems = [
-  { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
-  { href: "/dashboard/products", label: "Products", icon: Package },
-  { href: "/dashboard/categories", label: "Categories", icon: FolderTree },
-  { href: "/dashboard/orders", label: "Orders", icon: ShoppingBag },
-  { href: "/dashboard/storefront", label: "Store Page", icon: Layout },
-  { href: "/dashboard/reels", label: "Reels", icon: Film },
-  { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
-  { href: "/dashboard/coupons", label: "Coupons", icon: Tag },
-  { href: "/dashboard/reviews", label: "Reviews", icon: Star },
-  { href: "/dashboard/referral", label: "Refer & Earn", icon: Gift },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings },
+  { href: "/dashboard", label: "Overview", icon: LayoutDashboard, pro: false },
+  { href: "/dashboard/products", label: "Products", icon: Package, pro: false },
+  { href: "/dashboard/categories", label: "Categories", icon: FolderTree, pro: false },
+  { href: "/dashboard/orders", label: "Orders", icon: ShoppingBag, pro: false },
+  { href: "/dashboard/storefront", label: "Store Page", icon: Layout, pro: false },
+  { href: "/dashboard/reels", label: "Reels", icon: Film, pro: true },
+  { href: "/dashboard/billing", label: "Billing", icon: CreditCard, pro: false },
+  { href: "/dashboard/coupons", label: "Coupons", icon: Tag, pro: true },
+  { href: "/dashboard/reviews", label: "Reviews", icon: Star, pro: false },
+  { href: "/dashboard/referral", label: "Refer & Earn", icon: Gift, pro: false },
+  { href: "/dashboard/settings", label: "Settings", icon: Settings, pro: false },
 ];
 
 interface SidebarProps {
   store?: { name: string; slug: string; logoUrl?: string };
+  isPro?: boolean;
 }
 
 function SidebarContent({
   store,
+  isPro,
   onClose,
 }: {
   store?: SidebarProps["store"];
+  isPro?: boolean;
   onClose?: () => void;
 }) {
   const pathname = usePathname();
@@ -119,10 +122,11 @@ const storeDisplayUrl = store
 
       {/* Nav links */}
       <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
-        {navItems.map(({ href, label, icon: Icon }) => {
+        {navItems.map(({ href, label, icon: Icon, pro }) => {
           const active =
             pathname === href ||
             (href !== "/dashboard" && pathname.startsWith(href));
+          const locked = pro && !isPro;
           return (
             <Link
               key={href}
@@ -146,6 +150,11 @@ const storeDisplayUrl = store
                 )}
               />
               {label}
+              {locked && (
+                <span className="ml-auto text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+                  Pro
+                </span>
+              )}
             </Link>
           );
         })}
@@ -165,7 +174,7 @@ const storeDisplayUrl = store
   );
 }
 
-export function Sidebar({ store }: SidebarProps) {
+export function Sidebar({ store, isPro }: SidebarProps) {
   const { open, setOpen } = useDashboardDrawer();
 
   return (
@@ -185,12 +194,12 @@ export function Sidebar({ store }: SidebarProps) {
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <SidebarContent store={store} onClose={() => setOpen(false)} />
+        <SidebarContent store={store} isPro={isPro} onClose={() => setOpen(false)} />
       </aside>
 
       {/* Desktop fixed sidebar */}
       <aside className="hidden lg:flex flex-col fixed inset-y-0 left-0 z-30 w-64 bg-white dark:bg-zinc-950 border-r border-zinc-100 dark:border-zinc-800">
-        <SidebarContent store={store} />
+        <SidebarContent store={store} isPro={isPro} />
       </aside>
     </>
   );

@@ -29,6 +29,14 @@ export interface Store {
   accent_color?: string
   storefront_theme_mode?: 'light' | 'dark' | 'both'
   storefront_accent_color?: string
+  // Theme presets — font + card style (flat columns, same pattern as accent color)
+  storefrontFont?: string
+  storefront_font?: string
+  storefrontCardStyle?: 'rounded' | 'sharp'
+  storefront_card_style?: 'rounded' | 'sharp'
+  // AI shopping assistant opt-in
+  aiAssistantEnabled?: boolean
+  ai_assistant_enabled?: boolean
   // Payment — camelCase
   paymentPreference?: 'paystack' | 'bank_transfer' | 'both'
   paymentMethods?: ('paystack' | 'transfer')[]

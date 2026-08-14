@@ -1,6 +1,8 @@
 import { verifySession, getUserStore } from "@/lib/auth";
 import { queryOne, queryMany } from "@/lib/db";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { getEffectivePlan } from "@/lib/plan";
+import { formatCurrency, formatDate, getStoreUrl } from "@/lib/utils";
+import OnboardingChecklist, { type ChecklistItem } from "@/components/dashboard/OnboardingChecklist";
 import Link from "next/link";
 import {
   ShoppingBag,
@@ -72,7 +74,24 @@ const STATUS_STYLES: Record<string, string> = {
 export default async function DashboardPage() {
   const user = await verifySession();
   const store = await getUserStore(user!.firebaseUid);
-  const { stats, recentOrders } = await getDashboardStats(store!.id);
+  const [{ stats, recentOrders }, effectivePlan] = await Promise.all([
+    getDashboardStats(store!.id),
+    getEffectivePlan(store!.id),
+  ]);
+
+  const hasPaymentSetUp = !!(store!.paystackPublicKey || store!.bankAccountNumber);
+  const hasCustomTheme =
+    (store!.storefrontAccentColor ?? "#f59e0b") !== "#f59e0b" ||
+    (store!.storefrontFont ?? "inter") !== "inter" ||
+    (store!.storefrontCardStyle ?? "rounded") !== "rounded";
+
+  const checklistItems: ChecklistItem[] = [
+    { id: "product", label: "Add your first product", done: stats.total_products > 0, href: "/dashboard/products/new", cta: "Add" },
+    { id: "payment", label: "Set up a payment method", done: hasPaymentSetUp, href: "/dashboard/settings", cta: "Set up" },
+    { id: "logo", label: "Upload a store logo", done: !!store!.logoUrl, href: "/dashboard/settings", cta: "Upload" },
+    { id: "theme", label: "Customize your storefront theme", done: hasCustomTheme, href: "/dashboard/settings", cta: "Customize" },
+    { id: "share", label: "Share your store link", done: stats.total_visitors > 0, href: "", cta: "Copy link" },
+  ];
 
   const statCards = [
     {
@@ -87,25 +106,33 @@ export default async function DashboardPage() {
       icon: Clock,
       color: "bg-yellow-50 dark:bg-yellow-950/30 text-yellow-600",
     },
-    {
-      label: "Total revenue",
-      value: formatCurrency(stats.total_revenue),
-      icon: TrendingUp,
-      color: "bg-green-50 dark:bg-green-950/30 text-green-600",
-    },
+    ...(effectivePlan.isPro
+      ? [
+          {
+            label: "Total revenue",
+            value: formatCurrency(stats.total_revenue),
+            icon: TrendingUp,
+            color: "bg-green-50 dark:bg-green-950/30 text-green-600",
+          },
+        ]
+      : []),
     {
       label: "Active products",
       value: stats.total_products,
       icon: Package,
       color: "bg-purple-50 dark:bg-purple-950/30 text-purple-600",
     },
-    {
-      label: "Unique visitors",
-      value: stats.total_visitors,
-      icon: Eye,
-      color: "bg-cyan-50 dark:bg-cyan-950/30 text-cyan-600",
-      sub: stats.today_visitors > 0 ? `${stats.today_visitors} today` : undefined,
-    },
+    ...(effectivePlan.isPro
+      ? [
+          {
+            label: "Unique visitors",
+            value: stats.total_visitors,
+            icon: Eye,
+            color: "bg-cyan-50 dark:bg-cyan-950/30 text-cyan-600",
+            sub: stats.today_visitors > 0 ? `${stats.today_visitors} today` : undefined,
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -139,32 +166,11 @@ export default async function DashboardPage() {
         <strong>How your dashboard works:</strong> Revenue counts only paid orders. Unique visitors are tracked per day (not page views). To go fully live: add products → set up your Store Page (banner + featured) → complete Billing if required.
       </Tip>
 
-      {/* Store banner if no products */}
-      {stats.total_products === 0 && (
-        <div className="rounded-2xl bg-accent-50 dark:bg-accent-950/20 border border-accent-200 dark:border-accent-800 p-6">
-          <div className="flex items-start gap-4">
-            <div className="text-3xl">🚀</div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-surface-900 dark:text-white mb-1">
-                Your store is ready! Add your first product.
-              </h3>
-              <p className="text-sm text-surface-500 dark:text-surface-400 mb-4">
-                Start by adding products to your store so customers can browse
-                and buy.
-              </p>
-              <Link
-                href="/dashboard/products/new"
-                className="inline-flex items-center gap-2 bg-accent-400 hover:bg-accent-500 text-black font-semibold px-4 py-2 rounded-lg text-sm transition-all"
-              >
-                Add first product <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Getting-started checklist — one first-run nudge, derived from real data, auto-hides at 100% */}
+      <OnboardingChecklist items={checklistItems} storeUrl={getStoreUrl(store!.slug)} />
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className={`grid grid-cols-2 gap-4 ${effectivePlan.isPro ? "lg:grid-cols-5" : "lg:grid-cols-3"}`}>
         {statCards.map((card) => {
           const Icon = card.icon;
           return (

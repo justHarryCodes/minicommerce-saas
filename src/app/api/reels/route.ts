@@ -3,6 +3,7 @@ import { z } from "zod";
 import { verifySession } from "@/lib/auth";
 import { query, queryOne } from "@/lib/db";
 import { redis, reelKey, cacheDel } from "@/lib/redis";
+import { requirePro, getEffectivePlan } from "@/lib/plan";
 import type { Reel } from "@/types";
 
 const MAX_PER_PAGE = 20;
@@ -10,8 +11,8 @@ const MAX_PER_PAGE = 20;
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 async function getStore(uid: string) {
-  return queryOne<{ id: string }>(
-    `SELECT s.id FROM stores s WHERE s.owner_id = $1 AND s.is_active = true`,
+  return queryOne<{ id: string; reels_monthly_limit: number | null }>(
+    `SELECT s.id, s.reels_monthly_limit FROM stores s WHERE s.owner_id = $1 AND s.is_active = true`,
     [uid]
   );
 }
@@ -24,14 +25,20 @@ async function getGlobalLimit(): Promise<number> {
   return Number(row?.value ?? 20);
 }
 
-async function checkRateLimit(storeId: string): Promise<{ allowed: boolean; reason?: string }> {
+async function checkRateLimit(
+  storeId: string,
+  storeLimitOverride: number | null,
+  planMaxReels: number
+): Promise<{ allowed: boolean; reason?: string }> {
   // Hourly rate limit — max 3 uploads per hour to prevent bursts
   const hourKey = reelKey.hourlyRate(storeId);
   const count = await redis.incr(hourKey);
   if (count === 1) await redis.expire(hourKey, 3600);
   if (count > 3) return { allowed: false, reason: "Too many uploads — please wait before uploading again." };
 
-  // Monthly quota
+  // Monthly quota — a per-store override (set from the admin vendor detail page)
+  // takes precedence over the store's plan limit, which takes precedence over
+  // the global platform default (defensive fallback only).
   const monthlyCount = await queryOne<{ count: string }>(
     `SELECT COUNT(*) as count FROM reels
      WHERE store_id = $1 AND created_at >= date_trunc('month', NOW())`,
@@ -39,8 +46,7 @@ async function checkRateLimit(storeId: string): Promise<{ allowed: boolean; reas
   );
   const used = Number(monthlyCount?.count ?? 0);
 
-  const globalLimit = await getGlobalLimit();
-  const limit = globalLimit;
+  const limit = storeLimitOverride ?? planMaxReels ?? (await getGlobalLimit());
 
   if (used >= limit) {
     return { allowed: false, reason: `Monthly reel limit reached (${limit}/month). Upgrade your plan or contact support.` };
@@ -86,7 +92,8 @@ export async function GET(req: NextRequest) {
     "SELECT COUNT(*) as count FROM reels WHERE store_id = $1 AND created_at >= date_trunc('month', NOW())",
     [store.id]
   );
-  const monthlyLimit = await getGlobalLimit();
+  const effectivePlan = await getEffectivePlan(store.id);
+  const monthlyLimit = store.reels_monthly_limit ?? effectivePlan.max_reels ?? (await getGlobalLimit());
 
   return NextResponse.json({
     reels,
@@ -114,7 +121,11 @@ export async function POST(req: NextRequest) {
   const store = await getStore(user.firebaseUid);
   if (!store) return NextResponse.json({ error: "Store not found" }, { status: 404 });
 
-  const rate = await checkRateLimit(store.id);
+  const proErr = await requirePro(store.id);
+  if (proErr) return proErr;
+
+  const effectivePlan = await getEffectivePlan(store.id);
+  const rate = await checkRateLimit(store.id, store.reels_monthly_limit, effectivePlan.max_reels);
   if (!rate.allowed) return NextResponse.json({ error: rate.reason }, { status: 429 });
 
   const body = await req.json();

@@ -4,6 +4,7 @@ import { query, queryOne, rowsToCamel, toCamel } from '@/lib/db'
 import { cacheDelPattern } from '@/lib/redis'
 import { ensureUncategorized } from '@/lib/categories'
 import { slugify } from '@/lib/utils'
+import { getEffectivePlan } from '@/lib/plan'
 import { z } from 'zod'
 
 const Schema = z.object({
@@ -63,6 +64,15 @@ export async function POST(req: NextRequest) {
   if (!store) return NextResponse.json({ error: 'No store' }, { status: 404 })
   const subErr = await requireSubscription(store)
   if (subErr) return subErr
+
+  const effectivePlan = await getEffectivePlan(store.id)
+  const [{ count }] = await query('SELECT COUNT(*) FROM products WHERE store_id=$1', [store.id]) as { count: string }[]
+  if (parseInt(count) >= effectivePlan.max_products) {
+    return NextResponse.json(
+      { error: `Your ${effectivePlan.name} plan allows up to ${effectivePlan.max_products} products. Upgrade to add more.` },
+      { status: 403 }
+    )
+  }
 
   const body = await req.json()
   const parsed = Schema.safeParse(body)

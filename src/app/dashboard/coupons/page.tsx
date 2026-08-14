@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation'
 import { verifySession, getUserStore } from '@/lib/auth'
 import { queryMany } from '@/lib/db'
+import { getEffectivePlan } from '@/lib/plan'
+import { UpgradePrompt } from '@/components/dashboard/UpgradePrompt'
 import CouponsClient from './CouponsClient'
 
 export const metadata = { title: 'Coupons' }
@@ -10,6 +12,11 @@ export default async function CouponsPage() {
   if (!user) redirect('/auth/login')
   const store = await getUserStore(user.firebaseUid)
   if (!store) redirect('/onboarding')
+
+  const effectivePlan = await getEffectivePlan(store.id)
+  if (!effectivePlan.isPro) {
+    return <UpgradePrompt feature="Coupons" />
+  }
 
   const coupons = await queryMany<{
     id: string; code: string; discount_type: string; discount_value: number

@@ -13,6 +13,7 @@ export default async function PlansPage() {
     description: string | null
     price_monthly: number
     max_products: number
+    max_reels: number
     is_active: boolean
     sort_order: number
     created_at: string

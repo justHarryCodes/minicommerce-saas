@@ -8,6 +8,7 @@ const PlanSchema = z.object({
   description:   z.string().max(200).optional(),
   price_monthly: z.number().int().min(0),
   max_products:  z.number().int().min(1),
+  max_reels:     z.number().int().min(0),
   sort_order:    z.number().int().min(0).optional(),
 })
 
@@ -16,7 +17,7 @@ export async function GET() {
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const plans = await query(
-    `SELECT id, name, description, price_monthly, max_products, is_active, sort_order, created_at
+    `SELECT id, name, description, price_monthly, max_products, max_reels, is_active, sort_order, created_at
      FROM plans ORDER BY sort_order, created_at`,
     []
   )
@@ -31,12 +32,12 @@ export async function POST(req: NextRequest) {
   const parsed = PlanSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
 
-  const { name, description, price_monthly, max_products, sort_order = 0 } = parsed.data
+  const { name, description, price_monthly, max_products, max_reels, sort_order = 0 } = parsed.data
 
   const [plan] = await query<{ id: string }>(
-    `INSERT INTO plans (name, description, price_monthly, max_products, sort_order)
-     VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-    [name, description ?? null, price_monthly, max_products, sort_order]
+    `INSERT INTO plans (name, description, price_monthly, max_products, max_reels, sort_order)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+    [name, description ?? null, price_monthly, max_products, max_reels, sort_order]
   )
 
   await logAdminAction({
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
     action: 'create_plan',
     targetType: 'plan',
     targetId: plan.id,
-    details: { name, price_monthly, max_products },
+    details: { name, price_monthly, max_products, max_reels },
   })
 
   return NextResponse.json({ success: true, id: plan.id }, { status: 201 })

@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-typecheck-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm run typecheck
+
+      - run: npm test
+
+# Deliberately does NOT run `npm run build` here: the build script
+# (`node scripts/run-migrations.mjs && next build`) applies real database
+# migrations as a side effect, which must never run against a shared
+# database from an arbitrary PR branch. A full build check already happens
+# via the Vercel PR-preview deployment when this repo is connected there.

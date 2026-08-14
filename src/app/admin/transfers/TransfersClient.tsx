@@ -77,7 +77,7 @@ export default function TransfersClient({ initialTransfers }: { initialTransfers
         <div>
           <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Bank Transfer Payments</h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-            Vendors who paid via bank transfer and clicked "I've made this transfer"
+            Vendors who paid via bank transfer and clicked &quot;I&apos;ve made this transfer&quot;
           </p>
         </div>
         {pending.length > 0 && (

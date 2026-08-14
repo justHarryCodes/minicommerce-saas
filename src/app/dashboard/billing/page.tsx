@@ -76,9 +76,10 @@ export default async function BillingPage({
       description: string | null;
       price_monthly: number;
       max_products: number;
+      max_reels: number;
       is_active: boolean;
     }>(
-      `SELECT DISTINCT ON (name) id, name, description, price_monthly, max_products, is_active
+      `SELECT DISTINCT ON (name) id, name, description, price_monthly, max_products, max_reels, is_active
        FROM plans WHERE is_active = true ORDER BY name, sort_order, created_at`,
       []
     ),
@@ -101,9 +102,10 @@ export default async function BillingPage({
         description: string | null;
         price_monthly: number;
         max_products: number;
+        max_reels: number;
         is_active: boolean;
       }>(
-        "SELECT id, name, description, price_monthly, max_products, is_active FROM plans WHERE id = $1",
+        "SELECT id, name, description, price_monthly, max_products, max_reels, is_active FROM plans WHERE id = $1",
         [store.current_plan_id]
       )
     : null;
@@ -123,7 +125,7 @@ export default async function BillingPage({
       }}
       settings={settings}
       payments={payments}
-      plans={plans}
+      plans={plans.filter((p) => p.price_monthly > 0)}
       bankAccounts={bankAccounts}
       currentPlan={currentPlan ?? null}
       success={sp.success}

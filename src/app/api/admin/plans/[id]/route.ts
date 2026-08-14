@@ -8,6 +8,7 @@ const UpdateSchema = z.object({
   description:   z.string().max(200).optional(),
   price_monthly: z.number().int().min(0).optional(),
   max_products:  z.number().int().min(1).optional(),
+  max_reels:     z.number().int().min(0).optional(),
   is_active:     z.boolean().optional(),
   sort_order:    z.number().int().min(0).optional(),
 })
@@ -40,6 +41,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   if (d.description !== undefined)   { sets.push(`description = $${i++}`);   vals.push(d.description) }
   if (d.price_monthly !== undefined) { sets.push(`price_monthly = $${i++}`); vals.push(d.price_monthly) }
   if (d.max_products !== undefined)  { sets.push(`max_products = $${i++}`);  vals.push(d.max_products) }
+  if (d.max_reels !== undefined)     { sets.push(`max_reels = $${i++}`);     vals.push(d.max_reels) }
   if (d.is_active !== undefined)     { sets.push(`is_active = $${i++}`);     vals.push(d.is_active) }
   if (d.sort_order !== undefined)    { sets.push(`sort_order = $${i++}`);    vals.push(d.sort_order) }
 

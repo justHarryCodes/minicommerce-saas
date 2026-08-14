@@ -97,6 +97,13 @@ export function getProductUrl(storeSlug: string, productSlug: string): string {
     : `/store/${storeSlug}/products/${productSlug}`
 }
 
+// Path-based, not subdomain — the vendor subdomain route currently 404s on
+// nested paths like /reels/[id] in production, while the path-based route
+// (awarizon.shop/store/[slug]/reels/[id]) works reliably.
+export function getReelUrl(storeSlug: string, reelId: string): string {
+  return `/store/${storeSlug}/reels/${reelId}`
+}
+
 // Build a prefilled WhatsApp URL
 export function waLink(phone: string, message: string): string {
   const digits = phone.replace(/\D/g, '')

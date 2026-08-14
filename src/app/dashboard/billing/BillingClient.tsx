@@ -28,6 +28,7 @@ interface Plan {
   description: string | null;
   price_monthly: number;
   max_products: number;
+  max_reels: number;
   is_active: boolean;
 }
 
@@ -615,7 +616,7 @@ export default function BillingClient({
             Subscribe to a plan to list products on your store.
           </p>
 
-          {isPlanActive && currentPlan ? (
+          {isPlanActive && currentPlan && currentPlan.price_monthly > 0 ? (
             <div>
               <div className="flex items-center gap-2 text-sm font-semibold mb-2" style={{ color: "#16a34a" }}>
                 <CheckCircle className="w-4 h-4" />
@@ -728,6 +729,7 @@ function PlanCard({
           <p className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>{plan.name}</p>
           {plan.description && <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{plan.description}</p>}
           <p className="text-xs mt-1" style={{ color: "var(--text-secondary)" }}>Up to {plan.max_products.toLocaleString()} products</p>
+          <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>+ {plan.max_reels.toLocaleString()} reels/month</p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
           <div className="text-right">

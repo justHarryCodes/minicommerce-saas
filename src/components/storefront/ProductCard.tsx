@@ -18,8 +18,11 @@ interface Props {
 export default function ProductCard({ product, storeSlug }: Props) {
   const { addItem } = useCart();
   const { isBookmarked, toggleBookmark } = useBookmarks(storeSlug);
-  const { storeBase } = useStore();
+  const { storeBase, cardStyle } = useStore();
   const [added, setAdded] = useState(false);
+  const rounded = cardStyle === "sharp"
+    ? { card: "rounded-md", button: "rounded-md" }
+    : { card: "rounded-2xl", button: "rounded-xl" };
 
   const images = product.images ?? [];
   const imageUrl = images[0] ?? product.image_url ?? null;
@@ -63,7 +66,7 @@ export default function ProductCard({ product, storeSlug }: Props) {
     <Link
       href={`${storeBase}/products/${product.slug ?? product.id}`}
       prefetch={false}
-      className="group flex flex-col rounded-2xl bg-white dark:bg-surface-900 border border-surface-100 dark:border-surface-800 overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_28px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_28px_rgba(0,0,0,0.35)] hover:-translate-y-0.5 transition-all duration-200"
+      className={`group flex flex-col ${rounded.card} bg-white dark:bg-surface-900 border border-surface-100 dark:border-surface-800 overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_28px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_28px_rgba(0,0,0,0.35)] hover:-translate-y-0.5 transition-all duration-200`}
     >
       {/* ── Image ── */}
       <div className="relative aspect-square overflow-hidden bg-surface-50 dark:bg-surface-800">
@@ -134,7 +137,7 @@ export default function ProductCard({ product, storeSlug }: Props) {
         <button
           onClick={handleAddToCart}
           disabled={outOfStock}
-          className={`flex items-center justify-center gap-1.5 w-full py-2 rounded-xl text-xs font-bold transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.97] ${
+          className={`flex items-center justify-center gap-1.5 w-full py-2 ${rounded.button} text-xs font-bold transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.97] ${
             added
               ? "bg-emerald-500 text-white"
               : "hover:opacity-90"

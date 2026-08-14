@@ -1,8 +1,10 @@
 import { verifySession } from "@/lib/auth";
 import { query, queryOne } from "@/lib/db";
 import { getPlatformSettings } from "@/lib/admin-auth";
+import { getEffectivePlan } from "@/lib/plan";
 import { redirect } from "next/navigation";
 import ReelsClient from "./ReelsClient";
+import { UpgradePrompt } from "@/components/dashboard/UpgradePrompt";
 import type { Reel, Product } from "@/types";
 
 export const metadata = { title: "Reels" };
@@ -16,6 +18,11 @@ export default async function ReelsDashboardPage() {
     [user.firebaseUid]
   );
   if (!store) redirect("/onboarding");
+
+  const effectivePlan = await getEffectivePlan(store.id);
+  if (!effectivePlan.isPro) {
+    return <UpgradePrompt feature="Reels" />;
+  }
 
   const globalSettings = await getPlatformSettings();
   const monthlyLimit = store.reels_monthly_limit ?? globalSettings.reels_monthly_limit;

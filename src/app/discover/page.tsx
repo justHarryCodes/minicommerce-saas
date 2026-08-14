@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { query } from "@/lib/db";
+import { getTrendingReels, dedupeReelsByStore } from "@/lib/reels";
 import DiscoverClient from "./DiscoverClient";
 
 interface DiscoverPageProps {
@@ -22,7 +23,7 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
     whereClause += ` AND primary_category = $${params.length}`;
   }
 
-  const [stores, categoryCounts] = await Promise.all([
+  const [stores, categoryCounts, trendingReels] = await Promise.all([
     query<{
       id: string;
       name: string;
@@ -45,9 +46,11 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
        ORDER BY count DESC`,
       []
     ),
+    getTrendingReels(),
   ]);
 
   const totalCount = categoryCounts.reduce((sum, c) => sum + parseInt(c.count), 0);
+  const reels = dedupeReelsByStore(trendingReels);
 
   return (
     <Suspense>
@@ -57,6 +60,7 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
         activeCategory={category ?? "all"}
         initialSearch={q ?? ""}
         totalCount={totalCount}
+        reels={reels}
       />
     </Suspense>
   );

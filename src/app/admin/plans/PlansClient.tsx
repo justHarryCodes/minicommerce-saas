@@ -10,6 +10,7 @@ interface Plan {
   description: string | null;
   price_monthly: number;
   max_products: number;
+  max_reels: number;
   is_active: boolean;
   sort_order: number;
   created_at: string;
@@ -39,7 +40,7 @@ function Toggle({ enabled, onChange }: { enabled: boolean; onChange: (v: boolean
   );
 }
 
-const EMPTY = { name: "", description: "", price_monthly: 5000, max_products: 100 };
+const EMPTY = { name: "", description: "", price_monthly: 5000, max_products: 100, max_reels: 10 };
 
 export default function PlansClient({ initialPlans }: { initialPlans: Plan[] }) {
   const [plans, setPlans] = useState<Plan[]>(initialPlans);
@@ -180,6 +181,17 @@ export default function PlansClient({ initialPlans }: { initialPlans: Plan[] }) 
                 style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text-primary)" }}
               />
             </div>
+            <div>
+              <label className="block text-xs font-semibold mb-1" style={{ color: "var(--text-secondary)" }}>Max Reels / month</label>
+              <input
+                type="number"
+                min={0}
+                value={form.max_reels}
+                onChange={(e) => setForm((f) => ({ ...f, max_reels: Number(e.target.value) }))}
+                className="w-full px-3 py-2 rounded-lg border text-sm outline-none"
+                style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text-primary)" }}
+              />
+            </div>
           </div>
           <div className="flex gap-2">
             <button
@@ -205,7 +217,7 @@ export default function PlansClient({ initialPlans }: { initialPlans: Plan[] }) 
       <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--bg)", borderColor: "var(--border)" }}>
         {plans.length === 0 ? (
           <div className="py-16 text-center">
-            <p className="text-sm" style={{ color: "var(--text-muted)" }}>No plans yet. Click "Add Plan" to create one.</p>
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>No plans yet. Click &quot;Add Plan&quot; to create one.</p>
           </div>
         ) : (
           <table className="w-full text-sm">
@@ -215,6 +227,7 @@ export default function PlansClient({ initialPlans }: { initialPlans: Plan[] }) 
                 <th className="px-6 py-3 text-left">Plan</th>
                 <th className="px-6 py-3 text-left">Price / mo</th>
                 <th className="px-6 py-3 text-left">Max Products</th>
+                <th className="px-6 py-3 text-left">Max Reels</th>
                 <th className="px-6 py-3 text-left">Active</th>
                 <th className="px-6 py-3 text-right">Actions</th>
               </tr>
@@ -247,6 +260,15 @@ export default function PlansClient({ initialPlans }: { initialPlans: Plan[] }) 
                           type="number"
                           value={editForm.max_products ?? plan.max_products}
                           onChange={(e) => setEditForm((f) => ({ ...f, max_products: Number(e.target.value) }))}
+                          className="w-20 px-2 py-1 rounded border text-sm outline-none"
+                          style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text-primary)" }}
+                        />
+                      </td>
+                      <td className="px-6 py-3">
+                        <input
+                          type="number"
+                          value={editForm.max_reels ?? plan.max_reels}
+                          onChange={(e) => setEditForm((f) => ({ ...f, max_reels: Number(e.target.value) }))}
                           className="w-20 px-2 py-1 rounded border text-sm outline-none"
                           style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text-primary)" }}
                         />
@@ -287,13 +309,16 @@ export default function PlansClient({ initialPlans }: { initialPlans: Plan[] }) 
                       <td className="px-6 py-4" style={{ color: "var(--text-secondary)" }}>
                         {plan.max_products.toLocaleString()} products
                       </td>
+                      <td className="px-6 py-4" style={{ color: "var(--text-secondary)" }}>
+                        {plan.max_reels.toLocaleString()} reels
+                      </td>
                       <td className="px-6 py-4">
                         <Toggle enabled={plan.is_active} onChange={() => toggleActive(plan)} />
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2">
                           <button
-                            onClick={() => { setEditId(plan.id); setEditForm({ name: plan.name, description: plan.description ?? "", price_monthly: plan.price_monthly, max_products: plan.max_products }); }}
+                            onClick={() => { setEditId(plan.id); setEditForm({ name: plan.name, description: plan.description ?? "", price_monthly: plan.price_monthly, max_products: plan.max_products, max_reels: plan.max_reels }); }}
                             className="p-1.5 rounded-lg hover:opacity-70 transition-opacity"
                             style={{ color: "var(--text-muted)" }}
                             title="Edit"

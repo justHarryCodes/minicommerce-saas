@@ -107,6 +107,16 @@ export async function logAdminAction(opts: {
   )
 }
 
+// Coerces a stored setting value (native JSON boolean or legacy 'true'/'false'
+// string) to a boolean, falling back to the documented default when the key
+// is missing from platform_settings entirely — a bare `raw.x === 'true'`
+// silently resolves to `false` on a missing key, ignoring the default.
+function toBool(raw: unknown, fallback: boolean): boolean {
+  if (raw === undefined) return fallback
+  if (typeof raw === 'boolean') return raw
+  return raw === 'true'
+}
+
 // Fetch all platform settings, merging with defaults
 export async function getPlatformSettings(): Promise<PlatformSettings> {
   const rows = await query<{ key: string; value: unknown }>(
@@ -117,31 +127,25 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
   const raw = Object.fromEntries(rows.map((r) => [r.key, r.value]))
 
   return {
-    require_setup_fee:
-      typeof raw.require_setup_fee === 'boolean'
-        ? raw.require_setup_fee
-        : raw.require_setup_fee === 'true',
+    require_setup_fee: toBool(raw.require_setup_fee, SETTING_DEFAULTS.require_setup_fee),
     setup_fee_amount: Number(raw.setup_fee_amount ?? SETTING_DEFAULTS.setup_fee_amount),
     setup_fee_duration_months: Number(
       raw.setup_fee_duration_months ?? SETTING_DEFAULTS.setup_fee_duration_months
     ),
-    require_subscription:
-      typeof raw.require_subscription === 'boolean'
-        ? raw.require_subscription
-        : raw.require_subscription === 'true',
+    require_subscription: toBool(raw.require_subscription, SETTING_DEFAULTS.require_subscription),
     monthly_fee_amount: Number(raw.monthly_fee_amount ?? SETTING_DEFAULTS.monthly_fee_amount),
-    require_nin_verification:
-      typeof raw.require_nin_verification === 'boolean'
-        ? raw.require_nin_verification
-        : raw.require_nin_verification === 'true',
-    allow_new_registrations:
-      typeof raw.allow_new_registrations === 'boolean'
-        ? raw.allow_new_registrations
-        : raw.allow_new_registrations !== 'false',
-    require_plan_subscription:
-      typeof raw.require_plan_subscription === 'boolean'
-        ? raw.require_plan_subscription
-        : raw.require_plan_subscription === 'true',
+    require_nin_verification: toBool(
+      raw.require_nin_verification,
+      SETTING_DEFAULTS.require_nin_verification
+    ),
+    allow_new_registrations: toBool(
+      raw.allow_new_registrations,
+      SETTING_DEFAULTS.allow_new_registrations
+    ),
+    require_plan_subscription: toBool(
+      raw.require_plan_subscription,
+      SETTING_DEFAULTS.require_plan_subscription
+    ),
     reels_monthly_limit: Number(raw.reels_monthly_limit ?? SETTING_DEFAULTS.reels_monthly_limit),
   }
 }

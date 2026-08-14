@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { verifySession, getUserStore } from "@/lib/auth";
 import { getPlatformSettings } from "@/lib/admin-auth";
+import { getEffectivePlan } from "@/lib/plan";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
 import DashboardBottomNav from "@/components/dashboard/DashboardBottomNav";
@@ -37,6 +38,8 @@ export default async function DashboardLayout({
     if (!paid) redirect("/dashboard/billing");
   }
 
+  const effectivePlan = await getEffectivePlan(store.id);
+
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       <Sidebar
@@ -45,6 +48,7 @@ export default async function DashboardLayout({
           slug: store.slug,
           logoUrl: store.logoUrl ?? store.logo_url,
         }}
+        isPro={effectivePlan.isPro}
       />
 
       {/* Main — offset by sidebar width on desktop, full width on mobile */}

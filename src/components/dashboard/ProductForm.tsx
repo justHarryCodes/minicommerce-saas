@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import toast from "react-hot-toast";
-import { Loader2, X, ImageIcon } from "lucide-react";
+import { Loader2, X, ImageIcon, Sparkles } from "lucide-react";
 import type { Category, Product } from "@/types";
 
 const schema = z.object({
@@ -39,13 +39,25 @@ export default function ProductForm({ categories, product }: Props) {
   const [uploading, setUploading] = useState(false);
   const [selectedCatId, setSelectedCatId] = useState(product?.category_id ?? "");
 
+  // AI assist — hidden entirely until GROQ_API_KEY/GEMINI_API_KEY are configured.
+  const [aiAvailable, setAiAvailable] = useState({ groq: false, gemini: false });
+  const [writingDescription, setWritingDescription] = useState(false);
+  const [categorySuggestion, setCategorySuggestion] = useState<{ id: string; name: string } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/ai/status")
+      .then((res) => (res.ok ? res.json() : { groq: false, gemini: false }))
+      .then(setAiAvailable)
+      .catch(() => {});
+  }, []);
+
   // Build category tree: top-level cats with their subcategories
   const topCats = categories.filter((c) => !c.parent_id);
   const subCats = selectedCatId
     ? categories.filter((c) => c.parent_id === selectedCatId)
     : [];
 
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, getValues, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       name: product?.name ?? "",
@@ -71,8 +83,58 @@ export default function ProductForm({ categories, product }: Props) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setImageUrl(data.url);
+      if (aiAvailable.gemini) suggestCategory(data.url);
     } catch { toast.error("Image upload failed"); }
     finally { setUploading(false); }
+  }
+
+  // Fire-and-forget — never blocks the upload flow, just surfaces a
+  // dismissible chip near the category field if it succeeds.
+  async function suggestCategory(uploadedImageUrl: string) {
+    try {
+      const res = await fetch("/api/ai/suggest-category", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: uploadedImageUrl }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.suggestedCategoryId) {
+        setCategorySuggestion({ id: data.suggestedCategoryId, name: data.suggestedCategoryName });
+      }
+    } catch { /* silent — this is a convenience suggestion, not required */ }
+  }
+
+  function applyCategorySuggestion() {
+    if (!categorySuggestion) return;
+    setValue("categoryId", categorySuggestion.id);
+    setSelectedCatId(categorySuggestion.id);
+    setValue("subcategoryId", "");
+    setCategorySuggestion(null);
+  }
+
+  async function generateDescription() {
+    const name = getValues("name");
+    if (!name || name.trim().length < 2) {
+      toast.error("Enter a product name first");
+      return;
+    }
+    setWritingDescription(true);
+    try {
+      const categoryName = topCats.find((c) => c.id === selectedCatId)?.name;
+      const res = await fetch("/api/ai/product-description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, category: categoryName }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error?.message ?? "AI generation failed");
+      if (data.description) setValue("description", data.description);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "AI generation failed");
+    } finally {
+      setWritingDescription(false);
+    }
   }
 
   async function onSubmit(data: FormData) {
@@ -156,9 +218,24 @@ export default function ProductForm({ categories, product }: Props) {
 
       {/* Description */}
       <div>
-        <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
-          Description
-        </label>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="block text-sm font-medium text-surface-700 dark:text-surface-300">
+            Description
+          </label>
+          {aiAvailable.groq && (
+            <button
+              type="button"
+              onClick={generateDescription}
+              disabled={writingDescription}
+              className="flex items-center gap-1 text-xs font-semibold text-accent-600 dark:text-accent-400 hover:text-accent-700 disabled:opacity-50"
+            >
+              {writingDescription
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <Sparkles className="w-3.5 h-3.5" />}
+              {writingDescription ? "Writing…" : "AI-assist"}
+            </button>
+          )}
+        </div>
         <textarea {...register("description")} rows={4}
           className={inputClass + " resize-none"} placeholder="Describe your product…" />
       </div>
@@ -205,10 +282,21 @@ export default function ProductForm({ categories, product }: Props) {
               register("categoryId").onChange(e);
               setSelectedCatId(e.target.value);
               setValue("subcategoryId", "");
+              setCategorySuggestion(null);
             }}>
             <option value="">Select category</option>
             {topCats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
+          {categorySuggestion && categorySuggestion.id !== selectedCatId && (
+            <button
+              type="button"
+              onClick={applyCategorySuggestion}
+              className="mt-1.5 flex items-center gap-1 text-xs font-medium text-accent-600 dark:text-accent-400 hover:text-accent-700"
+            >
+              <Sparkles className="w-3 h-3" />
+              AI suggests &ldquo;{categorySuggestion.name}&rdquo; — apply
+            </button>
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">

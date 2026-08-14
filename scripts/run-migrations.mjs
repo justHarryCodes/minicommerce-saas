@@ -36,6 +36,10 @@ const MIGRATIONS = [
   { name: "affiliate-firebase-migration.sql",  path: join(__dirname, "affiliate-firebase-migration.sql") },
   { name: "plans-dedup-migration.sql",          path: join(__dirname, "plans-dedup-migration.sql") },
   { name: "mobile-push-tokens-migration.sql",   path: join(__dirname, "mobile-push-tokens-migration.sql") },
+  { name: "freemium-migration.sql",             path: join(__dirname, "freemium-migration.sql") },
+  { name: "reels-plan-limit-migration.sql",     path: join(__dirname, "reels-plan-limit-migration.sql") },
+  { name: "add_ai_and_theme_features.sql",      path: join(__dirname, "../migrations/add_ai_and_theme_features.sql") },
+  { name: "add_account_deletion.sql",           path: join(__dirname, "../migrations/add_account_deletion.sql") },
 ];
 
 async function run() {

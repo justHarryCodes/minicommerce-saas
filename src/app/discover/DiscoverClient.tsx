@@ -4,7 +4,19 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search, Loader2, ShoppingBag, Store as StoreIcon } from "lucide-react";
-import { getStoreUrl, getProductUrl, formatPrice } from "@/lib/utils";
+import { formatPrice } from "@/lib/utils";
+import ReelStoryStrip from "@/components/discover/ReelStoryStrip";
+import type { Reel } from "@/types";
+
+// Discover is a cross-vendor marketplace page — link within it using the
+// reliable path-based routes (awarizon.shop/store/[slug]/...) rather than
+// each vendor's subdomain, which currently 404s on nested paths in production.
+function discoverStoreUrl(slug: string): string {
+  return `/store/${slug}`;
+}
+function discoverProductUrl(storeSlug: string, productSlug: string): string {
+  return `/store/${storeSlug}/products/${productSlug}`;
+}
 
 interface StoreRow {
   id: string;
@@ -42,6 +54,7 @@ interface Props {
   activeCategory: string;
   initialSearch: string;
   totalCount: number;
+  reels: Reel[];
 }
 
 const CATEGORY_META: Record<string, { icon: string; color: string }> = {
@@ -67,6 +80,7 @@ export default function DiscoverClient({
   activeCategory,
   initialSearch,
   totalCount,
+  reels,
 }: Props) {
   const searchParamsHook = useSearchParams();
   const tab = searchParamsHook.get("tab") === "products" ? "products" : "stores";
@@ -229,6 +243,9 @@ export default function DiscoverClient({
           />
         </div>
 
+        {/* Latest reels story strip */}
+        <ReelStoryStrip reels={reels} />
+
         {/* Category filter tabs */}
         <div
           className="flex gap-2 overflow-x-auto pb-3 mb-8"
@@ -303,7 +320,7 @@ export default function DiscoverClient({
                   return (
                     <a
                       key={store.id}
-                      href={getStoreUrl(store.slug)}
+                      href={discoverStoreUrl(store.slug)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="group flex flex-col rounded-2xl border overflow-hidden transition-all hover:shadow-lg hover:-translate-y-0.5"
@@ -402,8 +419,8 @@ export default function DiscoverClient({
                     product.store_category
                       ? (CATEGORY_META[product.store_category] ?? CATEGORY_META["Other"])
                       : CATEGORY_META["Other"];
-                  const productUrl = getProductUrl(product.store_slug, product.product_slug);
-                  const storeUrl = getStoreUrl(product.store_slug);
+                  const productUrl = discoverProductUrl(product.store_slug, product.product_slug);
+                  const storeUrl = discoverStoreUrl(product.store_slug);
 
                   return (
                     <div
