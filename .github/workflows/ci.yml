@@ -24,8 +24,52 @@ jobs:
 
       - run: npm test
 
-# Deliberately does NOT run `npm run build` here: the build script
-# (`node scripts/run-migrations.mjs && next build`) applies real database
-# migrations as a side effect, which must never run against a shared
-# database from an arbitrary PR branch. A full build check already happens
-# via the Vercel PR-preview deployment when this repo is connected there.
+      # `npm run build:ci` is `next build` with no migration step (unlike
+      # `npm run build`, which runs scripts/run-migrations.mjs first — that
+      # applies real database migrations and must never run against a
+      # shared database from an arbitrary PR branch). It still needs
+      # placeholder env vars: src/lib/db.ts and src/lib/firebase-admin.ts
+      # both throw at module load if their env vars are unset, and Next
+      # imports every route module during the build's "collect page data"
+      # step even though nothing here uses generateStaticParams or
+      # build-time DB fetches. These values are never used to actually
+      # connect to anything — the build only needs them to be *present*.
+      # FIREBASE_ADMIN_PRIVATE_KEY below is a throwaway RSA keypair generated
+      # solely for this workflow — not derived from any real Firebase
+      # project or credential. firebase-admin's cert() parses it as ASN.1 at
+      # module load, so it must be syntactically valid PEM, but it is never
+      # used to sign or authenticate anything real.
+      - run: npm run build:ci
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+          FIREBASE_ADMIN_PROJECT_ID: ci-placeholder
+          FIREBASE_ADMIN_CLIENT_EMAIL: ci-placeholder@ci-placeholder.iam.gserviceaccount.com
+          FIREBASE_ADMIN_PRIVATE_KEY: |
+            -----BEGIN PRIVATE KEY-----
+            MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQChtSalE00g1mgx
+            P7KKPd//IJrf14xNoVXvCHdcSvCVnFD7tubE6xx0/Dl7amfaQlnri1x7C4iB39X5
+            V7wT0XAaBNcqIrh7vE63SV3SLkK+kthFYUIKVmF140UepCs2MXeRMozDVpwEyDpV
+            rtX/K87Fq84k29rSV9LT4CLccaMEutjjvS5+My72RaXK6R0H03gkzG4zZBse7B8a
+            xGks3b2WltDbyTAYn0UDW0r5d4ipWFSAlKbLYeCgHNVrTmh2picFcTxbbFPWDWpp
+            gu9gZJmyGRmVnJ92wsEX1SZLMQeXM14bheY/2uUatGC22YZiYWBBm7K2pEZoUlKB
+            Cwm0ySKdAgMBAAECggEABDTFYo8pTGyx8nCpC4t8eL23tDwpEW6G4QbOrqnhrs04
+            Fglgi0gKSh4IE2ZlznmMroxwxV/mwb9kE25CyB6Ef0jCR/2gitIPwhi4cK/KBfxP
+            1SN90kMDmfYQEDH4+xniSvaOTsPBSdE4zeMUUeTT0LRyp5FzFFGQfE5c2cW4QHaJ
+            FSateB5sX3fhTqRjOcO1kMHfGR8MYyHB5NBiZLQjygems5eI5vRg/zE5Zy1tZ4Hv
+            uEFh268bKT/quQtP0PMzx10FtkiG065fmLsq5a14g1cmIvdK0z5RavyuSStC9qAi
+            Mo/cVhkp1ZskSycoY/c1AB6V1O9RjwOGAF3Rn+bRwQKBgQDh8LmYiZqraUhLvxta
+            pD9ft/MvMvMK5/lWpecj7PHjfh2jPWBKtuUMAWvz2MXF7kiUsqRAfGEh/5E4grA+
+            oBnZ+mF6gdiFlaet6lRmEoRTaO8oF2Pe1NkM1gLlTVOPy5/WU5QH4G+hrNOyPo1C
+            ejsazbJCV5HSE7CsdrEKyw2d1QKBgQC3OLtO2kfyGLcnNUxT1iwslC3d8Gaf9L/E
+            93nF1lFMAO4BYWcerOxjhY5WXddq4zUb4jKPZZWxQhKs4hrhaffRUDjxtcy0sL/A
+            CQdYntDT7hua39JdIrE9Hyp3YL+2lfLrMXWwOYy2ctZIznswULuAUqKQLj4IDck+
+            IptfqxetqQKBgCw3ynrZ41VMo4N/gUD6CBUZkRRZqksmHxwgF95mDujw06gQ6Pl2
+            VdlFpfTxJbOY8Md5NsAQF4pp0+f1W7zF5IlOgSlSpCdwpIJa6+2WDiOs07FK8pa3
+            nUrvz11FBueLeFqfvMbV28MOadfmegralRqnyw1EyhsNE3SNPhTYrG+JAoGAQnkp
+            s80L5zDCWk5C9/OvKSlFjszmXsgsPyjOHFHKQvnfX87X29A/H0hYQMthGV1/ajNh
+            xpbDfYEMR37s47VPfLhPQJqFv1SU7PYZnTRZbVpo14K2zqWEijlhbdhDFdpHPL9A
+            BISMobD+P4HyPbA8pqzUX9z3EnL1/T4PAuGPAKkCgYEAyOYSjTUFkuoBD9ROfm9V
+            GlhQ+T9BPQJt9cCwK+0ANQijtyX4HgEpWjJQxlqkcuKYvxUURFFjtLPbTqGDH3aS
+            Zl+l+ah0DguscYm9tsuwUFuLlHdxg4F8NwHXRHh0PGWKZdA7I6h5zOxRwS8vs02X
+            aFa6G40+SGzQFf6VpqJYJhs=
+            -----END PRIVATE KEY-----
