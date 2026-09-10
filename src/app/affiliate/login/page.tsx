@@ -1,12 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Loader2, Eye, EyeOff, MailWarning } from "lucide-react";
 import toast from "react-hot-toast";
-import ReCAPTCHA from "react-google-recaptcha";
 import {
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -37,7 +36,6 @@ export default function AffiliateLoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [unverifiedUser, setUnverifiedUser] = useState<User | null>(null);
   const [resending, setResending] = useState(false);
-  const recaptchaRef = useRef<ReCAPTCHA>(null);
 
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -85,12 +83,6 @@ export default function AffiliateLoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const recaptchaToken = recaptchaRef.current?.getValue();
-    if (!recaptchaToken) {
-      toast.error("Please complete the reCAPTCHA");
-      return;
-    }
-
     setLoading(true);
     try {
       const cred = await signInWithEmailAndPassword(auth, form.email, form.password);
@@ -98,7 +90,6 @@ export default function AffiliateLoginPage() {
       if (!cred.user.emailVerified) {
         setUnverifiedUser(cred.user);
         toast.error("Please verify your email before signing in.");
-        recaptchaRef.current?.reset();
         return;
       }
 
@@ -107,17 +98,15 @@ export default function AffiliateLoginPage() {
       const res = await fetch("/api/affiliate/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken, recaptchaToken }),
+        body: JSON.stringify({ idToken }),
       });
       const data = await res.json();
       if (!res.ok) {
         toast.error(data.error ?? "Login failed");
-        recaptchaRef.current?.reset();
         return;
       }
       router.push("/affiliate/dashboard");
     } catch (err: unknown) {
-      recaptchaRef.current?.reset();
       const msg = err instanceof Error ? err.message : "";
       if (msg.includes("invalid-credential") || msg.includes("wrong-password")) {
         toast.error("Invalid email or password");
@@ -229,14 +218,6 @@ export default function AffiliateLoginPage() {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-            </div>
-
-            {/* reCAPTCHA */}
-            <div className="flex justify-center pt-1">
-              <ReCAPTCHA
-                ref={recaptchaRef}
-                sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
-              />
             </div>
 
             <button

@@ -1,13 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import toast from "react-hot-toast";
-import ReCAPTCHA from "react-google-recaptcha";
 import {
   Eye,
   EyeOff,
@@ -66,7 +65,6 @@ export default function SignupPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
   const [userEmail, setUserEmail] = useState("");
-  const recaptchaRef = useRef<ReCAPTCHA>(null);
 
   const {
     register,
@@ -106,12 +104,6 @@ export default function SignupPage() {
   }
 
   async function onSubmit(data: FormData) {
-    const recaptchaToken = recaptchaRef.current?.getValue();
-    if (!recaptchaToken) {
-      toast.error("Please complete the reCAPTCHA");
-      return;
-    }
-
     setLoading(true);
     try {
       const cred = await createUserWithEmailAndPassword(auth, data.email, data.password);
@@ -122,7 +114,7 @@ export default function SignupPage() {
       const res = await fetch("/api/auth/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken, recaptchaToken }),
+        body: JSON.stringify({ idToken }),
       });
       if (!res.ok) {
         const resData = await res.json();
@@ -132,7 +124,6 @@ export default function SignupPage() {
       setUserEmail(data.email);
       setVerificationSent(true);
     } catch (err: unknown) {
-      recaptchaRef.current?.reset();
       const msg = err instanceof Error ? err.message : "Signup failed";
       if (msg.includes("email-already-in-use")) {
         toast.error("An account with this email already exists.");
@@ -379,14 +370,6 @@ export default function SignupPage() {
               {errors.confirmPassword && (
                 <p className="text-red-500 text-xs mt-1.5">{errors.confirmPassword.message}</p>
               )}
-            </div>
-
-            {/* reCAPTCHA */}
-            <div className="flex justify-center pt-1">
-              <ReCAPTCHA
-                ref={recaptchaRef}
-                sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
-              />
             </div>
 
             <button

@@ -3,9 +3,9 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
 // Every external domain the app actually loads client-side today (confirmed
-// by grep, not guessed): Tawk.to chat widget, Google reCAPTCHA v2, Firebase
-// Auth's own network calls + its Google sign-in popup, Google Fonts, and the
-// three image CDNs already listed in images.remotePatterns below.
+// by grep, not guessed): Tawk.to chat widget, Firebase Auth's own network
+// calls + its Google sign-in popup, Google Fonts, and the three image CDNs
+// already listed in images.remotePatterns below.
 // Report-Only: logs violations, blocks nothing — this is a live site with
 // real customers and these embeds; enforcing without a monitoring period
 // risks silently breaking one of them. script-src/style-src keep
@@ -14,12 +14,12 @@ import { withSentryConfig } from "@sentry/nextjs";
 // nothing else is missing.
 const CSP_REPORT_ONLY = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://embed.tawk.to https://www.google.com https://www.gstatic.com",
+  "script-src 'self' 'unsafe-inline' https://embed.tawk.to",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: blob: https://res.cloudinary.com https://firebasestorage.googleapis.com https://storage.googleapis.com https://*.dukanigeria.com https://*.awarizonmall.com",
-  "connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.google.com https://*.tawk.to wss://*.tawk.to",
-  "frame-src https://www.google.com https://*.tawk.to https://accounts.google.com",
+  "connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.tawk.to wss://*.tawk.to",
+  "frame-src https://*.tawk.to https://accounts.google.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

@@ -1,13 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import toast from "react-hot-toast";
-import ReCAPTCHA from "react-google-recaptcha";
 import {
   Eye,
   EyeOff,
@@ -52,7 +51,6 @@ export default function LoginPage() {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const recaptchaRef = useRef<ReCAPTCHA>(null);
 
   const {
     register,
@@ -92,12 +90,6 @@ export default function LoginPage() {
   }
 
   async function onSubmit(data: FormData) {
-    const recaptchaToken = recaptchaRef.current?.getValue();
-    if (!recaptchaToken) {
-      toast.error("Please complete the reCAPTCHA");
-      return;
-    }
-
     setLoading(true);
     try {
       const cred = await signInWithEmailAndPassword(auth, data.email, data.password);
@@ -106,7 +98,7 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken, recaptchaToken }),
+        body: JSON.stringify({ idToken }),
       });
       if (!res.ok) {
         const resData = await res.json();
@@ -117,7 +109,6 @@ export default function LoginPage() {
       const { url } = await redirectRes.json();
       router.push(url);
     } catch (err: unknown) {
-      recaptchaRef.current?.reset();
       const msg = err instanceof Error ? err.message : "";
       if (msg.includes("invalid-credential") || msg.includes("wrong-password")) {
         toast.error("Invalid email or password");
@@ -281,14 +272,6 @@ export default function LoginPage() {
               {errors.password && (
                 <p className="text-red-500 text-xs mt-1.5">{errors.password.message}</p>
               )}
-            </div>
-
-            {/* reCAPTCHA */}
-            <div className="flex justify-center">
-              <ReCAPTCHA
-                ref={recaptchaRef}
-                sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
-              />
             </div>
 
             <button

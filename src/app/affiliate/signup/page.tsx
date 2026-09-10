@@ -1,12 +1,11 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Loader2, Eye, EyeOff, CheckCircle2, Mail } from "lucide-react";
 import toast from "react-hot-toast";
-import ReCAPTCHA from "react-google-recaptcha";
 import {
   createUserWithEmailAndPassword,
   getIdToken,
@@ -43,7 +42,6 @@ export default function AffiliateSignupPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
-  const recaptchaRef = useRef<ReCAPTCHA>(null);
 
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -80,12 +78,6 @@ export default function AffiliateSignupPage() {
       return;
     }
 
-    const recaptchaToken = recaptchaRef.current?.getValue();
-    if (!recaptchaToken) {
-      toast.error("Please complete the reCAPTCHA");
-      return;
-    }
-
     setLoading(true);
     try {
       const cred = await createUserWithEmailAndPassword(auth, form.email, form.password);
@@ -95,12 +87,11 @@ export default function AffiliateSignupPage() {
       const res = await fetch("/api/affiliate/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken, name: form.name, recaptchaToken }),
+        body: JSON.stringify({ idToken, name: form.name }),
       });
       const data = await res.json();
       if (!res.ok) {
         toast.error(data.error ?? "Signup failed");
-        recaptchaRef.current?.reset();
         return;
       }
       // Send verification email — continue URL takes user back to login after verifying
@@ -109,7 +100,6 @@ export default function AffiliateSignupPage() {
       });
       setEmailSent(true);
     } catch (err: unknown) {
-      recaptchaRef.current?.reset();
       const msg = err instanceof Error ? err.message : "";
       if (msg.includes("email-already-in-use")) {
         toast.error("An account with this email already exists.");
@@ -310,14 +300,6 @@ export default function AffiliateSignupPage() {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-              </div>
-
-              {/* reCAPTCHA */}
-              <div className="flex justify-center pt-1">
-                <ReCAPTCHA
-                  ref={recaptchaRef}
-                  sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
-                />
               </div>
 
               <button
