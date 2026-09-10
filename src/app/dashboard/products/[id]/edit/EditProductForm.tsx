@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { Loader2, Package } from "lucide-react";
-import type { Product } from "@/types";
+import { SizeEditor } from "@/components/dashboard/SizeEditor";
+import type { Product, ProductSize } from "@/types";
 
 interface Props {
   product: Product;
@@ -28,9 +29,24 @@ export default function EditProductForm({ product }: Props) {
     stockQuantity: String(product.stock_quantity ?? product.stockQuantity ?? 0),
     isActive: product.is_active ?? product.isActive ?? true,
   });
+  const [sizes, setSizes] = useState<ProductSize[]>(
+    (product.sizes ?? []).map((s) => ({
+      label: s.label,
+      stockQuantity: s.stockQuantity ?? s.stock_quantity ?? 0,
+    }))
+  );
 
   const set = (k: keyof typeof form, v: string | boolean) =>
     setForm((f) => ({ ...f, [k]: v }));
+
+  // When sizes are in use, stock is the sum of size stocks — keep the
+  // (now read-only) plain stock field in sync with it.
+  useEffect(() => {
+    if (sizes.length > 0) {
+      set("stockQuantity", String(sizes.reduce((sum, s) => sum + (s.stockQuantity ?? 0), 0)));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sizes]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -59,6 +75,7 @@ export default function EditProductForm({ product }: Props) {
         price,
         stockQuantity: stock,
         isActive: form.isActive,
+        sizes: sizes.map((s) => ({ label: s.label, stockQuantity: s.stockQuantity ?? 0 })),
       };
       const cp = parseFloat(form.comparePrice);
       body.comparePrice = !isNaN(cp) && cp > 0 ? cp : null;
@@ -81,7 +98,9 @@ export default function EditProductForm({ product }: Props) {
     }
   }
 
-  const currentStock = product.stock_quantity ?? product.stockQuantity ?? 0;
+  const currentStock = sizes.length > 0
+    ? sizes.reduce((sum, s) => sum + (s.stockQuantity ?? 0), 0)
+    : (parseInt(form.stockQuantity, 10) || 0);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -188,15 +207,24 @@ export default function EditProductForm({ product }: Props) {
         <div>
           <label className={labelClass}>Quantity in stock</label>
           <input
-            className={inputClass}
+            className={inputClass + (sizes.length > 0 ? " opacity-60 cursor-not-allowed" : "")}
             type="number"
             min="0"
             step="1"
+            readOnly={sizes.length > 0}
             value={form.stockQuantity}
             onChange={(e) => set("stockQuantity", e.target.value)}
             placeholder="0"
           />
+          {sizes.length > 0 && (
+            <p className="text-xs text-surface-400 mt-1">Auto-calculated from the sizes below</p>
+          )}
         </div>
+      </div>
+
+      {/* Sizes */}
+      <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-5">
+        <SizeEditor sizes={sizes} onChange={setSizes} />
       </div>
 
       {/* Visibility */}

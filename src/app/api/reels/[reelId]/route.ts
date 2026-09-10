@@ -17,7 +17,7 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
        COALESCE(
          json_agg(
            json_build_object('product_id', p.id,'name',p.name,'price',p.price,
-             'image_url',p.image_url,'slug',p.slug,'stock_quantity',p.stock_quantity)
+             'image_url',p.image_url,'slug',p.slug,'stock_quantity',p.stock_quantity,'has_sizes',p.has_sizes)
            ORDER BY rp.sort_order
          ) FILTER (WHERE p.id IS NOT NULL), '[]'
        ) AS products,

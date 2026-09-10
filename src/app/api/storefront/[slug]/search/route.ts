@@ -28,8 +28,9 @@ export async function GET(
     images: string[]
     image_url: string | null
     stock_quantity: number
+    has_sizes: boolean
   }>(
-    `SELECT id, name, slug, price, compare_price, images, image_url, stock_quantity
+    `SELECT id, name, slug, price, compare_price, images, image_url, stock_quantity, has_sizes
      FROM products
      WHERE store_id = $1
        AND is_active = true

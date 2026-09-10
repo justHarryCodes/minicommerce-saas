@@ -123,6 +123,9 @@ export interface Product {
   is_featured?: boolean
   sortOrder?: number
   sort_order?: number
+  hasSizes?: boolean
+  has_sizes?: boolean
+  sizes?: ProductSize[]
   // Joined fields
   category_name?: string
   category_slug?: string
@@ -132,6 +135,19 @@ export interface Product {
   updated_at?: string
 }
 
+// A single size/variant of a product (e.g. "M", "42", "One Size") with its
+// own stock count. See migrations/product_sizes.sql for the design notes.
+export interface ProductSize {
+  id?: string
+  productId?: string
+  product_id?: string
+  label: string
+  stockQuantity?: number
+  stock_quantity?: number
+  sortOrder?: number
+  sort_order?: number
+}
+
 export interface ReelProduct {
   product_id: string
   name: string
@@ -139,6 +155,7 @@ export interface ReelProduct {
   image_url: string | null
   slug: string | null
   stock_quantity: number
+  has_sizes?: boolean
 }
 
 export interface Reel {
@@ -173,6 +190,7 @@ export interface OrderItem {
   product_name?: string
   productImage?: string
   product_image?: string
+  size?: string | null
   price: number
   quantity: number
   subtotal: number
@@ -228,6 +246,8 @@ export interface CartItem {
   image_url?: string
   stock_quantity: number
   quantity: number
+  /** Selected size label, e.g. "M" or "42" — undefined/null for products without sizes. */
+  size?: string | null
 }
 
 // API responses

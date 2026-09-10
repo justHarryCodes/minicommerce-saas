@@ -33,11 +33,15 @@ export default function ProductCard({ product, storeSlug }: Props) {
   const discountPct = hasDiscount ? Math.round((1 - product.price / comparePrice!) * 100) : 0;
   const bookmarked = isBookmarked(product.id);
   const outOfStock = stockQty === 0;
+  const hasSizes = product.has_sizes ?? product.hasSizes ?? false;
 
   function handleAddToCart(e: React.MouseEvent) {
+    if (outOfStock) { e.preventDefault(); return; }
+    // Sized products need a size picked first — let the click fall through
+    // to the card's own Link instead of adding straight to cart.
+    if (hasSizes) return;
     e.preventDefault();
     e.stopPropagation();
-    if (outOfStock) return;
     addItem({
       product_id: product.id,
       name: product.name,
@@ -147,6 +151,8 @@ export default function ProductCard({ product, storeSlug }: Props) {
         >
           {added ? (
             <><Check className="w-3.5 h-3.5" /> Added</>
+          ) : hasSizes ? (
+            <><ShoppingCart className="w-3.5 h-3.5" /> Select size</>
           ) : (
             <><ShoppingCart className="w-3.5 h-3.5" /> Add to cart</>
           )}

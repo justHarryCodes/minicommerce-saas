@@ -88,7 +88,7 @@ export function CartDrawer({ isOpen, onClose, store }: CartDrawerProps) {
           ) : (
             items.map((item) => (
               <div
-                key={item.product_id}
+                key={`${item.product_id}:${item.size ?? ''}`}
                 className="flex gap-3 p-3 rounded-2xl"
                 style={{ background: 'var(--sf-surface)' }}
               >
@@ -120,12 +120,17 @@ export function CartDrawer({ isOpen, onClose, store }: CartDrawerProps) {
                   >
                     {item.name}
                   </p>
+                  {item.size && (
+                    <p className="text-xs font-medium mt-0.5" style={{ color: 'var(--sf-muted)' }}>
+                      Size: {item.size}
+                    </p>
+                  )}
                   <p className="text-sm font-black mt-0.5" style={{ color: 'var(--sf-accent)' }}>
                     {formatPrice(item.price)}
                   </p>
                   <div className="flex items-center gap-2 mt-2">
                     <button
-                      onClick={() => updateQuantity(item.product_id, item.quantity - 1)}
+                      onClick={() => updateQuantity(item.product_id, item.quantity - 1, item.size)}
                       className="h-6 w-6 rounded-lg flex items-center justify-center transition-colors hover:bg-black/10 dark:hover:bg-white/10"
                       style={{ border: '1.5px solid var(--sf-border)', color: 'var(--sf-text)' }}
                       aria-label="Decrease quantity"
@@ -136,7 +141,7 @@ export function CartDrawer({ isOpen, onClose, store }: CartDrawerProps) {
                       {item.quantity}
                     </span>
                     <button
-                      onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
+                      onClick={() => updateQuantity(item.product_id, item.quantity + 1, item.size)}
                       className="h-6 w-6 rounded-lg flex items-center justify-center transition-colors"
                       style={{ background: 'var(--sf-accent)', color: '#000' }}
                       aria-label="Increase quantity"
@@ -149,7 +154,7 @@ export function CartDrawer({ isOpen, onClose, store }: CartDrawerProps) {
                 {/* Right: total + remove */}
                 <div className="flex flex-col items-end justify-between shrink-0">
                   <button
-                    onClick={() => removeItem(item.product_id)}
+                    onClick={() => removeItem(item.product_id, item.size)}
                     className="w-6 h-6 rounded-lg flex items-center justify-center transition-colors hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500"
                     style={{ color: 'var(--sf-muted)' }}
                     aria-label="Remove item"
@@ -198,7 +203,7 @@ export function CartDrawer({ isOpen, onClose, store }: CartDrawerProps) {
               const wa = store.whatsapp as string;
               const storeUrl = getStoreUrl(store.slug);
               const itemLines = items
-                .map((it) => `• ${it.name} × ${it.quantity} — ${formatPrice(it.price * it.quantity)}`)
+                .map((it) => `• ${it.name}${it.size ? ` (${it.size})` : ''} × ${it.quantity} — ${formatPrice(it.price * it.quantity)}`)
                 .join('\n');
               const msg = [
                 `Hello! I'd like to place an order from *${store.name}* 🛍️`,

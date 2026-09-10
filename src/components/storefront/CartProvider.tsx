@@ -9,12 +9,17 @@ interface CartStore {
   items: CartItem[];
   storeId: string | null;
   addItem: (item: Omit<CartItem, "quantity"> & { quantity?: number }) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, qty: number) => void;
+  removeItem: (productId: string, size?: string | null) => void;
+  updateQuantity: (productId: string, qty: number, size?: string | null) => void;
   clearCart: () => void;
   totalItems: number;
   totalAmount: number;
 }
+
+// Two cart lines for the same product are distinct exactly when their size
+// differs (e.g. one shirt in size M, another in size L) — undefined/null
+// both mean "no size", so normalize them to the same key.
+const sizeKey = (size?: string | null) => size ?? "";
 
 type StoreApi = ReturnType<typeof createCartStore>;
 
@@ -33,11 +38,13 @@ function createCartStore(storeId: string) {
             stock_quantity: Number(newItem.stock_quantity),
           };
           set((state) => {
-            const existing = state.items.find((i) => i.product_id === item.product_id);
+            const existing = state.items.find(
+              (i) => i.product_id === item.product_id && sizeKey(i.size) === sizeKey(item.size)
+            );
             if (existing) {
               return {
                 items: state.items.map((i) =>
-                  i.product_id === item.product_id
+                  i.product_id === item.product_id && sizeKey(i.size) === sizeKey(item.size)
                     ? { ...i, quantity: Math.min(i.quantity + 1, item.stock_quantity) }
                     : i
                 ),
@@ -47,17 +54,25 @@ function createCartStore(storeId: string) {
           });
         },
 
-        removeItem: (productId) => {
-          set((state) => ({ items: state.items.filter((i) => i.product_id !== productId) }));
+        removeItem: (productId, size) => {
+          set((state) => ({
+            items: state.items.filter(
+              (i) => !(i.product_id === productId && sizeKey(i.size) === sizeKey(size))
+            ),
+          }));
         },
 
-        updateQuantity: (productId, qty) => {
+        updateQuantity: (productId, qty, size) => {
           if (qty <= 0) {
-            set((state) => ({ items: state.items.filter((i) => i.product_id !== productId) }));
+            set((state) => ({
+              items: state.items.filter(
+                (i) => !(i.product_id === productId && sizeKey(i.size) === sizeKey(size))
+              ),
+            }));
           } else {
             set((state) => ({
               items: state.items.map((i) =>
-                i.product_id === productId
+                i.product_id === productId && sizeKey(i.size) === sizeKey(size)
                   ? { ...i, quantity: Math.min(qty, i.stock_quantity) }
                   : i
               ),

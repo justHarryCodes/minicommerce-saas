@@ -15,6 +15,7 @@ import { clThumb } from "@/lib/cloudinary";
 interface OrderItem {
   product_name: string;
   product_image: string | null;
+  size: string | null;
   price: number;
   quantity: number;
   subtotal: number;
@@ -482,6 +483,7 @@ export default function TrackClient({ storeSlug, initialOrder, initialPhone }: P
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-surface-900 dark:text-white truncate leading-snug">
                         {item.product_name}
+                        {item.size && <span className="text-surface-400 font-normal"> · Size {item.size}</span>}
                       </p>
                       <p className="text-xs text-surface-400 mt-0.5">
                         {formatCurrency(Number(item.price))} × {item.quantity}

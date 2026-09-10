@@ -2,8 +2,8 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { verifySession, getUserStore } from "@/lib/auth";
-import { queryOne } from "@/lib/db";
-import type { Product } from "@/types";
+import { queryOne, queryMany } from "@/lib/db";
+import type { Product, ProductSize } from "@/types";
 import EditProductForm from "./EditProductForm";
 
 interface Props {
@@ -29,6 +29,12 @@ export default async function EditProductPage({ params }: Props) {
     [id, store.id]
   );
   if (!product) notFound();
+
+  const sizes = await queryMany<ProductSize>(
+    "SELECT * FROM product_sizes WHERE product_id = $1 ORDER BY sort_order, created_at",
+    [id]
+  );
+  product.sizes = sizes;
 
   return (
     <div className="max-w-xl">

@@ -39,11 +39,26 @@ vi.mock("@/lib/auth", () => ({
   verifySession: vi.fn(),
   getUserStore: vi.fn(),
 }));
-vi.mock("@/lib/db", () => ({
-  query: vi.fn(),
-  queryOne: vi.fn(),
-  toCamel: (row: unknown) => row,
-}));
+vi.mock("@/lib/db", () => {
+  // Shared with `withTransaction` below so a route that moves its mutation
+  // inside a transaction (e.g. products/[productId] PATCH, for product
+  // sizes) still shows up in `mockedQuery.mock.calls` for the scoping
+  // assertions — same mock instance, whether called directly or via a
+  // transaction's client.
+  const queryMock = vi.fn();
+  const queryOneMock = vi.fn();
+  return {
+    query: queryMock,
+    queryOne: queryOneMock,
+    queryMany: queryMock,
+    toCamel: (row: unknown) => row,
+    rowsToCamel: (rows: unknown[]) => rows,
+    withTransaction: vi.fn(
+      async (fn: (client: { query: (...args: unknown[]) => Promise<{ rows: unknown[] }> }) => Promise<unknown>) =>
+        fn({ query: async (...args: unknown[]) => ({ rows: (await queryMock(...args)) ?? [] }) })
+    ),
+  };
+});
 vi.mock("@/lib/redis", () => ({
   cacheDel: vi.fn(),
   cacheDelPattern: vi.fn(),

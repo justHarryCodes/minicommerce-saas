@@ -80,6 +80,13 @@ export default function ProductDetailClient({ product, related, store, storeSlug
   const [added, setAdded] = useState(false);
   const [activeImg, setActiveImg] = useState(0);
 
+  const sizes = (product.sizes ?? []).map((s) => ({
+    label: s.label,
+    stockQuantity: s.stockQuantity ?? s.stock_quantity ?? 0,
+  }));
+  const hasSizes = sizes.length > 0;
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+
   const [reviews, setReviews] = useState<Review[]>([]);
   const [avgRating, setAvgRating] = useState(0);
   const [reviewTotal, setReviewTotal] = useState(0);
@@ -98,6 +105,13 @@ export default function ProductDetailClient({ product, related, store, storeSlug
     : [];
 
   const stockQty = product.stock_quantity ?? product.stockQuantity ?? 0;
+  const selectedSizeStock = selectedSize
+    ? sizes.find((s) => s.label === selectedSize)?.stockQuantity ?? 0
+    : 0;
+  // Without sizes, the plain product stock governs everything below (add to
+  // cart, qty stepper). With sizes, nothing is purchasable until a size with
+  // stock is chosen.
+  const effectiveStock = hasSizes ? selectedSizeStock : stockQty;
   const comparePrice = product.compare_price ?? product.comparePrice;
   const hasDiscount = comparePrice && comparePrice > product.price;
   const discountPct = hasDiscount ? Math.round((1 - product.price / comparePrice!) * 100) : 0;
@@ -119,9 +133,24 @@ export default function ProductDetailClient({ product, related, store, storeSlug
     fetchReviews();
   }, [product.id, storeSlug]);
 
+  // Reset quantity whenever the selected size changes, clamped to that
+  // size's own stock.
+  useEffect(() => {
+    setQty(1);
+  }, [selectedSize]);
+
   function handleAdd() {
+    if (hasSizes && !selectedSize) return;
     for (let i = 0; i < qty; i++) {
-      addItem({ product_id: product.id, name: product.name, price: product.price, image_url: images[0], stock_quantity: stockQty, quantity: 1 });
+      addItem({
+        product_id: product.id,
+        name: product.name,
+        price: product.price,
+        image_url: images[0],
+        stock_quantity: effectiveStock,
+        quantity: 1,
+        size: hasSizes ? selectedSize : undefined,
+      });
     }
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
@@ -287,6 +316,42 @@ export default function ProductDetailClient({ product, related, store, storeSlug
             </p>
           )}
 
+          {/* Size picker */}
+          {hasSizes && (
+            <div>
+              <span className="text-sm font-medium text-surface-600 dark:text-surface-400 mb-2 block">
+                Size{selectedSize ? `: ${selectedSize}` : ""}
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {sizes.map((s) => {
+                  const outOfStock = s.stockQuantity <= 0;
+                  const active = selectedSize === s.label;
+                  return (
+                    <button
+                      key={s.label}
+                      type="button"
+                      disabled={outOfStock}
+                      onClick={() => setSelectedSize(s.label)}
+                      className={`px-3.5 py-2 rounded-xl text-sm font-bold border transition-all ${
+                        outOfStock
+                          ? "border-surface-100 dark:border-surface-800 text-surface-300 dark:text-surface-700 line-through cursor-not-allowed"
+                          : active
+                          ? "text-black"
+                          : "border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-300 hover:border-surface-400"
+                      }`}
+                      style={active && !outOfStock ? { backgroundColor: "var(--sf-accent)", borderColor: "var(--sf-accent)" } : undefined}
+                    >
+                      {s.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {!selectedSize && (
+                <p className="text-xs text-surface-400 mt-2">Select a size to add to cart</p>
+              )}
+            </div>
+          )}
+
           {/* Qty + Add to cart */}
           {stockQty > 0 && (
             <div className="space-y-3">
@@ -295,7 +360,8 @@ export default function ProductDetailClient({ product, related, store, storeSlug
                 <div className="flex items-center gap-1 bg-surface-100 dark:bg-surface-800 rounded-xl p-1">
                   <button
                     onClick={() => setQty((q) => Math.max(1, q - 1))}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-surface-700 dark:text-surface-300 hover:bg-white dark:hover:bg-surface-700 transition-colors shadow-sm"
+                    disabled={hasSizes && !selectedSize}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-surface-700 dark:text-surface-300 hover:bg-white dark:hover:bg-surface-700 transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <Minus className="w-3.5 h-3.5" />
                   </button>
@@ -303,8 +369,9 @@ export default function ProductDetailClient({ product, related, store, storeSlug
                     {qty}
                   </span>
                   <button
-                    onClick={() => setQty((q) => Math.min(stockQty, q + 1))}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-surface-700 dark:text-surface-300 hover:bg-white dark:hover:bg-surface-700 transition-colors shadow-sm"
+                    onClick={() => setQty((q) => Math.min(effectiveStock, q + 1))}
+                    disabled={hasSizes && !selectedSize}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-surface-700 dark:text-surface-300 hover:bg-white dark:hover:bg-surface-700 transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <Plus className="w-3.5 h-3.5" />
                   </button>
@@ -319,7 +386,8 @@ export default function ProductDetailClient({ product, related, store, storeSlug
               <div className="flex gap-2.5">
                 <button
                   onClick={handleAdd}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm transition-all active:scale-[0.98] shadow-[0_4px_14px_rgba(0,0,0,0.12)] ${
+                  disabled={hasSizes && !selectedSize}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm transition-all active:scale-[0.98] shadow-[0_4px_14px_rgba(0,0,0,0.12)] disabled:opacity-50 disabled:cursor-not-allowed ${
                     added ? "bg-emerald-500 text-white" : "hover:opacity-90"
                   }`}
                   style={added ? {} : { backgroundColor: "var(--sf-accent)", color: "#000" }}
@@ -347,6 +415,7 @@ export default function ProductDetailClient({ product, related, store, storeSlug
               `Hello! I'd like to order from *${store.name}* 🛍️`,
               ``,
               `*${product.name}*`,
+              selectedSize ? `📏 Size: ${selectedSize}` : "",
               `📦 Quantity: ${qty}`,
               `💰 Price: ${formatCurrency(product.price)} each`,
               `💳 Total: ${lineTotal}`,

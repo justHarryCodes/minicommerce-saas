@@ -144,6 +144,7 @@ export default function CheckoutClient({
             productId: i.product_id,
             quantity: Number(i.quantity),
             unitPrice: Number(i.price),
+            size: i.size ?? undefined,
           })),
           paymentMethod: payMethod,
           totalAmount,
@@ -492,7 +493,7 @@ export default function CheckoutClient({
               {/* Cart items */}
               <div className="space-y-3 mb-4">
                 {items.map((item) => (
-                  <div key={item.product_id} className="flex items-center gap-3 min-w-0">
+                  <div key={`${item.product_id}:${item.size ?? ''}`} className="flex items-center gap-3 min-w-0">
                     {item.image_url ? (
                       <Image src={clThumb(item.image_url)} alt={item.name} width={44} height={44} className="w-11 h-11 rounded-lg object-cover border border-surface-100 dark:border-surface-700 shrink-0" />
                     ) : (
@@ -500,7 +501,9 @@ export default function CheckoutClient({
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-surface-900 dark:text-white truncate">{item.name}</p>
-                      <p className="text-xs text-surface-400">Qty: {item.quantity}</p>
+                      <p className="text-xs text-surface-400">
+                        {item.size ? `Size: ${item.size} · ` : ""}Qty: {item.quantity}
+                      </p>
                     </div>
                     <span className="text-sm font-bold text-surface-900 dark:text-white shrink-0">
                       {formatCurrency(Number(item.price) * item.quantity)}

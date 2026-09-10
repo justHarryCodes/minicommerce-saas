@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
-import { query, queryOne } from "@/lib/db";
+import { query, queryOne, queryMany } from "@/lib/db";
 import ProductDetailClient from "./ProductDetailClient";
-import type { Product, Store } from "@/types";
+import type { Product, ProductSize, Store } from "@/types";
 
 interface Props {
   params: Promise<{ slug: string; productSlug: string }>;
@@ -26,6 +26,13 @@ export default async function ProductDetailPage({ params }: Props) {
     [store.id, productSlug]
   );
   if (!product) notFound();
+
+  if (product.has_sizes ?? product.hasSizes) {
+    product.sizes = await queryMany<ProductSize>(
+      "SELECT id, label, stock_quantity, sort_order FROM product_sizes WHERE product_id = $1 ORDER BY sort_order, created_at",
+      [product.id]
+    );
+  }
 
   const related = product.category_id ?? product.categoryId
     ? await query<Product>(

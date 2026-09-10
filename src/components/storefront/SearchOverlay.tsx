@@ -18,6 +18,7 @@ interface SearchProduct {
   images: string[];
   image_url: string | null;
   stock_quantity: number;
+  has_sizes?: boolean;
 }
 
 interface Props {
@@ -42,11 +43,15 @@ function SearchResultRow({
   const hasDiscount = comparePrice && comparePrice > product.price;
   const discountPct = hasDiscount ? Math.round((1 - product.price / comparePrice!) * 100) : 0;
   const inStock = product.stock_quantity > 0;
+  const hasSizes = !!product.has_sizes;
 
   function handleAdd(e: React.MouseEvent) {
+    if (!inStock) { e.preventDefault(); return; }
+    // Sized products need a size picked first — fall through to the row's
+    // own Link to the product page instead of adding straight to cart.
+    if (hasSizes) return;
     e.preventDefault();
     e.stopPropagation();
-    if (!inStock) return;
     addItem({
       product_id: product.id,
       name: product.name,

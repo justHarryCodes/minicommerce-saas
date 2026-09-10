@@ -57,11 +57,12 @@ export async function GET(req: NextRequest, { params }: Ctx) {
     const items = await query<{
       product_name: string;
       product_image: string | null;
+      size: string | null;
       price: number;
       quantity: number;
       subtotal: number;
     }>(
-      "SELECT product_name, product_image, price, quantity, subtotal FROM order_items WHERE order_id = $1",
+      "SELECT product_name, product_image, size, price, quantity, subtotal FROM order_items WHERE order_id = $1",
       [order.id]
     );
 

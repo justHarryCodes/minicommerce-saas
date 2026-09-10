@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Eye, Share2, ShoppingBag, Play, Volume2, VolumeX } from "lucide-react";
 import { useCart } from "./CartProvider";
 import ShareSheet from "./ShareSheet";
@@ -257,13 +258,23 @@ export default function ReelCard({ reel, shareBase, isActive = false, preloadHin
                     </p>
                   </div>
                   {p.stock_quantity > 0 ? (
-                    <button
-                      onClick={() => addToCart(p)}
-                      className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
-                      style={{ backgroundColor: "var(--sf-accent)" }}
-                    >
-                      Add
-                    </button>
+                    p.has_sizes ? (
+                      <Link
+                        href={`${shareBase}/products/${p.slug ?? p.product_id}`}
+                        className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
+                        style={{ backgroundColor: "var(--sf-accent)" }}
+                      >
+                        Select size
+                      </Link>
+                    ) : (
+                      <button
+                        onClick={() => addToCart(p)}
+                        className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
+                        style={{ backgroundColor: "var(--sf-accent)" }}
+                      >
+                        Add
+                      </button>
+                    )
                   ) : (
                     <span className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-zinc-400 bg-zinc-100 dark:bg-zinc-800">
                       Sold out

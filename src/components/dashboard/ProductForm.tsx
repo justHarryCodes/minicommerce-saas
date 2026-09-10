@@ -8,7 +8,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import toast from "react-hot-toast";
 import { Loader2, X, ImageIcon, Sparkles } from "lucide-react";
-import type { Category, Product } from "@/types";
+import { SizeEditor } from "@/components/dashboard/SizeEditor";
+import type { Category, Product, ProductSize } from "@/types";
 
 const schema = z.object({
   name: z.string().min(2, "Product name is required"),
@@ -39,6 +40,7 @@ export default function ProductForm({ categories, product }: Props) {
   );
   const [uploading, setUploading] = useState(false);
   const [selectedCatId, setSelectedCatId] = useState(product?.category_id ?? "");
+  const [sizes, setSizes] = useState<ProductSize[]>(product?.sizes ?? []);
 
   // AI assist — hidden entirely until GROQ_API_KEY/GEMINI_API_KEY are configured.
   const [aiAvailable, setAiAvailable] = useState({ groq: false, gemini: false });
@@ -106,6 +108,15 @@ export default function ProductForm({ categories, product }: Props) {
     } catch { /* silent — this is a convenience suggestion, not required */ }
   }
 
+  // When sizes are in use, product-level stock is the sum of size stocks —
+  // keep the (now read-only) Stock quantity field in sync so the number
+  // shown on screen and the number submitted always match.
+  useEffect(() => {
+    if (sizes.length > 0) {
+      setValue("stockQuantity", sizes.reduce((sum, s) => sum + (s.stockQuantity ?? 0), 0));
+    }
+  }, [sizes, setValue]);
+
   function applyCategorySuggestion() {
     if (!categorySuggestion) return;
     setValue("categoryId", categorySuggestion.id);
@@ -154,6 +165,7 @@ export default function ProductForm({ categories, product }: Props) {
           images: imageUrl ? [imageUrl] : [],
           categoryId: data.categoryId || undefined,
           subcategoryId: data.subcategoryId || undefined,
+          sizes: sizes.map((s) => ({ label: s.label, stockQuantity: s.stockQuantity ?? 0 })),
         }),
       });
 
@@ -266,10 +278,19 @@ export default function ProductForm({ categories, product }: Props) {
           Stock quantity <span className="text-red-500">*</span>
         </label>
         <input {...register("stockQuantity")} type="number" min="0"
-          className={inputClass} placeholder="0" />
-        {errors.stockQuantity && (
+          readOnly={sizes.length > 0}
+          className={inputClass + (sizes.length > 0 ? " opacity-60 cursor-not-allowed" : "")}
+          placeholder="0" />
+        {sizes.length > 0 ? (
+          <p className="text-xs text-surface-400 mt-1">Auto-calculated from the sizes below</p>
+        ) : errors.stockQuantity && (
           <p className="text-red-500 text-xs mt-1">{errors.stockQuantity.message}</p>
         )}
+      </div>
+
+      {/* Sizes */}
+      <div className="pt-2 border-t border-surface-100 dark:border-surface-800">
+        <SizeEditor sizes={sizes} onChange={setSizes} />
       </div>
 
       {/* Category */}

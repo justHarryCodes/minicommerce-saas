@@ -34,6 +34,7 @@ export default async function OrdersPage() {
            'id', oi.id,
            'product_name', oi.product_name,
            'product_image', oi.product_image,
+           'size', oi.size,
            'price', oi.price,
            'quantity', oi.quantity,
            'subtotal', oi.subtotal
@@ -158,6 +159,9 @@ export default async function OrdersPage() {
                         )}
                         <span className="flex-1 text-surface-900 dark:text-white">
                           {item.product_name}
+                          {item.size && (
+                            <span className="text-surface-400 font-normal"> · Size {item.size}</span>
+                          )}
                         </span>
                         <span className="text-surface-500 dark:text-surface-400">
                           ×{item.quantity}

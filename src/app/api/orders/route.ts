@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
       COALESCE(o.total_amount, o.total, o.subtotal) AS total_amount,
       json_agg(json_build_object(
         'id', oi.id, 'product_id', oi.product_id, 'product_name', oi.product_name,
-        'product_image', oi.product_image, 'price', oi.price,
+        'product_image', oi.product_image, 'size', oi.size, 'price', oi.price,
         'quantity', oi.quantity, 'subtotal', oi.subtotal
       ) ORDER BY oi.id) FILTER (WHERE oi.id IS NOT NULL) AS items
     FROM orders o

@@ -43,6 +43,7 @@ const MIGRATIONS = [
   { name: "referral_reward_idempotency.sql",    path: join(__dirname, "../migrations/referral_reward_idempotency.sql") },
   { name: "web_push_subscriptions.sql",         path: join(__dirname, "../migrations/web_push_subscriptions.sql") },
   { name: "ai_usage_log_nullable_store.sql",    path: join(__dirname, "../migrations/ai_usage_log_nullable_store.sql") },
+  { name: "product_sizes.sql",                  path: join(__dirname, "../migrations/product_sizes.sql") },
 ];
 
 async function run() {
