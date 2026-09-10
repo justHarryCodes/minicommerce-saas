@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifySession, getUserStore, requireSubscription } from '@/lib/auth'
+import { verifySession, getUserStore } from '@/lib/auth'
 import { query, queryOne, rowsToCamel, toCamel } from '@/lib/db'
 import { cacheDelPattern } from '@/lib/redis'
 import { ensureUncategorized } from '@/lib/categories'
@@ -62,8 +62,6 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const store = await getUserStore(user.firebaseUid)
   if (!store) return NextResponse.json({ error: 'No store' }, { status: 404 })
-  const subErr = await requireSubscription(store)
-  if (subErr) return subErr
 
   const effectivePlan = await getEffectivePlan(store.id)
   const [{ count }] = await query('SELECT COUNT(*) FROM products WHERE store_id=$1', [store.id]) as { count: string }[]

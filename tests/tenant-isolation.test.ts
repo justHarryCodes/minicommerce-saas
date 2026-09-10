@@ -38,7 +38,6 @@ const USER_A = { firebaseUid: "uid-a", email: "vendor-a@example.com" };
 vi.mock("@/lib/auth", () => ({
   verifySession: vi.fn(),
   getUserStore: vi.fn(),
-  requireSubscription: vi.fn(),
 }));
 vi.mock("@/lib/db", () => ({
   query: vi.fn(),
@@ -55,12 +54,11 @@ vi.mock("@/lib/cloudinary-server", () => ({
   default: { uploader: { destroy: vi.fn() } },
 }));
 
-import { verifySession, getUserStore, requireSubscription } from "@/lib/auth";
+import { verifySession, getUserStore } from "@/lib/auth";
 import { query, queryOne } from "@/lib/db";
 
 const mockedVerifySession = vi.mocked(verifySession);
 const mockedGetUserStore = vi.mocked(getUserStore);
-const mockedRequireSubscription = vi.mocked(requireSubscription);
 const mockedQuery = vi.mocked(query);
 const mockedQueryOne = vi.mocked(queryOne);
 
@@ -91,7 +89,6 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockedVerifySession.mockResolvedValue(USER_A);
   mockedGetUserStore.mockResolvedValue({ id: STORE_A } as never);
-  mockedRequireSubscription.mockResolvedValue(null);
 });
 
 describe("products/[productId] — tenant isolation", () => {
