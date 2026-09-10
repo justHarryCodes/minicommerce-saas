@@ -40,6 +40,7 @@ const MIGRATIONS = [
   { name: "reels-plan-limit-migration.sql",     path: join(__dirname, "reels-plan-limit-migration.sql") },
   { name: "add_ai_and_theme_features.sql",      path: join(__dirname, "../migrations/add_ai_and_theme_features.sql") },
   { name: "add_account_deletion.sql",           path: join(__dirname, "../migrations/add_account_deletion.sql") },
+  { name: "referral_reward_idempotency.sql",    path: join(__dirname, "../migrations/referral_reward_idempotency.sql") },
 ];
 
 async function run() {

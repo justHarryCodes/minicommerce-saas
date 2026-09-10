@@ -52,8 +52,7 @@ export async function getEffectivePlan(storeId: string): Promise<EffectivePlan> 
 }
 
 // Returns a 403 NextResponse if the store's effective plan isn't Pro, else null.
-// Mirrors requireSubscription() in src/lib/auth.ts — use in mutation routes for
-// Pro-only features (Reels, Coupons).
+// Use in mutation routes for Pro-only features (Reels, Coupons).
 export async function requirePro(storeId: string): Promise<NextResponse | null> {
   const effective = await getEffectivePlan(storeId)
   if (!effective.isPro) {

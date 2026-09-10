@@ -60,7 +60,7 @@ export default function ReferralClient({ referralCode, referralCredits, referral
           Refer &amp; Earn
         </h1>
         <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
-          Share your referral link — earn 1 free month when a friend pays their setup fee
+          Share your referral link — earn 1 free month of Pro when a friend subscribes to a paid plan
         </p>
       </div>
 
@@ -145,7 +145,7 @@ export default function ReferralClient({ referralCode, referralCredits, referral
             {
               icon: <Award className="w-5 h-5" />,
               title: "You both benefit",
-              desc: "When they pay their setup fee, you automatically get 1 free month added to your subscription.",
+              desc: "When they subscribe to a paid plan, you automatically get 1 free month of Pro.",
             },
           ].map((step, i) => (
             <div key={i} className="flex items-start gap-4">
