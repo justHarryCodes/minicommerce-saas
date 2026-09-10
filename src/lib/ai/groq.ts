@@ -3,7 +3,15 @@
 // — no SDK dependency, matching this codebase's existing style (raw `pg`,
 // raw `ioredis`, hand-rolled HMAC rather than a payments SDK).
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const DEFAULT_MODEL = "llama-3.3-70b-versatile";
+// llama-3.3-70b-versatile was retired from Groq's catalog (confirmed via a
+// live GET /openai/v1/models call — it's gone from the response entirely,
+// which is why every AI call was failing). openai/gpt-oss-120b is Groq's
+// current largest general-purpose instruction-tuned text model — used here
+// over the smaller openai/gpt-oss-20b because product copy and the shopping
+// assistant are quality-sensitive; Groq's inference speed advantage holds
+// at this size too, so there's no meaningful latency trade-off.
+// Verify current models periodically: `curl -H "Authorization: Bearer $GROQ_API_KEY" https://api.groq.com/openai/v1/models`
+const DEFAULT_MODEL = "openai/gpt-oss-120b";
 
 export interface GenerateTextOptions {
   system?: string;

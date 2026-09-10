@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
       system:
         "You write concise, honest e-commerce product copy for informal/small merchants selling online. Never invent specifications you weren't given.",
       prompt,
-      maxTokens: 300,
+      maxTokens: 400,
     });
 
     let shortDescription = "";

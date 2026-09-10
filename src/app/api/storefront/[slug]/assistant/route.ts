@@ -62,7 +62,9 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   const { message, history = [] } = parsed.data;
 
   // Lightweight RAG — same ILIKE pattern as /api/storefront/[slug]/search,
-  // just reused inline here rather than making an internal fetch.
+  // extended to also match on category name (joined in) so a question like
+  // "do you have shoes" still surfaces products whose name/description never
+  // literally contains the word "shoes" but whose category does.
   const pattern = `%${message.trim().slice(0, 80)}%`;
   const products = await query<{
     name: string;
@@ -70,12 +72,13 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     price: number;
     stock_quantity: number;
   }>(
-    `SELECT name, slug, price, stock_quantity
-     FROM products
-     WHERE store_id = $1 AND is_active = true
-       AND (name ILIKE $2 OR description ILIKE $2)
-     ORDER BY CASE WHEN name ILIKE $2 THEN 0 ELSE 1 END, sort_order
-     LIMIT 5`,
+    `SELECT p.name, p.slug, p.price, p.stock_quantity
+     FROM products p
+     LEFT JOIN categories c ON c.id = p.category_id
+     WHERE p.store_id = $1 AND p.is_active = true
+       AND (p.name ILIKE $2 OR p.description ILIKE $2 OR c.name ILIKE $2)
+     ORDER BY CASE WHEN p.name ILIKE $2 THEN 0 ELSE 1 END, p.sort_order
+     LIMIT 8`,
     [store.id, pattern]
   );
 
@@ -112,7 +115,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
         .filter(Boolean)
         .join("\n"),
       prompt,
-      maxTokens: 250,
+      maxTokens: 350,
     });
 
     await logAiUsage(store.id, "storefront-assistant", "groq");
