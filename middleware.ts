@@ -81,26 +81,27 @@ export function middleware(req: NextRequest) {
       return NextResponse.next({ request: { headers } });
     }
 
-    // Leave the rewrite target's hostname exactly as Next.js already sees it
-    // (req.nextUrl.hostname) — don't repoint it at www.<ROOT_DOMAIN>. That
-    // repointing was written for Vercel's rewrite semantics; on this
-    // deployment (Cloudflare Worker → Hostinger, which forwards the request
-    // with a literal Host header already matching ROOT_DOMAIN) it made the
-    // rewrite target's hostname disagree with the physical connection's
-    // hostname, which downgrades the rewrite into a visible 307 redirect
-    // instead of an invisible internal one.
+    // NextResponse.rewrite() (an invisible, same-request internal
+    // re-route) does not survive Hostinger's reverse-proxy layer in front
+    // of this deployment — confirmed live: the rewritten pathname never
+    // took effect, on every path tested, regardless of hostname handling.
+    // NextResponse.redirect() (a real HTTP 3xx) does work reliably there
+    // (same infra correctly redirects unauthenticated /dashboard visits
+    // below), so subdomain routing uses a real redirect instead. The
+    // request that follows lands on `/store/${slug}/...`, which matches
+    // the "already rewritten" guard above and passes straight through.
     const url = req.nextUrl.clone();
     url.pathname = `/store/${slug}${pathname === "/" ? "" : pathname}`;
 
     devLog([
-      `[MW] → REWRITING`,
+      `[MW] → REDIRECTING`,
       `[MW]   slug     : ${slug}`,
       `[MW]   from     : ${pathname}`,
       `[MW]   to       : ${url.pathname}`,
       `[MW]   hostname : ${url.hostname}`,
     ].join("\n"));
 
-    return NextResponse.rewrite(url, { request: { headers } });
+    return NextResponse.redirect(url);
   }
 
   // ── Main domain: protected routes ─────────────────────────────────────────
