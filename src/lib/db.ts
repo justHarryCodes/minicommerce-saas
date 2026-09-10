@@ -10,14 +10,39 @@ declare global {
 }
 
 function createPool(): Pool {
-  return new Pool({
+  const p = new Pool({
     connectionString: process.env.DATABASE_URL,
     // Set DATABASE_SSL=true in env if your Postgres host requires SSL (e.g. Neon, Supabase)
     ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
     max: 20,
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 2_000,
+    // Without this, a NAT gateway/firewall/load balancer sitting between
+    // this app and DATABASE_URL's host can silently close an idle pooled
+    // connection without either side noticing — the pool still considers
+    // it live, hands it out for the next query, and that query fails with
+    // "Connection terminated unexpectedly" (reproduced this exact error
+    // against the real DB: a single fresh connection succeeded instantly,
+    // meaning the DB itself was fine — the pool was holding a connection
+    // that had gone stale in the background). TCP keepalive pings the
+    // connection periodically so dead ones get detected and recycled
+    // instead of silently handed out.
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10_000,
   })
+
+  // node-postgres emits 'error' on the pool itself when an *idle* client
+  // hits a background error (the exact failure mode above) — with nothing
+  // listening, that's an unhandled error event, not a rejected query
+  // promise, which is why it showed up as confusing duplicate
+  // process-level output rather than a clean caught error. This does not
+  // replace error handling on individual queries; it only stops idle
+  // connection failures from going unhandled.
+  p.on('error', (err) => {
+    console.error('[DB] Idle client error (pool recovers automatically):', err.message)
+  })
+
+  return p
 }
 
 export const pool: Pool =
