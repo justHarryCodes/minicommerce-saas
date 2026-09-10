@@ -18,8 +18,12 @@ export function isAiEnabled(): AiAvailability {
   };
 }
 
-/** Best-effort usage counter — never blocks or throws on the caller. */
-export async function logAiUsage(storeId: string, feature: string, provider: "groq" | "gemini") {
+/**
+ * Best-effort usage counter — never blocks or throws on the caller.
+ * storeId is nullable: suggest-store-structure runs during onboarding,
+ * before a store row exists yet, unlike every other AI feature here.
+ */
+export async function logAiUsage(storeId: string | null, feature: string, provider: "groq" | "gemini") {
   try {
     await query(
       `INSERT INTO ai_usage_log (store_id, feature, provider) VALUES ($1, $2, $3)`,

@@ -16,6 +16,8 @@ import {
   Globe,
   Zap,
   Building2,
+  Sparkles,
+  X,
 } from "lucide-react";
 import { slugify } from "@/lib/utils";
 import { PRIMARY_CATEGORIES } from "@/types";
@@ -66,6 +68,52 @@ function OnboardingPage() {
   });
 
   const set = (k: string, v: unknown) => setForm((f) => ({ ...f, [k]: v }));
+
+  // AI-suggested store structure (categories/subcategories from the
+  // Description text above). Held in local state and only actually created
+  // once the store itself exists — see handleSubmit.
+  const [aiSuggesting, setAiSuggesting] = useState(false);
+  const [suggestedCategories, setSuggestedCategories] = useState<
+    { name: string; subcategories: string[] }[]
+  >([]);
+
+  const suggestStoreStructure = async () => {
+    if (form.description.trim().length < 10) {
+      toast.error("Add a bit more detail to your description first");
+      return;
+    }
+    setAiSuggesting(true);
+    try {
+      const res = await fetch("/api/ai/suggest-store-structure", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: form.description.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Suggestion failed");
+      if (data.primaryCategory) set("primaryCategory", data.primaryCategory);
+      setSuggestedCategories(data.categories ?? []);
+      toast.success("Suggested categories ready — review below");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Couldn't generate suggestions");
+    } finally {
+      setAiSuggesting(false);
+    }
+  };
+
+  const removeSuggestedCategory = (name: string) => {
+    setSuggestedCategories((prev) => prev.filter((c) => c.name !== name));
+  };
+
+  const removeSuggestedSubcategory = (categoryName: string, sub: string) => {
+    setSuggestedCategories((prev) =>
+      prev.map((c) =>
+        c.name === categoryName
+          ? { ...c, subcategories: c.subcategories.filter((s) => s !== sub) }
+          : c
+      )
+    );
+  };
 
   const handleNameChange = async (name: string) => {
     set("name", name);
@@ -135,11 +183,40 @@ function OnboardingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, referralCode }),
       });
-      const { error } = await res.json();
+      const { data, error } = await res.json();
       if (error)
         throw new Error(
           typeof error === "string" ? error : "Failed to create store",
         );
+
+      // Best-effort: create any AI-suggested categories now that the store
+      // exists. A failure here must never block the "store created"
+      // success screen — the merchant already has a working store either
+      // way, this is a nice-to-have on top.
+      if (suggestedCategories.length && data?.id) {
+        await Promise.allSettled(
+          suggestedCategories.map(async (cat) => {
+            const catRes = await fetch("/api/categories", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ name: cat.name }),
+            });
+            const catJson = await catRes.json();
+            const parentId = catJson?.data?.id;
+            if (!parentId) return;
+            await Promise.allSettled(
+              cat.subcategories.map((sub) =>
+                fetch("/api/categories", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ name: sub, parentId }),
+                })
+              )
+            );
+          })
+        );
+      }
+
       setDone(true);
       setTimeout(() => router.push("/dashboard"), 2000);
     } catch (err: unknown) {
@@ -362,6 +439,66 @@ function OnboardingPage() {
                     value={form.description}
                     onChange={(e) => set("description", e.target.value)}
                   />
+                  <button
+                    type="button"
+                    onClick={suggestStoreStructure}
+                    disabled={aiSuggesting || form.description.trim().length < 10}
+                    className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {aiSuggesting ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-3.5 h-3.5" />
+                    )}
+                    {aiSuggesting ? "Organizing your store…" : "Suggest categories with AI"}
+                  </button>
+
+                  {suggestedCategories.length > 0 && (
+                    <div className="mt-3 p-3.5 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 space-y-2.5">
+                      <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+                        We&apos;ll set these up for you — remove anything you don&apos;t want
+                      </p>
+                      <div className="space-y-2">
+                        {suggestedCategories.map((cat) => (
+                          <div key={cat.name} className="bg-white dark:bg-zinc-900 rounded-lg p-2.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-sm font-semibold text-zinc-900 dark:text-white">
+                                {cat.name}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => removeSuggestedCategory(cat.name)}
+                                className="text-zinc-400 hover:text-red-500 transition-colors shrink-0"
+                                aria-label={`Remove ${cat.name}`}
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            {cat.subcategories.length > 0 && (
+                              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                                {cat.subcategories.map((sub) => (
+                                  <span
+                                    key={sub}
+                                    className="flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-xs text-zinc-600 dark:text-zinc-400"
+                                  >
+                                    {sub}
+                                    <button
+                                      type="button"
+                                      onClick={() => removeSuggestedSubcategory(cat.name, sub)}
+                                      className="text-zinc-400 hover:text-red-500 transition-colors"
+                                      aria-label={`Remove ${sub}`}
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div>

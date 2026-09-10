@@ -46,6 +46,23 @@ export async function generateText({
       messages,
       max_tokens: maxTokens,
       temperature,
+      // openai/gpt-oss-* models (the current default and .env value) are
+      // reasoning models: they emit a separate `reasoning` (chain-of-thought)
+      // field alongside `content`, billed from the same max_tokens budget.
+      // Confirmed live against the real API: at the default effort, a
+      // moderately complex prompt burned the entire budget on reasoning and
+      // never produced any content at all (finish_reason: "length", content:
+      // "", reasoning_tokens: 498/500). "low" cut that to 41 reasoning
+      // tokens with a clean, complete answer and finish_reason: "stop" on
+      // the identical prompt. Every caller of generateText() benefits from
+      // this, not just complex ones — a simple prompt just spends fewer of
+      // its "low" tokens on reasoning, it doesn't need more effort than that
+      // for assistive copy/classification tasks. If GROQ_MODEL is ever
+      // switched to a non-reasoning model, this field is expected to be
+      // silently ignored (OpenAI-compatible APIs generally don't error on
+      // unrecognized parameters) — hasn't been verified against every
+      // possible model, so revisit if a future model swap misbehaves.
+      reasoning_effort: "low",
     }),
   });
 
@@ -55,7 +72,19 @@ export async function generateText({
   }
 
   const json = await res.json();
-  const text = json?.choices?.[0]?.message?.content;
-  if (typeof text !== "string") throw new Error("Groq returned an unexpected response shape");
+  const choice = json?.choices?.[0];
+  const text = choice?.message?.content;
+  if (typeof text !== "string" || text.length === 0) {
+    // A reasoning model can legitimately return finish_reason: "length"
+    // with empty content if it ran out of budget mid-thought (see comment
+    // above) — surface that distinctly from a truly malformed response,
+    // since the fix differs (raise maxTokens) from a real API-shape change.
+    const reason = choice?.finish_reason ?? "unknown";
+    throw new Error(
+      reason === "length"
+        ? "Groq ran out of tokens before producing a response (finish_reason: length) — try raising maxTokens"
+        : `Groq returned an unexpected response shape (finish_reason: ${reason})`
+    );
+  }
   return text.trim();
 }
