@@ -9,7 +9,7 @@ import { Colors } from '@/constants/theme';
 import { AppHeader } from '@/components/AppHeader';
 import { ProductCard } from '@/components/ProductCard';
 import { EmptyState } from '@/components/ui/EmptyState';
-import type { Product } from '@/types';
+import type { Product, Store } from '@/types';
 
 function snakeToCamel(obj: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(
@@ -42,6 +42,11 @@ export default function ProductsScreen() {
     </View>
   );
 
+  const { data: store } = useQuery<Store>({
+    queryKey: ['store'],
+    queryFn: () => api.get<Store>('/api/dashboard/store'),
+  });
+
   const { data, isLoading, error, refetch, isRefetching } = useQuery<Product[]>({
     queryKey: ['products'],
     queryFn: async () => {
@@ -54,6 +59,10 @@ export default function ProductsScreen() {
       return arr.map(snakeToCamel) as unknown as Product[];
     },
   });
+
+  const maxProducts = store?.plan?.maxProducts;
+  const productCount = data?.length ?? 0;
+  const atLimit = maxProducts != null && productCount >= maxProducts;
 
   const filtered = (data ?? []).filter(
     (p) => !search || p.name.toLowerCase().includes(search.toLowerCase())
@@ -76,7 +85,9 @@ export default function ProductsScreen() {
   }, [filtered]);
 
   const subtitle = !isLoading
-    ? `${data?.length ?? 0} total · ${sections.length} ${sections.length === 1 ? 'category' : 'categories'}`
+    ? maxProducts != null
+      ? `${productCount} / ${maxProducts} products · ${store?.plan?.name} plan`
+      : `${productCount} total · ${sections.length} ${sections.length === 1 ? 'category' : 'categories'}`
     : undefined;
 
   return (
@@ -100,6 +111,15 @@ export default function ProductsScreen() {
           )}
         </View>
       </View>
+
+      {atLimit && (
+        <Pressable onPress={() => router.push('/(app)/billing')} style={styles.limitBanner}>
+          <AlertTriangle size={16} color="#b45309" />
+          <Text style={styles.limitBannerText}>
+            {store?.plan?.name} plan limit reached ({maxProducts} products). Upgrade to add more →
+          </Text>
+        </Pressable>
+      )}
 
       <SectionList
         sections={sections}
@@ -205,6 +225,24 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     fontSize: 14,
     color: Colors.surface[900],
+  },
+  limitBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 16,
+    marginBottom: 10,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+  },
+  limitBannerText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#92400e',
   },
   list: {
     paddingHorizontal: 16,

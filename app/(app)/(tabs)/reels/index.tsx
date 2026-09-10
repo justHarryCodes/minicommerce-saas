@@ -1,15 +1,18 @@
 import { Image } from 'expo-image';
-import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
-import { Film, Plus, Trash2 } from 'lucide-react-native';
-import { api } from '@/lib/api';
+import { Film, Lock, Plus, Trash2 } from 'lucide-react-native';
+import { api, API_BASE } from '@/lib/api';
 import { Colors } from '@/constants/theme';
 import { SubHeader } from '@/components/SubHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import type { Reel } from '@/types/reels';
+import type { Store } from '@/types';
+
+const WEB_BILLING_URL = `${API_BASE}/dashboard/billing`;
 
 function duration(secs: number | null) {
   if (!secs) return '';
@@ -20,6 +23,11 @@ function duration(secs: number | null) {
 
 export default function ReelsScreen() {
   const qc = useQueryClient();
+
+  const { data: store } = useQuery<Store>({
+    queryKey: ['store'],
+    queryFn: () => api.get<Store>('/api/dashboard/store'),
+  });
 
   const { data, isLoading, refetch, isRefetching } = useQuery<{ reels: Reel[]; monthlyUsed: number; monthlyLimit: number }>({
     queryKey: ['reels'],
@@ -50,6 +58,22 @@ export default function ReelsScreen() {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: () => remove.mutate(id) },
     ]);
+  }
+
+  // Only gate once we positively know the plan isn't Pro — don't flash the
+  // upgrade prompt while `store` is still loading (plan is undefined then).
+  if (store && !store.plan?.isPro) {
+    return (
+      <SafeAreaView style={styles.root} edges={['left', 'right', 'bottom']}>
+        <SubHeader title="Reels" />
+        <EmptyState
+          icon={<Lock size={56} color={Colors.surface[300]} />}
+          title="Reels is a Pro feature"
+          subtitle="Upgrade to Pro to unlock short-video product showcases and reach more customers."
+          action={{ label: 'Upgrade to Pro →', onPress: () => Linking.openURL(WEB_BILLING_URL) }}
+        />
+      </SafeAreaView>
+    );
   }
 
   const reels = data?.reels ?? [];

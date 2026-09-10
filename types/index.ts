@@ -19,6 +19,12 @@ export interface Store {
   subscriptionExpiresAt: string | null;
   accentColor: string | null;
   createdAt: string;
+  plan?: {
+    name: string;
+    maxProducts: number;
+    maxReels: number;
+    isPro: boolean;
+  };
 }
 
 export interface Product {

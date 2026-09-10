@@ -1,8 +1,8 @@
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CheckCircle, Clock, Info, RefreshCw, XCircle } from 'lucide-react-native';
-import { api } from '@/lib/api';
+import { Check, CheckCircle, Clock, Crown, Info, RefreshCw, XCircle } from 'lucide-react-native';
+import { api, API_BASE } from '@/lib/api';
 import { Colors } from '@/constants/theme';
 import { SubHeader } from '@/components/SubHeader';
 import type { Store } from '@/types';
@@ -11,7 +11,9 @@ function fmt(n: number) {
   return '₦' + n.toLocaleString('en-NG');
 }
 
-const WEB_BILLING_URL = 'https://awarizon.shop/dashboard/billing';
+const WEB_BILLING_URL = `${API_BASE}/dashboard/billing`;
+
+const PRO_PERKS = ['More product listings', 'Reels — short-video product showcases', 'Priority support'];
 
 function StatusIcon({ status, color }: { status: string; color: string }) {
   const props = { size: 28, color };
@@ -83,6 +85,43 @@ export default function BillingScreen() {
             </Text>
           )}
         </View>
+
+        {/* Current plan */}
+        {store?.plan && (
+          <View style={styles.planCard}>
+            <View style={styles.planTop}>
+              <View style={styles.planNameRow}>
+                <Crown size={18} color={store.plan.isPro ? '#166534' : Colors.surface[400]} />
+                <Text style={styles.planName}>{store.plan.name} plan</Text>
+              </View>
+              <Text style={styles.planLimit}>Up to {store.plan.maxProducts} products</Text>
+            </View>
+
+            {store.plan.isPro ? (
+              <View style={styles.proActiveRow}>
+                <Check size={16} color="#166534" />
+                <Text style={styles.proActiveText}>You have full access to Reels and higher product limits</Text>
+              </View>
+            ) : (
+              <>
+                <View style={styles.perksList}>
+                  {PRO_PERKS.map((perk) => (
+                    <View key={perk} style={styles.perkRow}>
+                      <Check size={14} color={Colors.brandDark} />
+                      <Text style={styles.perkText}>{perk}</Text>
+                    </View>
+                  ))}
+                </View>
+                <Pressable
+                  onPress={() => Linking.openURL(WEB_BILLING_URL)}
+                  style={({ pressed }) => [styles.upgradeBtn, { opacity: pressed ? 0.85 : 1 }]}
+                >
+                  <Text style={styles.upgradeLabel}>Upgrade to Pro →</Text>
+                </Pressable>
+              </>
+            )}
+          </View>
+        )}
 
         {/* Pricing */}
         <View style={styles.pricingCard}>
@@ -167,6 +206,72 @@ const styles = StyleSheet.create({
   },
   expiryText: {
     fontSize: 12,
+  },
+  planCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.surface[200],
+    padding: 16,
+    gap: 12,
+  },
+  planTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  planNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  planName: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: Colors.surface[900],
+  },
+  planLimit: {
+    fontSize: 12,
+    color: Colors.surface[400],
+    fontWeight: '600',
+  },
+  proActiveRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#dcfce7',
+    borderRadius: 10,
+    padding: 10,
+  },
+  proActiveText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#166534',
+  },
+  perksList: {
+    gap: 8,
+  },
+  perkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  perkText: {
+    fontSize: 13,
+    color: Colors.surface[700],
+    fontWeight: '500',
+  },
+  upgradeBtn: {
+    backgroundColor: Colors.brand,
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+  },
+  upgradeLabel: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: Colors.dark,
   },
   pricingCard: {
     backgroundColor: Colors.white,

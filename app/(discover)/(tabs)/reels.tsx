@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -8,11 +8,21 @@ import {
   View,
   ViewToken,
 } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { API_BASE } from '@/lib/api';
 import { Colors } from '@/constants/theme';
 import { ReelCard } from '@/components/discover/ReelCard';
 import { getCachedReels, isCacheStale, setCachedReels } from '@/lib/discover-cache';
 import type { DiscoverReel } from '@/types/discover';
+
+// Moves the reel matching targetId to the front so a story tap lands on that
+// store's reel first, without needing FlatList scroll-index gymnastics.
+function reorderForTarget(list: DiscoverReel[], targetId?: string): DiscoverReel[] {
+  if (!targetId) return list;
+  const idx = list.findIndex(r => r.id === targetId);
+  if (idx <= 0) return list;
+  return [list[idx], ...list.slice(0, idx), ...list.slice(idx + 1)];
+}
 
 async function fetchReels(): Promise<DiscoverReel[]> {
   const res = await fetch(`${API_BASE}/api/discover/reels`);
@@ -22,10 +32,13 @@ async function fetchReels(): Promise<DiscoverReel[]> {
 }
 
 export default function ReelsTab() {
+  const { reelId } = useLocalSearchParams<{ reelId?: string }>();
   const [reels, setReels] = useState<DiscoverReel[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
   const [reelHeight, setReelHeight] = useState(0);
+
+  const displayReels = useMemo(() => reorderForTarget(reels, reelId), [reels, reelId]);
 
   useEffect(() => {
     const cached = getCachedReels();
@@ -70,7 +83,7 @@ export default function ReelsTab() {
           </View>
         ) : reelHeight > 0 ? (
           <FlatList
-            data={reels}
+            data={displayReels}
             keyExtractor={r => r.id}
             pagingEnabled
             snapToInterval={reelHeight}

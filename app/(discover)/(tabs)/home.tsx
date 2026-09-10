@@ -16,6 +16,7 @@ import { ChevronRight, ShoppingBag } from 'lucide-react-native';
 import { API_BASE } from '@/lib/api';
 import { Colors } from '@/constants/theme';
 import { ProductCardSkeleton, SectionHeaderSkeleton } from '@/components/Skeleton';
+import { LatestReelsStrip } from '@/components/discover/LatestReelsStrip';
 import type { MarketProduct } from '@/types/discover';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -203,6 +204,9 @@ export default function HomeScreen() {
         <Text style={styles.headerTitle}>Discover</Text>
         <Text style={styles.headerSub}>Products &amp; connect with vendors</Text>
       </View>
+
+      {/* ── Latest reels story strip ──────────────────────────────── */}
+      <LatestReelsStrip />
 
       {/* ── Content ────────────────────────────────────────────────── */}
       {loading ? (

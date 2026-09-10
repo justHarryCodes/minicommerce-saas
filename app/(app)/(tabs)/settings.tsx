@@ -15,13 +15,14 @@ import { AppHeader } from '@/components/AppHeader';
 import { Colors } from '@/constants/theme';
 import type { Store as StoreType } from '@/types';
 
-function SettingRow({ icon, label, sub, onPress, danger, hideChevron }: {
+function SettingRow({ icon, label, sub, onPress, danger, hideChevron, badge }: {
   icon: React.ReactNode;
   label: string;
   sub?: string;
   onPress?: () => void;
   danger?: boolean;
   hideChevron?: boolean;
+  badge?: string;
 }) {
   return (
     <Pressable
@@ -32,7 +33,14 @@ function SettingRow({ icon, label, sub, onPress, danger, hideChevron }: {
         {icon}
       </View>
       <View style={styles.rowText}>
-        <Text style={[styles.rowLabel, danger && styles.rowLabelDanger]}>{label}</Text>
+        <View style={styles.rowLabelWrap}>
+          <Text style={[styles.rowLabel, danger && styles.rowLabelDanger]}>{label}</Text>
+          {badge && (
+            <View style={styles.rowBadge}>
+              <Text style={styles.rowBadgeText}>{badge}</Text>
+            </View>
+          )}
+        </View>
         {sub && <Text style={styles.rowSub}>{sub}</Text>}
       </View>
       {!hideChevron && <ChevronRight size={16} color={Colors.surface[300]} />}
@@ -122,14 +130,14 @@ export default function SettingsScreen() {
           <SectionLabel title="STORE" />
           <View style={styles.group}>
             <SettingRow icon={<Store size={18} color={Colors.surface[600]} />}        label="Store settings"        sub="Name, logo, description"    onPress={() => Linking.openURL('https://awarizon.shop/dashboard/settings')} />
-            <SettingRow icon={<CreditCard size={18} color={Colors.surface[600]} />}   label="Billing & subscription" sub="Setup fee, monthly plan"     onPress={() => router.push('/(app)/billing')} />
+            <SettingRow icon={<CreditCard size={18} color={Colors.surface[600]} />}   label="Billing & subscription" sub={store?.plan ? `${store.plan.name} plan · up to ${store.plan.maxProducts} products` : 'Setup fee, monthly plan'} onPress={() => router.push('/(app)/billing')} />
             <SettingRow icon={<Link2 size={18} color={Colors.surface[600]} />}        label="Affiliate program"      sub="Earn by referring vendors"   onPress={() => Linking.openURL('https://awarizon.shop/affiliate')} />
           </View>
 
           {/* Content */}
           <SectionLabel title="CONTENT" />
           <View style={styles.group}>
-            <SettingRow icon={<Film size={18} color={Colors.surface[600]} />} label="Reels" sub="Manage your product videos" onPress={() => router.push('/(app)/reels')} />
+            <SettingRow icon={<Film size={18} color={Colors.surface[600]} />} label="Reels" sub="Manage your product videos" badge={store?.plan && !store.plan.isPro ? 'PRO' : undefined} onPress={() => router.push('/(app)/reels')} />
           </View>
 
           {/* Support */}
@@ -307,10 +315,27 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 1,
   },
+  rowLabelWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   rowLabel: {
     fontSize: 14,
     fontWeight: '600',
     color: Colors.surface[900],
+  },
+  rowBadge: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  rowBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#92400E',
+    letterSpacing: 0.3,
   },
   rowLabelDanger: {
     color: Colors.error,

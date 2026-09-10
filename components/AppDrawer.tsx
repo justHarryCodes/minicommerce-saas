@@ -44,6 +44,7 @@ interface NavItem {
   matchPath: string;
   iconBg: string;
   iconColor: string;
+  pro?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -51,7 +52,7 @@ const NAV_ITEMS: NavItem[] = [
   { Icon: Package, label: "Orders", route: "/(app)/orders", matchPath: "/orders", iconBg: "#F5F3FF", iconColor: "#8B5CF6" },
   { Icon: ShoppingBag, label: "Products", route: "/(app)/products", matchPath: "/products", iconBg: "#F0FDF4", iconColor: "#22C55E" },
   { Icon: FolderOpen, label: "Categories", route: "/(app)/categories", matchPath: "/categories", iconBg: "#FFF7ED", iconColor: "#F97316" },
-  { Icon: Film, label: "Reels", route: "/(app)/reels", matchPath: "/reels", iconBg: "#FFF1F2", iconColor: "#F43F5E" },
+  { Icon: Film, label: "Reels", route: "/(app)/reels", matchPath: "/reels", iconBg: "#FFF1F2", iconColor: "#F43F5E", pro: true },
   { Icon: CreditCard, label: "Billing", route: "/(app)/billing", matchPath: "/billing", iconBg: "#ECFDF5", iconColor: "#10B981" },
   { Icon: QrCode, label: "QR Code", route: "/(app)/qrcode", matchPath: "/qrcode", iconBg: "#EEF2FF", iconColor: "#6366F1" },
   { Icon: Settings, label: "Settings", route: "/(app)/settings", matchPath: "/settings", iconBg: "#F8FAFC", iconColor: "#64748B" },
@@ -63,10 +64,12 @@ function NavCard({
   item,
   onPress,
   pathname,
+  locked,
 }: {
   item: NavItem;
   onPress: (route: string) => void;
   pathname: string;
+  locked: boolean;
 }) {
   const active =
     pathname === item.matchPath ||
@@ -83,6 +86,11 @@ function NavCard({
         pressed && { transform: [{ scale: 0.96 }], opacity: 0.9 },
       ]}
     >
+      {locked && (
+        <View style={styles.proBadge}>
+          <Text style={styles.proBadgeText}>PRO</Text>
+        </View>
+      )}
       <View
         style={[
           styles.icon,
@@ -227,6 +235,7 @@ export function DrawerContent({
               item={item}
               onPress={go}
               pathname={pathname}
+              locked={!!item.pro && !store?.plan?.isPro}
             />
           ))}
         </View>
@@ -375,6 +384,23 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
+  },
+
+  proBadge: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    backgroundColor: "#FEF3C7",
+    borderRadius: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+
+  proBadgeText: {
+    fontSize: 8,
+    fontWeight: "800",
+    color: "#92400E",
+    letterSpacing: 0.3,
   },
 
   cardActive: {
