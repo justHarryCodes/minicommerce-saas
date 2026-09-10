@@ -81,8 +81,15 @@ export function middleware(req: NextRequest) {
       return NextResponse.next({ request: { headers } });
     }
 
+    // Leave the rewrite target's hostname exactly as Next.js already sees it
+    // (req.nextUrl.hostname) — don't repoint it at www.<ROOT_DOMAIN>. That
+    // repointing was written for Vercel's rewrite semantics; on this
+    // deployment (Cloudflare Worker → Hostinger, which forwards the request
+    // with a literal Host header already matching ROOT_DOMAIN) it made the
+    // rewrite target's hostname disagree with the physical connection's
+    // hostname, which downgrades the rewrite into a visible 307 redirect
+    // instead of an invisible internal one.
     const url = req.nextUrl.clone();
-    if (process.env.NODE_ENV === "production") url.hostname = `www.${ROOT_DOMAIN}`;
     url.pathname = `/store/${slug}${pathname === "/" ? "" : pathname}`;
 
     devLog([
