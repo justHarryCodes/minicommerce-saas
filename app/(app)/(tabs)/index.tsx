@@ -58,7 +58,7 @@ export default function DashboardScreen() {
     queryFn: () => api.get<StoreType>('/api/dashboard/store'),
     enabled: !!user,
   });
-  const storeUrl = store?.slug ? `${store.slug}.awarizon.shop` : null;
+  const storeUrl = store?.slug ? `${store.slug}.dukanigeria.com` : null;
 
   async function copyStoreUrl() {
     if (!storeUrl) return;
@@ -93,7 +93,7 @@ export default function DashboardScreen() {
         </Text>
         <View style={styles.noStoreActions}>
           <Text
-            onPress={() => Linking.openURL('https://awarizon.shop/onboarding')}
+            onPress={() => Linking.openURL('https://dukanigeria.com/onboarding')}
             style={styles.noStoreCta}
           >
             Set up my store →

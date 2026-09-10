@@ -1,7 +1,7 @@
 import { getIdToken } from '@react-native-firebase/auth';
 import { auth } from './firebase';
 
-export const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? 'https://awarizon.shop';
+export const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? 'https://dukanigeria.com';
 
 async function getToken(forceRefresh = false): Promise<string | null> {
   const user = auth.currentUser;

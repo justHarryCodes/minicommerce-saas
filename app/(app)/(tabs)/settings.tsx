@@ -114,10 +114,10 @@ export default function SettingsScreen() {
           <View style={styles.storeCard}>
             <View style={{ flex: 1 }}>
               <Text style={styles.storeName}>{store.name}</Text>
-              <Text style={styles.storeSlug}>{store.slug}.awarizon.shop</Text>
+              <Text style={styles.storeSlug}>{store.slug}.dukanigeria.com</Text>
             </View>
             <Pressable
-              onPress={() => Linking.openURL(`https://${store.slug}.awarizon.shop`)}
+              onPress={() => Linking.openURL(`https://${store.slug}.dukanigeria.com`)}
               style={({ pressed }) => [styles.visitBtn, { opacity: pressed ? 0.75 : 1 }]}
             >
               <Text style={styles.visitText}>Visit →</Text>
@@ -129,9 +129,9 @@ export default function SettingsScreen() {
           {/* Store */}
           <SectionLabel title="STORE" />
           <View style={styles.group}>
-            <SettingRow icon={<Store size={18} color={Colors.surface[600]} />}        label="Store settings"        sub="Name, logo, description"    onPress={() => Linking.openURL('https://awarizon.shop/dashboard/settings')} />
+            <SettingRow icon={<Store size={18} color={Colors.surface[600]} />}        label="Store settings"        sub="Name, logo, description"    onPress={() => Linking.openURL('https://dukanigeria.com/dashboard/settings')} />
             <SettingRow icon={<CreditCard size={18} color={Colors.surface[600]} />}   label="Billing & subscription" sub={store?.plan ? `${store.plan.name} plan · up to ${store.plan.maxProducts} products` : 'Setup fee, monthly plan'} onPress={() => router.push('/(app)/billing')} />
-            <SettingRow icon={<Link2 size={18} color={Colors.surface[600]} />}        label="Affiliate program"      sub="Earn by referring vendors"   onPress={() => Linking.openURL('https://awarizon.shop/affiliate')} />
+            <SettingRow icon={<Link2 size={18} color={Colors.surface[600]} />}        label="Affiliate program"      sub="Earn by referring vendors"   onPress={() => Linking.openURL('https://dukanigeria.com/affiliate')} />
           </View>
 
           {/* Content */}
@@ -159,8 +159,8 @@ export default function SettingsScreen() {
                 thumbColor={soundEnabled ? Colors.brand : Colors.surface[300]}
               />
             </View>
-            <SettingRow icon={<HelpCircle size={18} color={Colors.surface[600]} />} label="Help & support" sub="Chat with us"         onPress={() => Linking.openURL('https://awarizon.shop/dashboard')} />
-            <SettingRow icon={<FileText size={18} color={Colors.surface[600]} />}  label="Terms of service"                           onPress={() => Linking.openURL('https://awarizon.shop/terms')} />
+            <SettingRow icon={<HelpCircle size={18} color={Colors.surface[600]} />} label="Help & support" sub="Chat with us"         onPress={() => Linking.openURL('https://dukanigeria.com/dashboard')} />
+            <SettingRow icon={<FileText size={18} color={Colors.surface[600]} />}  label="Terms of service"                           onPress={() => Linking.openURL('https://dukanigeria.com/terms')} />
           </View>
 
           {/* Sign out */}

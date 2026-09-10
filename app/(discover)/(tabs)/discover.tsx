@@ -84,11 +84,11 @@ function VendorCard({ vendor }: { vendor: DiscoverVendor }) {
       </Pressable>
       <Pressable
         style={({ pressed }) => [styles.webLink, { opacity: pressed ? 0.7 : 1 }]}
-        onPress={() => WebBrowser.openBrowserAsync(`https://${vendor.store_slug}.awarizon.shop`)}
+        onPress={() => WebBrowser.openBrowserAsync(`https://${vendor.store_slug}.dukanigeria.com`)}
       >
         <Globe size={10} color={Colors.surface[400]} />
         <Text style={styles.webLinkText} numberOfLines={1}>
-          {vendor.store_slug}.awarizon.shop
+          {vendor.store_slug}.dukanigeria.com
         </Text>
       </Pressable>
     </View>

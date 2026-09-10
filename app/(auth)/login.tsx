@@ -142,7 +142,7 @@ export default function LoginScreen() {
 
           <View style={styles.signupRow}>
             <Text style={styles.signupText}>Don&apos;t have an account?</Text>
-            <Pressable onPress={() => WebBrowser.openBrowserAsync('https://awarizon.shop/auth/signup')}>
+            <Pressable onPress={() => WebBrowser.openBrowserAsync('https://dukanigeria.com/auth/signup')}>
               <Text style={styles.signupLink}>Create one</Text>
             </Pressable>
           </View>

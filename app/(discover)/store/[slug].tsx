@@ -110,7 +110,7 @@ export default function StoreDetail() {
               )}
               <Pressable
                 style={({ pressed }) => [styles.visitStoreBtn, { opacity: pressed ? 0.85 : 1 }]}
-                onPress={() => WebBrowser.openBrowserAsync(`https://${store.store_slug}.awarizon.shop`)}
+                onPress={() => WebBrowser.openBrowserAsync(`https://${store.store_slug}.dukanigeria.com`)}
               >
                 <Globe size={15} color={Colors.dark} />
                 <Text style={styles.visitStoreBtnLabel}>Visit Store</Text>
@@ -143,7 +143,7 @@ export default function StoreDetail() {
             store.products.length > 0 ? (
               <Pressable
                 style={({ pressed }) => [styles.viewMoreProducts, { opacity: pressed ? 0.85 : 1 }]}
-                onPress={() => WebBrowser.openBrowserAsync(`https://${store.store_slug}.awarizon.shop`)}
+                onPress={() => WebBrowser.openBrowserAsync(`https://${store.store_slug}.dukanigeria.com`)}
               >
                 <Globe size={14} color={Colors.dark} />
                 <Text style={styles.viewMoreProductsLabel}>View More Products</Text>

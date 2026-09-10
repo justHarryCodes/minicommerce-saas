@@ -203,7 +203,7 @@ export function DrawerContent({
             {store && (
               <View style={styles.meta}>
                 <Text style={styles.store}>
-                  {store.slug}.awarizon.shop
+                  {store.slug}.dukanigeria.com
                 </Text>
 
                 <View

@@ -19,7 +19,7 @@ export default function QRCodeScreen() {
     queryFn:  () => api.get<Store>('/api/dashboard/store'),
   });
 
-  const storeUrl = store ? `https://${store.slug}.awarizon.shop` : '';
+  const storeUrl = store ? `https://${store.slug}.dukanigeria.com` : '';
 
   async function handleShare() {
     try {

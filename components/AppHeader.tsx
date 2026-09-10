@@ -50,7 +50,7 @@ export function AppHeader({ right }: Props) {
           <Pressable
             onPress={() =>
               store?.slug
-                ? Linking.openURL(`https://${store.slug}.awarizon.shop`)
+                ? Linking.openURL(`https://${store.slug}.dukanigeria.com`)
                 : undefined
             }
             style={({ pressed }) => [styles.shopBtn, { opacity: pressed ? 0.75 : 1 }]}
