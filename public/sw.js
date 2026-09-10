@@ -2,10 +2,21 @@
 //
 // Deliberately NOT an offline-first cache — this is a live e-commerce site
 // with prices/stock/orders that change constantly; caching pages would risk
-// showing stale data, which is worse than no offline support at all. The
-// fetch handler below exists only because it's part of what some browsers'
-// installability checks look for, not to serve cached content — every
-// request just passes straight through to the network.
+// showing stale data, which is worse than no offline support at all.
+//
+// No fetch handler. There used to be a pure-passthrough one here
+// (`event.respondWith(fetch(event.request))`), added only because some
+// browsers' installability checks historically wanted *a* fetch handler
+// present — it wasn't meant to change any behavior. It broke page
+// navigation instead: a navigation's event.request has mode "navigate",
+// and the Fetch API does not allow calling fetch() with a request whose
+// mode is "navigate" — re-issuing that exact request object throws
+// TypeError: Failed to fetch, which surfaced as a full Next.js application
+// error on every route this service worker controlled (reproduced:
+// visiting /admin hard-failed with exactly this error, sw.js:19). Modern
+// Chrome no longer requires a fetch handler for installability, so the
+// fix is removing it outright rather than special-casing navigation mode
+// — a passthrough handler adds no functionality either way, only risk.
 
 self.addEventListener("install", () => {
   self.skipWaiting();
@@ -13,10 +24,6 @@ self.addEventListener("install", () => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
-});
-
-self.addEventListener("fetch", (event) => {
-  event.respondWith(fetch(event.request));
 });
 
 self.addEventListener("push", (event) => {
