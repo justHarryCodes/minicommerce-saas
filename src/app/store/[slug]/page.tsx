@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import Image from "next/image";
 import { query, queryOne } from "@/lib/db";
 import { getOrSet, cacheKey, TTL } from "@/lib/redis";
 import ProductCard from "@/components/storefront/ProductCard";
@@ -124,11 +125,12 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
       style={{ background: "linear-gradient(135deg, var(--sf-accent-light, var(--sf-accent)) 0%, var(--sf-accent) 100%)" }}
     >
       {store.logo_url && (
-        <img
+        <Image
           src={clLogo(store.logo_url)}
           alt={store.name}
-          loading="eager"
-          decoding="sync"
+          width={168}
+          height={56}
+          priority
           className="h-14 w-auto object-contain mb-4 lg:mx-0 mx-auto"
         />
       )}
@@ -216,10 +218,12 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
                   href={`${homeHref}?category=${cat.slug}`}
                   className="group relative aspect-[4/3] rounded-2xl overflow-hidden block shadow-[0_2px_12px_rgba(0,0,0,0.06)] hover:shadow-[0_6px_24px_rgba(0,0,0,0.12)] transition-shadow duration-200"
                 >
-                  <img
+                  <Image
                     src={cat.cover_image!}
                     alt={cat.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+                    fill
+                    sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+                    className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/5 to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-3">

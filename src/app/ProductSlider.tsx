@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getProductUrl } from "@/lib/utils";
 
@@ -72,10 +73,12 @@ export default function ProductSlider({ products }: { products: ProductSlide[] }
             {/* Product image */}
             <div className="relative overflow-hidden bg-zinc-100 dark:bg-zinc-800"
               style={{ aspectRatio: "1 / 1" }}>
-              <img
+              <Image
                 src={p.image_url}
                 alt={p.name}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                fill
+                sizes={`${CARD_W}px`}
+                className="object-cover transition-transform duration-500 group-hover:scale-110"
               />
               {p.compare_price && p.compare_price > p.price && (
                 <span className="absolute top-3 left-3 px-2 py-0.5 rounded-full text-xs font-black text-white"

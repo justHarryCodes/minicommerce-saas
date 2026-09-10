@@ -1,6 +1,7 @@
 import { verifySession, getUserStore } from "@/lib/auth";
 import { queryMany } from "@/lib/db";
 import { getEffectivePlan } from "@/lib/plan";
+import Image from "next/image";
 import Link from "next/link";
 import { Plus, Package, Pencil } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
@@ -110,9 +111,11 @@ export default async function ProductsPage() {
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-3">
                         {product.image_url ? (
-                          <img
+                          <Image
                             src={product.image_url}
                             alt={product.name}
+                            width={40}
+                            height={40}
                             className="w-10 h-10 rounded-lg object-cover border border-surface-100 dark:border-surface-700"
                           />
                         ) : (
@@ -193,9 +196,11 @@ export default async function ProductsPage() {
             {products.map((product) => (
               <div key={product.id} className="p-4 flex items-center gap-3">
                 {product.image_url ? (
-                  <img
+                  <Image
                     src={product.image_url}
                     alt={product.name}
+                    width={56}
+                    height={56}
                     className="w-14 h-14 rounded-xl object-cover border border-surface-100 dark:border-surface-700 shrink-0"
                   />
                 ) : (

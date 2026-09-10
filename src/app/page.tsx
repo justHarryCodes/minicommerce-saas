@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { verifySession, getUserStore } from "@/lib/auth";
@@ -125,7 +126,7 @@ export default async function HomePage() {
             {/* Left: text */}
             <div className="text-center lg:text-left">
               <div className="flex flex-col items-center lg:items-start mb-6">
-                <img src="/logo.png" alt="Duka" className="h-14 w-auto object-contain mb-2" />
+                <Image src="/logo.png" alt="Duka" width={168} height={56} className="h-14 w-auto object-contain mb-2" priority />
                 <span
                   className="text-xs font-bold uppercase tracking-widest"
                   style={{ color: "var(--text-muted)" }}
@@ -190,12 +191,14 @@ export default async function HomePage() {
                 <Link
                   key={label}
                   href={href}
-                  className="group relative rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all"
+                  className="group relative h-36 rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all"
                 >
-                  <img
+                  <Image
                     src={src}
                     alt={label}
-                    className="w-full h-36 object-cover group-hover:scale-105 transition-transform duration-500"
+                    fill
+                    sizes="(min-width: 1024px) 25vw, 50vw"
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
                   <p className="absolute bottom-2.5 left-3 text-white text-xs font-bold drop-shadow">{label}</p>
@@ -517,7 +520,7 @@ export default async function HomePage() {
       <footer className="py-10 px-4 border-t" style={{ borderColor: "var(--border)" }}>
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <Link href="/" className="flex flex-col items-start gap-0.5">
-            <img src="/logo.png" alt="Duka" className="h-7 w-auto object-contain" />
+            <Image src="/logo.png" alt="Duka" width={112} height={28} className="h-7 w-auto object-contain" />
             <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>by Awarizon</span>
           </Link>
           <p className="text-xs" style={{ color: "var(--text-muted)" }}>

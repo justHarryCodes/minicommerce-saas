@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { Loader2, Package } from "lucide-react";
@@ -88,9 +89,11 @@ export default function EditProductForm({ product }: Props) {
       {/* Image — read-only */}
       <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-4 flex items-center gap-4">
         {product.image_url ?? product.imageUrl ? (
-          <img
+          <Image
             src={(product.image_url ?? product.imageUrl)!}
             alt={product.name}
+            width={64}
+            height={64}
             className="w-16 h-16 rounded-xl object-cover border border-surface-100 dark:border-surface-700 shrink-0"
           />
         ) : (

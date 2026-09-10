@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { clBanner } from "@/lib/cloudinary";
 
@@ -40,15 +41,16 @@ export default function HeroSlider({ images, storeName, fillHeight = false }: Pr
           className="absolute inset-0 transition-opacity duration-700"
           style={{ opacity: i === active ? 1 : 0, zIndex: i === active ? 1 : 0 }}
         >
-          <img
+          <Image
             src={clBanner(src)}
             alt={`${storeName} banner ${i + 1}`}
-            className="w-full h-full object-cover"
+            fill
+            sizes="100vw"
+            className="object-cover"
             // First slide is LCP — load eagerly and with high priority.
-            // Remaining slides load lazily so they don't compete for bandwidth.
-            loading={i === 0 ? "eager" : "lazy"}
-            decoding={i === 0 ? "sync" : "async"}
-            {...(i === 0 ? { fetchPriority: "high" } as Record<string, string> : {})}
+            // Remaining slides load lazily (next/image default) so they
+            // don't compete for bandwidth.
+            priority={i === 0}
           />
           {/* Subtle gradient overlay at bottom */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />

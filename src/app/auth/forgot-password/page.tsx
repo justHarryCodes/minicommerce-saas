@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import Image from "next/image";
 import { Loader2, Mail, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "@/lib/firebase-client";
@@ -47,7 +48,7 @@ export default function ForgotPasswordPage() {
         {/* Logo */}
         <div className="flex justify-center mb-8">
           <Link href="/">
-            <img src="/logo.png" alt="Duka" className="h-10 w-auto object-contain" />
+            <Image src="/logo.png" alt="Duka" width={120} height={40} className="h-10 w-auto object-contain" priority />
           </Link>
         </div>
 

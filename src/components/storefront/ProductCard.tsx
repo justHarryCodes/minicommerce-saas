@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { ShoppingCart, Check, Heart } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "./CartProvider";
@@ -71,12 +72,12 @@ export default function ProductCard({ product, storeSlug }: Props) {
       {/* ── Image ── */}
       <div className="relative aspect-square overflow-hidden bg-surface-50 dark:bg-surface-800">
         {imageUrl ? (
-          <img
+          <Image
             src={clCard(imageUrl)}
             alt={product.name}
-            loading="lazy"
-            decoding="async"
-            className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500 ease-out"
+            fill
+            sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+            className="object-cover group-hover:scale-[1.04] transition-transform duration-500 ease-out"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-4xl text-surface-200 dark:text-surface-700">

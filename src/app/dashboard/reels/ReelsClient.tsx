@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import Image from "next/image";
 import toast from "react-hot-toast";
 import {
   Video, Upload, X, Trash2, Eye, Star, Loader2,
@@ -315,7 +316,7 @@ export default function ReelsClient({
                           {sel && <Star className="w-3 h-3 text-black fill-black" />}
                         </div>
                         {p.image_url && (
-                          <img src={p.image_url} alt={p.name} className="w-8 h-8 rounded-lg object-cover shrink-0" />
+                          <Image src={p.image_url} alt={p.name} width={32} height={32} className="w-8 h-8 rounded-lg object-cover shrink-0" />
                         )}
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-surface-900 dark:text-white truncate">{p.name}</p>
@@ -372,7 +373,13 @@ export default function ReelsClient({
           {reels.map(reel => (
             <div key={reel.id} className="relative group rounded-2xl overflow-hidden bg-black aspect-[9/16]">
               {reel.thumbnail_url ? (
-                <img src={reel.thumbnail_url} alt={reel.title ?? "Reel"} className="w-full h-full object-cover" loading="lazy" />
+                <Image
+                  src={reel.thumbnail_url}
+                  alt={reel.title ?? "Reel"}
+                  fill
+                  sizes="(min-width: 640px) 33vw, 50vw"
+                  className="object-cover"
+                />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
                   <Film className="w-8 h-8 text-surface-600" />

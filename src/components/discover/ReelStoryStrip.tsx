@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { getReelUrl } from "@/lib/utils";
 import type { Reel } from "@/types";
@@ -61,9 +62,11 @@ export default function ReelStoryStrip({ reels }: Props) {
                     style={{ borderColor: "var(--bg)" }}
                   >
                     {reel.thumbnail_url ? (
-                      <img
+                      <Image
                         src={reel.thumbnail_url}
                         alt={storeName}
+                        width={64}
+                        height={64}
                         className="w-full h-full object-cover"
                       />
                     ) : (

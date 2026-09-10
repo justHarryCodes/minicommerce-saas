@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ChevronLeft,
   CreditCard,
@@ -493,7 +494,7 @@ export default function CheckoutClient({
                 {items.map((item) => (
                   <div key={item.product_id} className="flex items-center gap-3 min-w-0">
                     {item.image_url ? (
-                      <img src={clThumb(item.image_url)} alt={item.name} className="w-11 h-11 rounded-lg object-cover border border-surface-100 dark:border-surface-700 shrink-0" />
+                      <Image src={clThumb(item.image_url)} alt={item.name} width={44} height={44} className="w-11 h-11 rounded-lg object-cover border border-surface-100 dark:border-surface-700 shrink-0" />
                     ) : (
                       <div className="w-11 h-11 rounded-lg bg-surface-100 dark:bg-surface-800 shrink-0" />
                     )}

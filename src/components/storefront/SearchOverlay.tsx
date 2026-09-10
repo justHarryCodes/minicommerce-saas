@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { X, Search, ShoppingCart, Check, Loader2, PackageSearch } from "lucide-react";
 import { useCart } from "./CartProvider";
 import { useStore } from "@/lib/store-context";
@@ -67,7 +68,7 @@ function SearchResultRow({
       {/* Thumbnail */}
       <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-surface-100 dark:bg-surface-800">
         {imageUrl ? (
-          <img src={clCard(imageUrl)} alt={product.name} className="w-full h-full object-cover" />
+          <Image src={clCard(imageUrl)} alt={product.name} width={48} height={48} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-lg">🛍️</div>
         )}

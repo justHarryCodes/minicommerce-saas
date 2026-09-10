@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search, Loader2, ShoppingBag, Store as StoreIcon } from "lucide-react";
@@ -151,7 +152,7 @@ export default function DiscoverClient({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="shrink-0 flex items-center">
-              <img src="/logo.png" alt="Duka" className="h-8 w-auto object-contain" />
+              <Image src="/logo.png" alt="Duka" width={96} height={32} className="h-8 w-auto object-contain" priority />
             </Link>
             <div className="flex items-center gap-3">
               <Link
@@ -331,9 +332,11 @@ export default function DiscoverClient({
                         style={{ background: `${meta.color}18` }}
                       >
                         {store.logo_url ? (
-                          <img
+                          <Image
                             src={store.logo_url}
                             alt={store.name}
+                            width={64}
+                            height={64}
                             className="h-16 w-16 object-cover rounded-xl shadow-sm"
                           />
                         ) : (
@@ -431,14 +434,16 @@ export default function DiscoverClient({
                       {/* Product image */}
                       <a href={productUrl} target="_blank" rel="noopener noreferrer" className="block">
                         <div
-                          className="aspect-square w-full overflow-hidden"
+                          className="relative aspect-square w-full overflow-hidden"
                           style={{ background: `${meta.color}18` }}
                         >
                           {product.image_url ? (
-                            <img
+                            <Image
                               src={product.image_url}
                               alt={product.product_name}
-                              className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                              fill
+                              sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+                              className="object-cover transition-transform group-hover:scale-105"
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-4xl">
@@ -479,9 +484,11 @@ export default function DiscoverClient({
                           style={{ color: meta.color }}
                         >
                           {product.store_logo ? (
-                            <img
+                            <Image
                               src={product.store_logo}
                               alt={product.store_name}
+                              width={16}
+                              height={16}
                               className="w-4 h-4 rounded-full object-cover"
                             />
                           ) : (
@@ -524,7 +531,7 @@ export default function DiscoverClient({
       >
         <div className="max-w-7xl mx-auto text-center">
           <Link href="/" className="inline-flex flex-col items-center gap-1">
-            <img src="/logo.png" alt="Duka" className="h-7 w-auto object-contain" />
+            <Image src="/logo.png" alt="Duka" width={112} height={28} className="h-7 w-auto object-contain" />
             <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>by Awarizon</span>
           </Link>
           <p className="text-xs mt-3" style={{ color: "var(--text-muted)" }}>

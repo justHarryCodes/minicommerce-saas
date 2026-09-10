@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ChevronLeft, Package, Loader2, Search, ArrowRight,
   ChevronDown, ChevronUp, MapPin, CreditCard, CheckCircle2,
@@ -466,9 +467,11 @@ export default function TrackClient({ storeSlug, initialOrder, initialPhone }: P
                 {singleOrder.items.map((item, i) => (
                   <div key={i} className="flex items-center gap-3.5 min-w-0">
                     {item.product_image ? (
-                      <img
+                      <Image
                         src={clThumb(item.product_image)}
                         alt={item.product_name}
+                        width={56}
+                        height={56}
                         className="w-14 h-14 rounded-xl object-cover border border-surface-100 dark:border-surface-700 shrink-0 shadow-sm"
                       />
                     ) : (

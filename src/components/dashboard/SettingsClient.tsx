@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   Store,
@@ -266,11 +267,11 @@ export default function SettingsClient({ store: initial }: Props) {
           </label>
           <div className="flex items-center gap-4">
             {(store.logoUrl ?? store.logo_url) ? (
-              <img
+              <Image
                 src={clLogo(store.logoUrl ?? store.logo_url)}
                 alt="Logo"
-                loading="lazy"
-                decoding="async"
+                width={64}
+                height={64}
                 className="w-16 h-16 rounded-xl object-contain border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800"
               />
             ) : (

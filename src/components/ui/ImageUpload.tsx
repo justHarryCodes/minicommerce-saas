@@ -1,5 +1,6 @@
 'use client'
 import { useState, useRef } from 'react'
+import Image from 'next/image'
 import { Upload, X, ImageIcon, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { clLogo } from '@/lib/cloudinary'
@@ -42,7 +43,7 @@ export function ImageUpload({ value, onChange, onRemove, className, label }: Ima
 
       {value ? (
         <div className="relative w-32 h-32 rounded-xl overflow-hidden border border-surface-200 dark:border-surface-700">
-          <img src={clLogo(value)} alt="Upload" loading="lazy" decoding="async" className="w-full h-full object-cover" />
+          <Image src={clLogo(value)} alt="Upload" fill sizes="128px" className="object-cover" />
           <button
             type="button"
             onClick={() => { onRemove?.(); onChange('') }}

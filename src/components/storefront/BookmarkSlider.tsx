@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import Image from "next/image";
 import { Heart, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import { useStore } from "@/lib/store-context";
@@ -75,12 +76,14 @@ export default function BookmarkSlider({ storeSlug }: Props) {
 
               <a href={`${storeBase}/products/${p.slug}`} className="block">
                 {/* Image */}
-                <div className="aspect-square bg-surface-50 dark:bg-surface-800 overflow-hidden">
+                <div className="relative aspect-square bg-surface-50 dark:bg-surface-800 overflow-hidden">
                   {p.image_url ? (
-                    <img
+                    <Image
                       src={p.image_url}
                       alt={p.name}
-                      className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-300"
+                      fill
+                      sizes={`${CARD_W}px`}
+                      className="object-cover group-hover/card:scale-105 transition-transform duration-300"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-3xl text-surface-200 dark:text-surface-700">

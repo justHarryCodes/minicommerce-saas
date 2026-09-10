@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Menu, X, ArrowRight } from "lucide-react";
 
 const NAV_LINKS = [
@@ -46,7 +47,7 @@ export default function HomeNav() {
           <div className="flex items-center justify-between h-16">
             {/* Logo — replace /logo.png in public/ once asset is ready */}
             <Link href="/" className="shrink-0 flex items-center">
-              <img src="/logo.png" alt="Duka" className="h-9 w-auto object-contain" />
+              <Image src="/logo.png" alt="Duka" width={108} height={36} className="h-9 w-auto object-contain" priority />
             </Link>
 
             {/* Desktop nav links */}

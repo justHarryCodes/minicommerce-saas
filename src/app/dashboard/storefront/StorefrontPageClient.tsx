@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import Image from "next/image";
 import toast from "react-hot-toast";
 import { Upload, X, GripVertical, Star, Loader2, ImagePlus } from "lucide-react";
 import { Tip } from "@/components/dashboard/Tip";
@@ -107,7 +108,7 @@ export default function StorefrontPageClient({ initialBanners, initialFeatured, 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
           {banners.map((url, i) => (
             <div key={url} className="relative group rounded-xl overflow-hidden border border-surface-200 dark:border-surface-700 aspect-video bg-surface-50 dark:bg-surface-800">
-              <img src={clBanner(url)} alt={`Banner ${i + 1}`} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+              <Image src={clBanner(url)} alt={`Banner ${i + 1}`} fill sizes="(min-width: 640px) 33vw, 50vw" className="object-cover" />
               <button
                 onClick={() => setBanners((prev) => prev.filter((_, j) => j !== i))}
                 className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white hover:bg-red-500"
@@ -196,9 +197,9 @@ export default function StorefrontPageClient({ initialBanners, initialFeatured, 
                     </div>
 
                     {/* Product image */}
-                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-surface-100 dark:bg-surface-800 shrink-0">
+                    <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-surface-100 dark:bg-surface-800 shrink-0">
                       {imageUrl ? (
-                        <img src={clThumb(imageUrl)} alt={p.name} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                        <Image src={clThumb(imageUrl)} alt={p.name} fill sizes="40px" className="object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-lg">🛍️</div>
                       )}

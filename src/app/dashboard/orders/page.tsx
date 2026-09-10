@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { verifySession, getUserStore } from "@/lib/auth";
 import { queryMany } from "@/lib/db";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -147,9 +148,11 @@ export default async function OrdersPage() {
                     {(order.items as OrderItem[]).map((item, i) => (
                       <div key={i} className="flex items-center gap-3 text-sm">
                         {item.product_image && (
-                          <img
+                          <Image
                             src={item.product_image}
-                            alt={item.product_name}
+                            alt={item.product_name ?? "Product"}
+                            width={32}
+                            height={32}
                             className="w-8 h-8 rounded-lg object-cover border border-surface-100 dark:border-surface-700 shrink-0"
                           />
                         )}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ChevronLeft, ShoppingCart, Check, Minus, Plus,
   Share2, Star, Loader2, Send, ChevronRight,
@@ -185,10 +186,13 @@ export default function ProductDetailClient({ product, related, store, storeSlug
         <div className="space-y-3">
           <div className="relative aspect-square rounded-2xl overflow-hidden bg-surface-50 dark:bg-surface-900 border border-surface-100 dark:border-surface-800 shadow-[0_4px_24px_rgba(0,0,0,0.06)]">
             {images.length > 0 ? (
-              <img
+              <Image
                 src={images[activeImg]}
                 alt={product.name}
-                className="w-full h-full object-cover transition-opacity duration-200"
+                fill
+                sizes="(min-width: 1024px) 50vw, 100vw"
+                priority
+                className="object-cover transition-opacity duration-200"
                 key={activeImg}
               />
             ) : (
@@ -211,13 +215,13 @@ export default function ProductDetailClient({ product, related, store, storeSlug
                 <button
                   key={i}
                   onClick={() => setActiveImg(i)}
-                  className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all duration-150 ${
+                  className={`relative shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all duration-150 ${
                     i === activeImg
                       ? "border-[var(--sf-accent)] scale-95 shadow-md"
                       : "border-surface-200 dark:border-surface-700 hover:border-surface-400"
                   }`}
                 >
-                  <img src={img} alt="" className="w-full h-full object-cover" />
+                  <Image src={img} alt="" fill sizes="64px" className="object-cover" />
                 </button>
               ))}
             </div>

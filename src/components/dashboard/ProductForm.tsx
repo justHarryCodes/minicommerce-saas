@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -183,7 +184,7 @@ export default function ProductForm({ categories, product }: Props) {
         <div className="flex items-start gap-4">
           <label className="relative w-32 h-32 rounded-xl border-2 border-dashed border-surface-200 dark:border-surface-700 cursor-pointer hover:border-accent-400 transition-colors overflow-hidden shrink-0">
             {imageUrl ? (
-              <img src={imageUrl} alt="Product" className="w-full h-full object-cover" />
+              <Image src={imageUrl} alt="Product" fill sizes="128px" className="object-cover" />
             ) : (
               <div className="flex flex-col items-center justify-center h-full gap-2">
                 {uploading

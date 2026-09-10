@@ -126,10 +126,12 @@ export default function AffiliateLandingPage() {
                     "photo-1438761681033-6461ffad8d80",
                     "photo-1472099645785-5658abf4ff4e",
                   ].map((id) => (
-                    <img
+                    <Image
                       key={id}
                       src={`https://images.unsplash.com/${id}?w=40&h=40&fit=crop&q=80`}
                       alt=""
+                      width={36}
+                      height={36}
                       className="w-9 h-9 rounded-full border-2 border-white object-cover shadow-sm"
                     />
                   ))}
@@ -154,11 +156,13 @@ export default function AffiliateLandingPage() {
 
             {/* Right: photo with floating widgets */}
             <div className="hidden lg:block relative">
-              <div className="relative rounded-3xl overflow-hidden shadow-2xl">
-                <img
+              <div className="relative h-[500px] rounded-3xl overflow-hidden shadow-2xl">
+                <Image
                   src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=620&h=520&fit=crop&q=80"
                   alt="Affiliate earning on Duka"
-                  className="w-full h-[500px] object-cover"
+                  fill
+                  sizes="(min-width: 1024px) 620px, 100vw"
+                  className="object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-br from-amber-400/15 to-transparent pointer-events-none" />
               </div>
@@ -232,11 +236,13 @@ export default function AffiliateLandingPage() {
 
       {/* ── Testimonial banner ───────────────────────────────────── */}
       <section className="relative overflow-hidden">
-        <img
+        <Image
           src="https://images.unsplash.com/photo-1551434678-e076c223a692?w=1400&h=320&fit=crop&q=80"
           alt=""
           aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover"
+          fill
+          sizes="100vw"
+          className="object-cover"
         />
         <div className="absolute inset-0 bg-gray-900/78" />
         <div className="relative py-16 px-4 text-center">
@@ -246,9 +252,11 @@ export default function AffiliateLandingPage() {
               Earned ₦24,000 without doing anything complicated.&rdquo;
             </p>
             <div className="flex items-center justify-center gap-3">
-              <img
+              <Image
                 src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=48&h=48&fit=crop&q=80"
                 alt="Adaeze"
+                width={44}
+                height={44}
                 className="w-11 h-11 rounded-full object-cover border-2 border-amber-400"
               />
               <cite className="not-italic text-left">

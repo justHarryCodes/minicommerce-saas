@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -138,7 +139,7 @@ export default function LoginPage() {
 
         <div className="relative z-10">
           <Link href="/" className="inline-flex items-center gap-3">
-            <img src="/logo.png" alt="Duka" className="h-10 w-auto object-contain" />
+            <Image src="/logo.png" alt="Duka" width={120} height={40} className="h-10 w-auto object-contain" priority />
             <div>
               <span className="text-white text-xl font-extrabold tracking-tight block leading-none">Duka</span>
               <span className="text-amber-400/70 text-xs font-medium tracking-wider">by Awarizon</span>
@@ -198,7 +199,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           <div className="flex justify-center mb-8 lg:hidden">
             <Link href="/" className="inline-flex flex-col items-center gap-1">
-              <img src="/logo.png" alt="Duka" className="h-10 w-auto object-contain" />
+              <Image src="/logo.png" alt="Duka" width={120} height={40} className="h-10 w-auto object-contain" priority />
               <span className="text-xs text-zinc-400 font-medium tracking-wider">by Awarizon</span>
             </Link>
           </div>
