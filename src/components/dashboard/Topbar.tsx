@@ -6,6 +6,7 @@ import { ExternalLink, Menu, Store } from "lucide-react";
 import type { Store as StoreType } from "@/types";
 import type { SessionUser } from "@/lib/auth";
 import { useDashboardDrawer } from "@/lib/dashboard-drawer-store";
+import { PushNotificationPrompt } from "@/components/PushNotificationPrompt";
 
 interface Props {
   user: SessionUser;
@@ -82,6 +83,8 @@ export default function DashboardTopbar({ user, store }: Props) {
         >
           <ExternalLink className="w-5 h-5" />
         </a>
+
+        <PushNotificationPrompt subjectType="vendor" />
       </header>
 
       {/* ── Desktop header (hidden below lg) ───────────────────── */}
@@ -108,6 +111,8 @@ export default function DashboardTopbar({ user, store }: Props) {
             {store.slug}.{ROOT}
             <ExternalLink className="w-3 h-3 opacity-60" />
           </a>
+
+          <PushNotificationPrompt subjectType="vendor" />
 
           {/* Divider */}
           <div className="hidden xl:block w-px h-5 bg-surface-200 dark:bg-surface-700" />

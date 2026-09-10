@@ -18,6 +18,7 @@ import {
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase-client";
 import type { AdminUser } from "@/lib/admin-auth";
+import { PushNotificationPrompt } from "@/components/PushNotificationPrompt";
 
 const ALL_NAV = [
   { href: "/admin",           label: "Overview",   icon: LayoutDashboard, exact: true  },
@@ -74,12 +75,15 @@ export default function AdminMobileNav({ admin }: { admin: AdminUser }) {
           <Image src="/logo.png" alt="Duka" width={72} height={24} style={{ height: 24, width: "auto" }} priority />
         </div>
 
-        {/* Right — admin avatar */}
-        <div
-          className="w-10 h-10 flex items-center justify-center rounded-xl flex-shrink-0 font-black text-sm"
-          style={{ background: "var(--accent)", color: "#000" }}
-        >
-          {initials}
+        {/* Right — notifications + admin avatar */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <PushNotificationPrompt subjectType="admin" />
+          <div
+            className="w-10 h-10 flex items-center justify-center rounded-xl font-black text-sm"
+            style={{ background: "var(--accent)", color: "#000" }}
+          >
+            {initials}
+          </div>
         </div>
       </header>
 

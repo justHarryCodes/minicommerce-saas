@@ -4,6 +4,7 @@ import { queryOne, query } from '@/lib/db'
 import { z } from 'zod'
 import { v4 as uuidv4 } from 'uuid'
 import { getPlatformSettings } from '@/lib/admin-auth'
+import { sendWebPushToAllAdmins } from '@/lib/webpush'
 
 const Schema = z.object({
   type:    z.enum(['setup_fee', 'monthly', 'plan']),
@@ -22,11 +23,12 @@ export async function POST(req: NextRequest) {
 
   const store = await queryOne<{
     id: string
+    name: string
     subscription_status: string
     subscription_expires_at: string | null
     status: string
   }>(
-    'SELECT id, subscription_status, subscription_expires_at, status FROM stores WHERE owner_id = $1',
+    'SELECT id, name, subscription_status, subscription_expires_at, status FROM stores WHERE owner_id = $1',
     [user.firebaseUid]
   )
 
@@ -135,6 +137,14 @@ export async function POST(req: NextRequest) {
       [store.id]
     )
   }
+
+  // Fire-and-forget — a vendor's payment submission must never wait on
+  // (or fail because of) notifying admins.
+  sendWebPushToAllAdmins({
+    title: 'Bank transfer awaiting confirmation',
+    body: `${store.name} · ${type.replace(/_/g, ' ')} · ₦${amount.toLocaleString('en-NG')}`,
+    url: '/admin/transfers',
+  }).catch(() => {})
 
   return NextResponse.json({ success: true, reference })
 }

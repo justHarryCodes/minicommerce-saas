@@ -7,6 +7,7 @@ import { LayoutDashboard, Users, Settings, LogOut, CreditCard, ArrowLeftRight, U
 import { auth } from "@/lib/firebase-client";
 import { signOut } from "firebase/auth";
 import type { AdminUser } from "@/lib/admin-auth";
+import { PushNotificationPrompt } from "@/components/PushNotificationPrompt";
 
 const navItems = [
   { href: "/admin",             label: "Overview",   icon: LayoutDashboard, exact: true },
@@ -31,9 +32,12 @@ export default function AdminSidebar({ admin }: { admin: AdminUser }) {
     <aside className="hidden lg:flex flex-col fixed inset-y-0 left-0 w-60 border-r z-30"
       style={{ background: "var(--bg)", borderColor: "var(--border)" }}>
       {/* Brand */}
-      <div className="px-5 py-5 border-b" style={{ borderColor: "var(--border)" }}>
-        <Image src="/logo.png" alt="Duka" width={96} height={32} style={{ height: 32, width: "auto" }} priority />
-        <p className="text-xs mt-1.5" style={{ color: "var(--text-muted)" }}>Admin Panel</p>
+      <div className="px-5 py-5 border-b flex items-start justify-between gap-2" style={{ borderColor: "var(--border)" }}>
+        <div>
+          <Image src="/logo.png" alt="Duka" width={96} height={32} style={{ height: 32, width: "auto" }} priority />
+          <p className="text-xs mt-1.5" style={{ color: "var(--text-muted)" }}>Admin Panel</p>
+        </div>
+        <PushNotificationPrompt subjectType="admin" />
       </div>
 
       {/* Nav */}

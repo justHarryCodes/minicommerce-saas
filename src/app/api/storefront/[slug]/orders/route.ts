@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query, queryOne, withTransaction } from "@/lib/db";
 import { notifyStoreNewOrder } from "@/lib/push";
+import { sendWebPushToSubject } from "@/lib/webpush";
 import { z } from "zod";
 
 const OrderSchema = z.object({
@@ -134,7 +135,11 @@ export async function POST(
       return order;
     });
 
-    // Fire-and-forget — don't await so push never delays the response
+    // Fire-and-forget — don't await so push never delays the response.
+    // Two independent channels for the same event: the existing Expo push
+    // (duka-vendors mobile app) and Web Push (installed PWA/browser) — a
+    // vendor may have either or both, so both fire rather than one
+    // falling back to the other.
     notifyStoreNewOrder(
       store.id,
       result.id,
@@ -142,6 +147,12 @@ export async function POST(
       d.customerName,
       d.totalAmount
     ).catch(() => {});
+
+    sendWebPushToSubject("vendor", store.id, {
+      title: "New Order Received",
+      body: `${result.order_number} · ${d.customerName} · ₦${d.totalAmount.toLocaleString("en-NG")}`,
+      url: "/dashboard/orders",
+    }).catch(() => {});
 
     return NextResponse.json(
       { orderId: result.id, orderNumber: result.order_number },
