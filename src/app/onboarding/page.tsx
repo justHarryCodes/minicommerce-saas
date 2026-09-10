@@ -21,6 +21,12 @@ import { slugify } from "@/lib/utils";
 import { PRIMARY_CATEGORIES } from "@/types";
 import toast from "react-hot-toast";
 
+// Preview text only (the real routing decision is middleware.ts's own
+// ROOT_DOMAIN fallback) — kept in sync with the same env var + fallback so
+// a future domain change doesn't require hunting down a second hardcoded
+// literal here.
+const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "dukanigeria.com";
+
 const STEPS = [
   { id: 0, label: "Store Info", icon: Store, desc: "Name & details" },
   { id: 1, label: "Contact", icon: Phone, desc: "Phone & payments" },
@@ -310,7 +316,7 @@ function OnboardingPage() {
                   </label>
                   <div className="flex rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden focus-within:ring-2 focus-within:ring-amber-400">
                     <span className="px-4 py-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 text-sm border-r border-zinc-200 dark:border-zinc-700 shrink-0">
-                      awarizon.shop/store/
+                      {ROOT_DOMAIN}/store/
                     </span>
                     <input
                       className="flex-1 px-3 py-3 bg-zinc-50 dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm focus:outline-none"
@@ -546,10 +552,10 @@ function OnboardingPage() {
                       <span className="text-zinc-500 shrink-0">URL</span>
                       <div className="text-right">
                         <p className="font-semibold text-zinc-900 dark:text-white text-xs font-mono">
-                          {form.slug}.awarizon.shop
+                          {form.slug}.{ROOT_DOMAIN}
                         </p>
                         <p className="text-zinc-400 text-xs font-mono">
-                          awarizon.shop/store/{form.slug}
+                          {ROOT_DOMAIN}/store/{form.slug}
                         </p>
                       </div>
                     </div>

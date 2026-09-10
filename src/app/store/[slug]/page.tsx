@@ -335,7 +335,7 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
       <div className="px-4 pb-10 border-t border-surface-100 dark:border-surface-800 pt-8 text-center">
         <p className="text-xs text-surface-300 dark:text-surface-600">
           Powered by{" "}
-          <a href="https://awarizon.shop" className="font-semibold hover:underline">
+          <a href="https://dukanigeria.com" className="font-semibold hover:underline">
             Duka by Awarizon
           </a>
         </p>

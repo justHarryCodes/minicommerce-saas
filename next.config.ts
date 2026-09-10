@@ -17,7 +17,7 @@ const CSP_REPORT_ONLY = [
   "script-src 'self' 'unsafe-inline' https://embed.tawk.to https://www.google.com https://www.gstatic.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
-  "img-src 'self' data: blob: https://res.cloudinary.com https://firebasestorage.googleapis.com https://storage.googleapis.com https://*.awarizon.shop https://*.awarizonmall.com",
+  "img-src 'self' data: blob: https://res.cloudinary.com https://firebasestorage.googleapis.com https://storage.googleapis.com https://*.dukanigeria.com https://*.awarizonmall.com",
   "connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.google.com https://*.tawk.to wss://*.tawk.to",
   "frame-src https://www.google.com https://*.tawk.to https://accounts.google.com",
   "object-src 'none'",
@@ -42,13 +42,13 @@ const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
       allowedOrigins: [
-        // awarizon.shop — all variants
-        "awarizon.shop",
-        "www.awarizon.shop",   // ← added: canonical www origin
-        "*.awarizon.shop",
+        // dukanigeria.com — all variants (switched from awarizon.shop)
+        "dukanigeria.com",
+        "www.dukanigeria.com",
+        "*.dukanigeria.com",
         // legacy / secondary domain
         "awarizonmall.com",
-        "www.awarizonmall.com", // ← added: canonical www origin
+        "www.awarizonmall.com",
         "*.awarizonmall.com",
         // local dev
         "localhost:3000",
@@ -61,8 +61,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "res.cloudinary.com" },
       { protocol: "https", hostname: "firebasestorage.googleapis.com" },
       { protocol: "https", hostname: "storage.googleapis.com" },
-      // awarizon.shop subdomains (storefronts)
-      { protocol: "https", hostname: "*.awarizon.shop" }, // ← added
+      // dukanigeria.com subdomains (storefronts)
+      { protocol: "https", hostname: "*.dukanigeria.com" },
       // legacy domain
       { protocol: "https", hostname: "*.awarizonmall.com" },
     ],

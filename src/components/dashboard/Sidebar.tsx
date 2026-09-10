@@ -62,7 +62,7 @@ function SidebarContent({
     router.push("/auth/login");
   };
 
-const ROOT = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "awarizon.shop")
+const ROOT = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "dukanigeria.com")
   .replace(/^www\./, "");
 
 const storeUrl = store

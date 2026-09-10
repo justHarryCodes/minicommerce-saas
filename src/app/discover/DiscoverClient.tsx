@@ -9,7 +9,7 @@ import ReelStoryStrip from "@/components/discover/ReelStoryStrip";
 import type { Reel } from "@/types";
 
 // Discover is a cross-vendor marketplace page — link within it using the
-// reliable path-based routes (awarizon.shop/store/[slug]/...) rather than
+// reliable path-based routes (dukanigeria.com/store/[slug]/...) rather than
 // each vendor's subdomain, which currently 404s on nested paths in production.
 function discoverStoreUrl(slug: string): string {
   return `/store/${slug}`;

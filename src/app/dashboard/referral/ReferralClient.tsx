@@ -30,7 +30,7 @@ export default function ReferralClient({ referralCode, referralCredits, referral
   const baseUrl =
     typeof window !== "undefined"
       ? window.location.origin
-      : process.env.NEXT_PUBLIC_APP_URL ?? "https://awarizon.shop";
+      : process.env.NEXT_PUBLIC_APP_URL ?? "https://dukanigeria.com";
 
   const referralLink = referralCode
     ? `${baseUrl}/onboarding?ref=${referralCode}`

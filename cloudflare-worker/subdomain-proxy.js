@@ -1,16 +1,16 @@
 /**
- * Cloudflare Worker — subdomain proxy for awarizon.shop
+ * Cloudflare Worker — subdomain proxy for dukanigeria.com
  *
- * Deploy this to a Worker route: *.awarizon.shop/*
+ * Deploy this to a Worker route: *.dukanigeria.com/*
  * It injects x-store-slug + x-is-subdomain headers and forwards
  * the request to the main Vercel deployment.
  *
  * Set these Worker secrets in the Cloudflare dashboard:
  *   WORKER_SECRET  — any random string, must match WORKER_SECRET in your .env
- *   VERCEL_HOST    — your Vercel deployment URL, e.g. awarizon.shop
+ *   VERCEL_HOST    — your Vercel deployment URL, e.g. dukanigeria.com
  */
 
-const ROOT_DOMAIN = "awarizon.shop";
+const ROOT_DOMAIN = "dukanigeria.com";
 
 export default {
   async fetch(request, env) {

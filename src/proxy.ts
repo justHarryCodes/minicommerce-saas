@@ -4,7 +4,7 @@ export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
 
   // Normalise — always bare domain, never www-prefixed
-  const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'awarizon.shop')
+  const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'dukanigeria.com')
     .toLowerCase()
     .replace(/^www\./, '')
 

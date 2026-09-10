@@ -13,7 +13,7 @@ interface Props {
   store: StoreType;
 }
 
-const ROOT = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "awarizon.shop").replace(/^www\./, "");
+const ROOT = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "dukanigeria.com").replace(/^www\./, "");
 
 const PAGE_LABELS: Record<string, string> = {
   "/dashboard":            "Overview",

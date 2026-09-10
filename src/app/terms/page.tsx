@@ -156,8 +156,8 @@ export default function TermsPage() {
             </P>
             <P>
               By accessing or using DUKA through{" "}
-              <a href="https://awarizon.shop" className="text-amber-500 hover:underline">
-                https://awarizon.shop
+              <a href="https://dukanigeria.com" className="text-amber-500 hover:underline">
+                https://dukanigeria.com
               </a>
               , you agree to comply with and be bound by these Terms of Use. If
               you do not agree with these terms, you should not use the platform.
@@ -363,14 +363,14 @@ export default function TermsPage() {
               <p className="text-sm text-zinc-600 dark:text-zinc-400 space-y-1">
                 <span className="block">
                   Email:{" "}
-                  <a href="mailto:support@awarizon.shop" className="text-amber-500 hover:underline">
-                    support@awarizon.shop
+                  <a href="mailto:support@dukanigeria.com" className="text-amber-500 hover:underline">
+                    support@dukanigeria.com
                   </a>
                 </span>
                 <span className="block">
                   Website:{" "}
-                  <a href="https://awarizon.shop" className="text-amber-500 hover:underline">
-                    https://awarizon.shop
+                  <a href="https://dukanigeria.com" className="text-amber-500 hover:underline">
+                    https://dukanigeria.com
                   </a>
                 </span>
                 <span className="block">
@@ -502,14 +502,14 @@ export default function TermsPage() {
               <p className="text-sm text-zinc-600 dark:text-zinc-400 space-y-1">
                 <span className="block">
                   Email:{" "}
-                  <a href="mailto:support@awarizon.shop" className="text-amber-500 hover:underline">
-                    support@awarizon.shop
+                  <a href="mailto:support@dukanigeria.com" className="text-amber-500 hover:underline">
+                    support@dukanigeria.com
                   </a>
                 </span>
                 <span className="block">
                   Website:{" "}
-                  <a href="https://awarizon.shop" className="text-amber-500 hover:underline">
-                    https://awarizon.shop
+                  <a href="https://dukanigeria.com" className="text-amber-500 hover:underline">
+                    https://dukanigeria.com
                   </a>
                 </span>
                 <span className="block">
@@ -528,9 +528,9 @@ export default function TermsPage() {
               © {new Date().getFullYear()} Awarizon. All rights reserved.
             </p>
             <div className="flex items-center gap-4 text-xs text-zinc-400">
-              <a href="https://awarizon.shop" className="hover:text-amber-500 transition-colors">awarizon.shop</a>
+              <a href="https://dukanigeria.com" className="hover:text-amber-500 transition-colors">dukanigeria.com</a>
               <a href="https://awarizon.com"  className="hover:text-amber-500 transition-colors">awarizon.com</a>
-              <a href="mailto:support@awarizon.shop" className="hover:text-amber-500 transition-colors">support@awarizon.shop</a>
+              <a href="mailto:support@dukanigeria.com" className="hover:text-amber-500 transition-colors">support@dukanigeria.com</a>
             </div>
           </div>
         </main>

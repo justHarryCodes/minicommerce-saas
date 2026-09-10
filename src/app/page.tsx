@@ -52,7 +52,7 @@ export default async function HomePage() {
   const host = (h.get("x-forwarded-host") ?? h.get("host") ?? "")
     .split(",")[0].trim().split(":")[0].toLowerCase();
 
-  const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "awarizon.shop")
+  const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "dukanigeria.com")
     .toLowerCase()
     .replace(/^www\./, "");
 
