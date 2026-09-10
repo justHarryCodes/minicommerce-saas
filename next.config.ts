@@ -1,3 +1,4 @@
+import path from "path";
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
@@ -26,6 +27,18 @@ const CSP_REPORT_ONLY = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  // Next infers the workspace root by walking up for the nearest
+  // package-lock.json — this machine has stray lockfiles above the project
+  // (C:\Users\USER\package-lock.json and one more in the shopforge-saas
+  // parent folder, neither an actual workspace), so it was picking the
+  // user's home directory as the root and file-tracing across the entire
+  // profile instead of just this project. Pinned explicitly instead of
+  // relying on inference — also a plausible contributor to the intermittent
+  // ENOENT/EPERM errors seen during `next build`/`next dev` on Windows,
+  // since tracing was covering far more files (OneDrive sync, AppData,
+  // browser caches, etc.) than it needed to.
+  outputFileTracingRoot: path.join(__dirname),
+
   experimental: {
     serverActions: {
       allowedOrigins: [
