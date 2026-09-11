@@ -3,7 +3,7 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Tabs, router } from 'expo-router';
 import { Film, FolderOpen, Home, Package, Plus, Settings, ShoppingBag } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors } from '@/constants/theme';
+import { Accent, Colors } from '@/constants/theme';
 
 const LEFT_TABS  = ['index', 'orders']    as const;
 const RIGHT_TABS = ['products', 'settings'] as const;
@@ -35,7 +35,7 @@ function TabBtn({
   return (
     <Pressable onPress={() => onNavigate(route)} style={tabStyles.btn}>
       {active && <View style={tabStyles.indicator} />}
-      <meta.Icon size={22} color={active ? '#111827' : '#6B7280'} />
+      <meta.Icon size={22} color={active ? Colors.surface[900] : Colors.surface[500]} />
       <Text style={active ? tabStyles.labelActive : tabStyles.labelInactive}>
         {meta.label}
       </Text>
@@ -62,12 +62,12 @@ const tabStyles = StyleSheet.create({
   labelActive: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#0F172A',
+    color: Colors.surface[900],
   },
   labelInactive: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#94A3B8',
+    color: Colors.surface[400],
   },
 });
 
@@ -114,22 +114,22 @@ function CustomTabBar({ state, navigation }: { state: any; navigation: any }) {
               <Text style={tabBarStyles.sheetTitle}>ADD NEW</Text>
 
               <SheetItem
-                bg="#FEF3C7"
-                icon={<ShoppingBag size={22} color="#92400E" />}
+                bg={Accent.products.bg}
+                icon={<ShoppingBag size={22} color={Accent.products.fg} />}
                 title="New Product"
                 sub="Add an item to your store"
                 onPress={() => { setShowFab(false); setTimeout(() => router.push('/(app)/products/new'), 200); }}
               />
               <SheetItem
-                bg="#DBEAFE"
-                icon={<FolderOpen size={22} color="#1D4ED8" />}
+                bg={Accent.categories.bg}
+                icon={<FolderOpen size={22} color={Accent.categories.fg} />}
                 title="New Category"
                 sub="Organise your products"
                 onPress={() => { setShowFab(false); setTimeout(() => router.push('/(app)/categories/new'), 200); }}
               />
               <SheetItem
-                bg="#FFF1F2"
-                icon={<Film size={22} color="#F43F5E" />}
+                bg={Accent.reels.bg}
+                icon={<Film size={22} color={Accent.reels.fg} />}
                 title="New Reel"
                 sub="Upload a product video"
                 onPress={() => { setShowFab(false); setTimeout(() => router.push('/(app)/reels/new'), 200); }}
@@ -154,7 +154,7 @@ function SheetItem({
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [tabBarStyles.sheetItem, { backgroundColor: pressed ? '#F9FAFB' : '#FFFFFF' }]}
+      style={({ pressed }) => [tabBarStyles.sheetItem, { backgroundColor: pressed ? Colors.surface[50] : Colors.white }]}
     >
       <View style={[tabBarStyles.sheetIcon, { backgroundColor: bg }]}>{icon}</View>
       <View style={{ flex: 1 }}>
@@ -170,10 +170,10 @@ const tabBarStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingTop: 4,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    shadowColor: '#0F172A',
+    borderTopColor: Colors.surface[200],
+    shadowColor: Colors.dark,
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
@@ -204,7 +204,7 @@ const tabBarStyles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingTop: 12,
@@ -215,14 +215,14 @@ const tabBarStyles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: Colors.surface[200],
     alignSelf: 'center',
     marginBottom: 10,
   },
   sheetTitle: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#9CA3AF',
+    color: Colors.surface[400],
     letterSpacing: 1.2,
     marginBottom: 4,
   },
@@ -233,7 +233,7 @@ const tabBarStyles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     borderWidth: 1.5,
-    borderColor: '#F3F4F6',
+    borderColor: Colors.surface[100],
   },
   sheetIcon: {
     width: 48,
@@ -245,11 +245,11 @@ const tabBarStyles = StyleSheet.create({
   sheetItemTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#111827',
+    color: Colors.surface[900],
   },
   sheetItemSub: {
     fontSize: 12,
-    color: '#6B7280',
+    color: Colors.surface[500],
     marginTop: 2,
   },
 });

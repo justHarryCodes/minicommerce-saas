@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   rowIconDanger: {
-    backgroundColor: '#fee2e2',
+    backgroundColor: Colors.errorLight,
   },
   rowText: {
     flex: 1,
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
     color: Colors.surface[900],
   },
   rowBadge: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: Colors.brandLight,
     borderRadius: 6,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
   rowBadgeText: {
     fontSize: 9,
     fontWeight: '800',
-    color: '#92400E',
+    color: Colors.brandDark,
     letterSpacing: 0.3,
   },
   rowLabelDanger: {

@@ -233,7 +233,7 @@ export default function NewReelScreen() {
           {/* ── Tips card ── */}
           <View style={styles.tipCard}>
             <View style={styles.tipHeader}>
-              <Lightbulb size={14} color="#d97706" />
+              <Lightbulb size={14} color={Colors.brandDark} />
               <Text style={styles.tipTitle}>Tips for better reels</Text>
             </View>
             <View style={styles.tipList}>
@@ -406,10 +406,10 @@ const styles = StyleSheet.create({
 
   /* ── Tips ── */
   tipCard: {
-    backgroundColor: '#fffbeb',
+    backgroundColor: Colors.brandLight,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#fde68a',
+    borderColor: Colors.brandBorder,
     padding: 14,
     gap: 10,
   },
@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
   tipTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#d97706',
+    color: Colors.brandDark,
   },
   tipList: { gap: 6 },
   tipRow: {
@@ -433,14 +433,14 @@ const styles = StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: 3,
-    backgroundColor: '#d97706',
+    backgroundColor: Colors.brandDark,
     marginTop: 5,
     flexShrink: 0,
   },
   tipText: {
     flex: 1,
     fontSize: 12,
-    color: '#92400e',
+    color: Colors.brandDark,
     lineHeight: 18,
   },
 

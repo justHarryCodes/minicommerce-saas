@@ -54,7 +54,7 @@ export default function ForgotPasswordScreen() {
           {sent ? (
             <View style={styles.successWrap}>
               <View style={styles.successIcon}>
-                <Mail size={34} color="#166534" />
+                <Mail size={34} color={Colors.successDark} />
               </View>
               <Text style={styles.successTitle}>Check your inbox</Text>
               <Text style={styles.successSub}>
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: '#dcfce7',
+    backgroundColor: Colors.successLight,
     alignItems: 'center',
     justifyContent: 'center',
   },

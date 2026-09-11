@@ -148,7 +148,7 @@ export default function OrdersScreen() {
             </View>
           ) : error ? (
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60, paddingHorizontal: 24 }}>
-              <AlertTriangle size={28} color="#b45309" style={{ marginBottom: 8 }} />
+              <AlertTriangle size={28} color={Colors.brandDark} style={{ marginBottom: 8 }} />
               <Text style={{ fontSize: 14, fontWeight: '700', color: Colors.surface[700], textAlign: 'center', marginBottom: 4 }}>Failed to load orders</Text>
               <Text style={{ fontSize: 12, color: Colors.surface[400], textAlign: 'center' }}>{(error as Error).message}</Text>
             </View>

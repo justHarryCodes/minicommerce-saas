@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FolderOpen, Pencil, Plus, Trash2 } from 'lucide-react-native';
 import { api } from '@/lib/api';
-import { Colors } from '@/constants/theme';
+import { CategoryAccents, Colors } from '@/constants/theme';
 import { SubHeader } from '@/components/SubHeader';
 import type { Category } from '@/types';
 
@@ -13,17 +13,9 @@ const TILE_GAP = 12;
 const TILE_PAD = 16;
 const TILE_W   = (SCREEN_W - TILE_PAD * 2 - TILE_GAP) / 2;
 
-// Rotating accent colours for tile icons
-const ACCENTS = [
-  { bg: '#FEF3C7', icon: '#D97706' },
-  { bg: '#DBEAFE', icon: '#2563EB' },
-  { bg: '#EDE9FE', icon: '#7C3AED' },
-  { bg: '#D1FAE5', icon: '#059669' },
-  { bg: '#FCE7F3', icon: '#DB2777' },
-  { bg: '#FFEDD5', icon: '#EA580C' },
-  { bg: '#CCFBF1', icon: '#0D9488' },
-  { bg: '#FEE2E2', icon: '#DC2626' },
-];
+// Rotating accent colours for tile icons — shared with categories/new.tsx
+// via constants/theme.ts (was duplicated verbatim in both files before).
+const ACCENTS = CategoryAccents;
 
 function CategoryTile({
   item,
@@ -282,6 +274,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   editBtn:   { backgroundColor: Colors.surface[100] },
-  deleteBtn: { backgroundColor: '#FEE2E2' },
+  deleteBtn: { backgroundColor: Colors.errorLight },
   tileActionLabel: { fontSize: 11, fontWeight: '700', color: Colors.surface[600] },
 });

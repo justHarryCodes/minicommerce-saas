@@ -67,7 +67,7 @@ export default function ReelsTab() {
 
   return (
     <View style={styles.root}>
-      <StatusBar backgroundColor="#000" barStyle="light-content" />
+      <StatusBar backgroundColor={Colors.black} barStyle="light-content" />
       <View
         style={styles.feed}
         onLayout={e => setReelHeight(e.nativeEvent.layout.height)}
@@ -108,7 +108,7 @@ export default function ReelsTab() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#000' },
+  root: { flex: 1, backgroundColor: Colors.black },
   feed: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   hint: { color: Colors.darkMuted, fontSize: 14 },

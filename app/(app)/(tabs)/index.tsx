@@ -112,7 +112,7 @@ export default function DashboardScreen() {
       onPress={() => router.push('/(app)/notifications' as never)}
       hitSlop={8}
     >
-      <Bell size={20} color="#fff" strokeWidth={2} />
+      <Bell size={20} color={Colors.white} strokeWidth={2} />
       {unreadCount > 0 && (
         <View style={styles.bellBadge}>
           <Text style={styles.bellBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     minWidth: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: '#EF4444',
+    backgroundColor: Colors.error,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 3,
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
   bellBadgeText: {
     fontSize: 8,
     fontWeight: '800',
-    color: '#fff',
+    color: Colors.white,
   },
   scroll: {
     padding: 16,

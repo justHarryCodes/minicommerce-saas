@@ -9,6 +9,7 @@ import { auth } from '@/lib/firebase';
 import { registerForPushNotifications } from '@/lib/notifications';
 import { api } from '@/lib/api';
 import { DrawerContent } from '@/components/AppDrawer';
+import { Colors } from '@/constants/theme';
 
 const DRAWER_W = Math.min(Dimensions.get('window').width * 0.82, 320);
 
@@ -57,7 +58,7 @@ function DrawerOverlay() {
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
       {/* Dark backdrop — tap to close */}
       <Animated.View
-        style={[StyleSheet.absoluteFill, { backgroundColor: '#000', opacity: fadeAnim }]}
+        style={[StyleSheet.absoluteFill, { backgroundColor: Colors.black, opacity: fadeAnim }]}
         pointerEvents={isOpen ? 'auto' : 'none'}
       >
         <Pressable style={StyleSheet.absoluteFill} onPress={close} />
@@ -133,7 +134,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     bottom: 0,
-    shadowColor: '#000',
+    shadowColor: Colors.black,
     shadowOffset: { width: 4, height: 0 },
     shadowOpacity: 0.25,
     shadowRadius: 20,

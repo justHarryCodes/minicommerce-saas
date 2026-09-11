@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { Status } from '@/constants/theme';
+import { Colors, Status } from '@/constants/theme';
 
 type StatusKey = keyof typeof Status;
 
@@ -9,7 +9,7 @@ interface BadgeProps {
 }
 
 export function Badge({ status, size = 'sm' }: BadgeProps) {
-  const s = Status[status as StatusKey] ?? { label: status, bg: '#F1F5F9', text: '#475569' };
+  const s = Status[status as StatusKey] ?? { label: status, bg: Colors.surface[100], text: Colors.surface[600] };
   return (
     <View style={[styles.base, size === 'md' ? styles.md : styles.sm, { backgroundColor: s.bg }]}>
       <Text style={[styles.label, size === 'md' ? styles.labelMd : styles.labelSm, { color: s.text }]}>

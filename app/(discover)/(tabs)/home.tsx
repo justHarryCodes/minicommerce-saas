@@ -14,7 +14,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronRight, ShoppingBag } from 'lucide-react-native';
 import { API_BASE } from '@/lib/api';
-import { Colors } from '@/constants/theme';
+import { CategoryMeta, Colors } from '@/constants/theme';
 import { ProductCardSkeleton, SectionHeaderSkeleton } from '@/components/Skeleton';
 import { LatestReelsStrip } from '@/components/discover/LatestReelsStrip';
 import type { MarketProduct } from '@/types/discover';
@@ -22,22 +22,9 @@ import type { MarketProduct } from '@/types/discover';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const logo = require('../../../assets/logo.png') as number;
 
-const CATEGORY_META: Record<string, { icon: string; accent: string }> = {
-  'Fashion and Clothing':    { icon: '👗', accent: '#ec4899' },
-  'Shoes and Sneakers':      { icon: '👟', accent: '#f97316' },
-  'Bags and Accessories':    { icon: '👜', accent: '#a855f7' },
-  'Beauty and Makeup':       { icon: '💄', accent: '#f43f5e' },
-  'Hair and Wigs':           { icon: '💇', accent: '#06b6d4' },
-  'Food and Catering':       { icon: '🍽️', accent: '#22c55e' },
-  'Electronics and Gadgets': { icon: '⚡', accent: '#3b82f6' },
-  'Phones and Accessories':  { icon: '📱', accent: '#6366f1' },
-  'Laptops and Computing':   { icon: '💻', accent: '#0ea5e9' },
-  'Furniture and Home':      { icon: '🛋️', accent: '#84cc16' },
-  'Artwork and Paintings':   { icon: '🎨', accent: '#f59e0b' },
-  'Jewelry and Watches':     { icon: '💎', accent: '#14b8a6' },
-  'Books and Stationery':    { icon: '📚', accent: '#8b5cf6' },
-  'Other':                   { icon: '📦', accent: '#71717a' },
-};
+// Shared with discover.tsx and products/[category].tsx via constants/theme.ts
+// (was duplicated three times, two copies out of sync with this one).
+const CATEGORY_META = CategoryMeta;
 
 function fmtPrice(n: number): string {
   return '₦' + n.toLocaleString('en-NG', { minimumFractionDigits: 0 });
@@ -188,7 +175,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.root}>
-      <StatusBar backgroundColor="#f97316" barStyle="dark-content" />
+      <StatusBar backgroundColor={Colors.brand} barStyle="dark-content" />
 
       {/* ── Header ─────────────────────────────────────────────────── */}
       <View style={[styles.header, { paddingTop: insets.top + 14 }]}>
@@ -262,11 +249,11 @@ const CARD_W = 148;
 const CARD_IMG_H = 148;
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#fff' },
+  root: { flex: 1, backgroundColor: Colors.white },
 
   // Header
   header: {
-    backgroundColor: '#f97316',
+    backgroundColor: Colors.brand,
     paddingHorizontal: 20,
     paddingBottom: 20,
   },
@@ -286,7 +273,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 40,
     fontWeight: '900',
-    color: '#000',
+    color: Colors.dark,
     letterSpacing: -1.5,
     lineHeight: 44,
   },
@@ -303,7 +290,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     flexShrink: 0,
   },
-  signInLabel: { fontSize: 13, fontWeight: '800', color: '#000' },
+  signInLabel: { fontSize: 13, fontWeight: '800', color: Colors.dark },
 
   // States
   emptyWrap: {
@@ -317,7 +304,7 @@ const styles = StyleSheet.create({
   emptyBody: { fontSize: 13, color: Colors.surface[500], textAlign: 'center', lineHeight: 20 },
 
   // Section
-  section: { backgroundColor: '#fff' },
+  section: { backgroundColor: Colors.white },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -364,7 +351,7 @@ const styles = StyleSheet.create({
   // Product card
   card: {
     width: CARD_W,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.surface[200],
@@ -388,12 +375,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 7,
     left: 7,
-    backgroundColor: '#ef4444',
+    backgroundColor: Colors.error,
     borderRadius: 5,
     paddingHorizontal: 5,
     paddingVertical: 2,
   },
-  saleTagText: { fontSize: 8, fontWeight: '900', color: '#fff', letterSpacing: 0.6 },
+  saleTagText: { fontSize: 8, fontWeight: '900', color: Colors.white, letterSpacing: 0.6 },
 
   cardBody: { padding: 9, gap: 4 },
   cardName: {
@@ -425,6 +412,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cardStoreLogoLetter: { fontSize: 7, color: '#fff', fontWeight: '900' },
+  cardStoreLogoLetter: { fontSize: 7, color: Colors.white, fontWeight: '900' },
   cardStoreName: { fontSize: 10, color: Colors.surface[500], fontWeight: '600', flex: 1 },
 });

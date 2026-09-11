@@ -80,7 +80,7 @@ export default function QRCodeScreen() {
         {/* Tip */}
         <View style={styles.tipCard}>
           <View style={styles.tipHeader}>
-            <Lightbulb size={14} color="#9a3412" />
+            <Lightbulb size={14} color={Colors.brandDark} />
             <Text style={styles.tipTitle}>How to use</Text>
           </View>
           <Text style={styles.tipBody}>
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     gap: 20,
     borderWidth: 1,
     borderColor: Colors.surface[200],
-    shadowColor: '#000',
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
@@ -176,12 +176,12 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   tipCard: {
-    backgroundColor: '#fff7ed',
+    backgroundColor: Colors.brandLight,
     borderRadius: 14,
     padding: 14,
     width: '100%',
     borderWidth: 1,
-    borderColor: '#fed7aa',
+    borderColor: Colors.brandBorder,
     gap: 4,
   },
   tipHeader: {
@@ -190,8 +190,8 @@ const styles = StyleSheet.create({
     gap: 6,
     marginBottom: 4,
   },
-  tipTitle: { fontSize: 13, color: '#9a3412', fontWeight: '700' },
-  tipBody: { fontSize: 12, color: '#9a3412', lineHeight: 18 },
+  tipTitle: { fontSize: 13, color: Colors.brandDark, fontWeight: '700' },
+  tipBody: { fontSize: 12, color: Colors.brandDark, lineHeight: 18 },
   shareBtn: {
     backgroundColor: Colors.brand,
     borderRadius: 14,

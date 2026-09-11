@@ -7,20 +7,24 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { ChevronDown, Package } from 'lucide-react-native';
 import { api } from '@/lib/api';
-import { Colors } from '@/constants/theme';
+import { Colors, Status } from '@/constants/theme';
 import { SubHeader } from '@/components/SubHeader';
 import type { Order } from '@/types';
 
 const STATUS_OPTIONS = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'] as const;
 type OrderStatus = (typeof STATUS_OPTIONS)[number];
 
+// Same bg/text pairs as the shared Status map (constants/theme.ts) — this
+// used to be its own, slightly different set of colors, so an order's
+// status badge here didn't quite match the same status shown elsewhere
+// (the dashboard's Badge component, the orders list, etc).
 const STATUS_COLORS: Record<OrderStatus, { bg: string; text: string }> = {
-  pending:    { bg: '#FEF3C7', text: '#92400E' },
-  confirmed:  { bg: '#DBEAFE', text: '#1E40AF' },
-  processing: { bg: '#EDE9FE', text: '#5B21B6' },
-  shipped:    { bg: '#D1FAE5', text: '#065F46' },
-  delivered:  { bg: '#D1FAE5', text: '#065F46' },
-  cancelled:  { bg: '#FEE2E2', text: '#991B1B' },
+  pending:    { bg: Status.pending.bg,    text: Status.pending.text },
+  confirmed:  { bg: Status.confirmed.bg,  text: Status.confirmed.text },
+  processing: { bg: Status.processing.bg, text: Status.processing.text },
+  shipped:    { bg: Status.shipped.bg,    text: Status.shipped.text },
+  delivered:  { bg: Status.delivered.bg,  text: Status.delivered.text },
+  cancelled:  { bg: Status.cancelled.bg,  text: Status.cancelled.text },
 };
 
 function mapOrder(raw: Record<string, unknown>): Order {
@@ -121,7 +125,7 @@ export default function OrderDetailScreen() {
             onPress={() => router.back()}
             style={{ marginTop: 20, paddingHorizontal: 24, paddingVertical: 10, backgroundColor: Colors.dark, borderRadius: 12 }}
           >
-            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Go back</Text>
+            <Text style={{ color: Colors.white, fontWeight: '700', fontSize: 14 }}>Go back</Text>
           </Pressable>
         </View>
       </SafeAreaView>

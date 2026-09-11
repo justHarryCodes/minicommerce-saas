@@ -27,6 +27,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { auth } from "@/lib/firebase";
 import { useAuthStore } from "@/store/auth";
+import { Accent, Colors } from "@/constants/theme";
 import type { Store } from "@/types";
 
 /* card width for 4-column grid */
@@ -48,14 +49,14 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { Icon: Home, label: "Dashboard", route: "/(app)", matchPath: "/", iconBg: "#EFF6FF", iconColor: "#3B82F6" },
-  { Icon: Package, label: "Orders", route: "/(app)/orders", matchPath: "/orders", iconBg: "#F5F3FF", iconColor: "#8B5CF6" },
-  { Icon: ShoppingBag, label: "Products", route: "/(app)/products", matchPath: "/products", iconBg: "#F0FDF4", iconColor: "#22C55E" },
-  { Icon: FolderOpen, label: "Categories", route: "/(app)/categories", matchPath: "/categories", iconBg: "#FFF7ED", iconColor: "#F97316" },
-  { Icon: Film, label: "Reels", route: "/(app)/reels", matchPath: "/reels", iconBg: "#FFF1F2", iconColor: "#F43F5E", pro: true },
-  { Icon: CreditCard, label: "Billing", route: "/(app)/billing", matchPath: "/billing", iconBg: "#ECFDF5", iconColor: "#10B981" },
-  { Icon: QrCode, label: "QR Code", route: "/(app)/qrcode", matchPath: "/qrcode", iconBg: "#EEF2FF", iconColor: "#6366F1" },
-  { Icon: Settings, label: "Settings", route: "/(app)/settings", matchPath: "/settings", iconBg: "#F8FAFC", iconColor: "#64748B" },
+  { Icon: Home, label: "Dashboard", route: "/(app)", matchPath: "/", iconBg: Accent.dashboard.bg, iconColor: Accent.dashboard.fg },
+  { Icon: Package, label: "Orders", route: "/(app)/orders", matchPath: "/orders", iconBg: Accent.orders.bg, iconColor: Accent.orders.fg },
+  { Icon: ShoppingBag, label: "Products", route: "/(app)/products", matchPath: "/products", iconBg: Accent.products.bg, iconColor: Accent.products.fg },
+  { Icon: FolderOpen, label: "Categories", route: "/(app)/categories", matchPath: "/categories", iconBg: Accent.categories.bg, iconColor: Accent.categories.fg },
+  { Icon: Film, label: "Reels", route: "/(app)/reels", matchPath: "/reels", iconBg: Accent.reels.bg, iconColor: Accent.reels.fg, pro: true },
+  { Icon: CreditCard, label: "Billing", route: "/(app)/billing", matchPath: "/billing", iconBg: Accent.billing.bg, iconColor: Accent.billing.fg },
+  { Icon: QrCode, label: "QR Code", route: "/(app)/qrcode", matchPath: "/qrcode", iconBg: Accent.qrcode.bg, iconColor: Accent.qrcode.fg },
+  { Icon: Settings, label: "Settings", route: "/(app)/settings", matchPath: "/settings", iconBg: Accent.settings.bg, iconColor: Accent.settings.fg },
 ];
 
 /* ───────────────── CARD ───────────────── */
@@ -94,10 +95,10 @@ function NavCard({
       <View
         style={[
           styles.icon,
-          { backgroundColor: active ? "#6366F1" : item.iconBg },
+          { backgroundColor: active ? Colors.brand : item.iconBg },
         ]}
       >
-        <Icon size={18} color={active ? "#fff" : item.iconColor} />
+        <Icon size={18} color={active ? Colors.dark : item.iconColor} />
       </View>
 
       <Text style={[styles.label, active && styles.labelActive]}>
@@ -130,10 +131,10 @@ export function DrawerContent({
 
   const subColor =
     subStatus === "subscribed"
-      ? "#22C55E"
+      ? Colors.success
       : subStatus === "expired"
-      ? "#EF4444"
-      : "#64748B";
+      ? Colors.error
+      : Colors.surface[500];
 
   const subLabel =
     subStatus === "subscribed"
@@ -184,7 +185,7 @@ export function DrawerContent({
           </View>
 
           <Pressable onPress={() => navigation.closeDrawer()}>
-            <X size={18} color="#94A3B8" />
+            <X size={18} color={Colors.surface[400]} />
           </Pressable>
         </View>
 
@@ -249,7 +250,7 @@ export function DrawerContent({
         ]}
       >
         <Pressable onPress={handleSignOut} style={styles.logout}>
-          <LogOut size={16} color="#EF4444" />
+          <LogOut size={16} color={Colors.error} />
           <Text style={styles.logoutText}>Sign out</Text>
         </Pressable>
       </View>
@@ -262,11 +263,11 @@ export function DrawerContent({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: Colors.surface[100],
   },
 
   header: {
-    backgroundColor: "#0B1220",
+    backgroundColor: Colors.dark,
     paddingHorizontal: 16,
     paddingBottom: 14,
     borderBottomLeftRadius: 22,
@@ -289,18 +290,18 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 10,
-    backgroundColor: "#6366F1",
+    backgroundColor: Colors.brand,
     alignItems: "center",
     justifyContent: "center",
   },
 
   logoText: {
-    color: "#fff",
+    color: Colors.dark,
     fontWeight: "900",
   },
 
   brandText: {
-    color: "#fff",
+    color: Colors.white,
     fontWeight: "800",
   },
 
@@ -316,18 +317,18 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 14,
-    backgroundColor: "#6366F1",
+    backgroundColor: Colors.brand,
     alignItems: "center",
     justifyContent: "center",
   },
 
   avatarText: {
-    color: "#fff",
+    color: Colors.dark,
     fontWeight: "900",
   },
 
   name: {
-    color: "#fff",
+    color: Colors.white,
     fontWeight: "700",
   },
 
@@ -375,12 +376,12 @@ const styles = StyleSheet.create({
 
   card: {
     width: CARD_W,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
     borderRadius: 14,
     padding: 10,
     alignItems: "center",
 
-    shadowColor: "#000",
+    shadowColor: Colors.black,
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
@@ -390,7 +391,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 6,
     right: 6,
-    backgroundColor: "#FEF3C7",
+    backgroundColor: Colors.brandLight,
     borderRadius: 6,
     paddingHorizontal: 5,
     paddingVertical: 1,
@@ -399,14 +400,14 @@ const styles = StyleSheet.create({
   proBadgeText: {
     fontSize: 8,
     fontWeight: "800",
-    color: "#92400E",
+    color: Colors.brandDark,
     letterSpacing: 0.3,
   },
 
   cardActive: {
     borderWidth: 1,
-    borderColor: "#6366F1",
-    backgroundColor: "#EEF2FF",
+    borderColor: Colors.brand,
+    backgroundColor: Colors.brandLight,
   },
 
   icon: {
@@ -421,20 +422,20 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#334155",
+    color: Colors.surface[700],
     textAlign: "center",
   },
 
   labelActive: {
     fontWeight: "800",
-    color: "#111827",
+    color: Colors.surface[900],
   },
 
   footer: {
     padding: 12,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
     borderTopWidth: 1,
-    borderTopColor: "#E2E8F0",
+    borderTopColor: Colors.surface[200],
   },
 
   logout: {
@@ -442,13 +443,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "#FEE2E2",
+    backgroundColor: Colors.errorLight,
     padding: 12,
     borderRadius: 12,
   },
 
   logoutText: {
-    color: "#EF4444",
+    color: Colors.error,
     fontWeight: "700",
   },
 });

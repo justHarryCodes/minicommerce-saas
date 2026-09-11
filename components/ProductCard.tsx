@@ -102,18 +102,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
-    backgroundColor: '#dcfce7',
+    backgroundColor: Colors.successLight,
   },
   stockBadgeLow: {
-    backgroundColor: '#fee2e2',
+    backgroundColor: Colors.errorLight,
   },
   stockText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#166534',
+    color: Colors.successDark,
   },
   stockTextLow: {
-    color: '#991b1b',
+    color: Colors.errorDark,
   },
   hiddenBadge: {
     backgroundColor: Colors.surface[100],

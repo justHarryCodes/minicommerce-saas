@@ -71,7 +71,7 @@ export function LatestReelsStrip() {
                     </View>
                   )}
                   <View style={styles.playBadge}>
-                    <Play size={9} color="#000" fill="#000" />
+                    <Play size={9} color={Colors.black} fill={Colors.black} />
                   </View>
                 </View>
                 <Text style={styles.name} numberOfLines={1}>{reel.store_name}</Text>
@@ -83,7 +83,7 @@ export function LatestReelsStrip() {
 }
 
 const styles = StyleSheet.create({
-  block: { paddingTop: 16, paddingBottom: 8, backgroundColor: '#fff' },
+  block: { paddingTop: 16, paddingBottom: 8, backgroundColor: Colors.white },
   label: {
     fontSize: 9, fontWeight: '800', color: Colors.surface[400],
     letterSpacing: 1.2, paddingHorizontal: 16, marginBottom: 12,
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   playBadge: {
     position: 'absolute', bottom: -1, right: -1,
     width: 20, height: 20, borderRadius: 10,
-    backgroundColor: Colors.brand, borderWidth: 2, borderColor: '#fff',
+    backgroundColor: Colors.brand, borderWidth: 2, borderColor: Colors.white,
     alignItems: 'center', justifyContent: 'center',
   },
   name: { fontSize: 10, color: Colors.dark, fontWeight: '700', textAlign: 'center' },

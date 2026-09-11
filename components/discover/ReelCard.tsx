@@ -144,7 +144,7 @@ export function ReelCard({ reel, isActive, height }: Props) {
 
 const styles = StyleSheet.create({
   root: {
-    backgroundColor: '#000',
+    backgroundColor: Colors.black,
     overflow: 'hidden',
   },
 
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     fontWeight: '800',
-    color: '#fff',
+    color: Colors.white,
   },
   viewsBadge: {
     flexDirection: 'row',
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#fff',
+    color: Colors.white,
     maxWidth: 100,
   },
   productPrice: {

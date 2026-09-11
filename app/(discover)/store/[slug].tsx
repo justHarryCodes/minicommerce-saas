@@ -44,7 +44,7 @@ export default function StoreDetail() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+      <StatusBar backgroundColor={Colors.white} barStyle="dark-content" />
 
       <View style={styles.topBar}>
         <Pressable
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     gap: 12,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
   },
   backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   topBarTitle: { flex: 1, fontSize: 17, fontWeight: '900', color: Colors.dark, letterSpacing: -0.3 },
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 24,
     paddingBottom: 20,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
     marginBottom: 8,
   },
   storeLogo: { width: 90, height: 90, borderRadius: 45, borderWidth: 3, borderColor: Colors.brand },
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
   productRow: { gap: 12, paddingHorizontal: 12, marginTop: 12 },
   productCard: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
     borderRadius: 14,
     overflow: 'hidden',
     borderWidth: 1,

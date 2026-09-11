@@ -13,25 +13,13 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft, ShoppingBag } from 'lucide-react-native';
 import { API_BASE } from '@/lib/api';
-import { Colors } from '@/constants/theme';
+import { CategoryMeta, Colors } from '@/constants/theme';
 import type { MarketProduct } from '@/types/discover';
 
-const CATEGORY_META: Record<string, { icon: string }> = {
-  'Fashion and Clothing':    { icon: '👗' },
-  'Shoes and Sneakers':      { icon: '👟' },
-  'Bags and Accessories':    { icon: '👜' },
-  'Beauty and Makeup':       { icon: '💄' },
-  'Hair and Wigs':           { icon: '💇' },
-  'Food and Catering':       { icon: '🍽️' },
-  'Electronics and Gadgets': { icon: '⚡' },
-  'Phones and Accessories':  { icon: '📱' },
-  'Laptops and Computing':   { icon: '💻' },
-  'Furniture and Home':      { icon: '🛋️' },
-  'Artwork and Paintings':   { icon: '🎨' },
-  'Jewelry and Watches':     { icon: '💎' },
-  'Books and Stationery':    { icon: '📚' },
-  'Other':                   { icon: '📦' },
-};
+// Shared with home.tsx and discover.tsx via constants/theme.ts (was
+// duplicated three times, this copy had silently dropped the `accent`
+// field kept by home.tsx's version).
+const CATEGORY_META = CategoryMeta;
 
 function fmtPrice(n: number): string {
   return '₦' + n.toLocaleString('en-NG', { minimumFractionDigits: 0 });
@@ -164,7 +152,7 @@ export default function CategoryProducts() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+      <StatusBar backgroundColor={Colors.white} barStyle="dark-content" />
 
       {/* Header */}
       <View style={styles.header}>
@@ -240,7 +228,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     gap: 10,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
   },
   backBtn: {
     width: 36,
@@ -294,7 +282,7 @@ const styles = StyleSheet.create({
   // Product card (2-col grid)
   card: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: Colors.surface[200],
@@ -319,12 +307,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     left: 8,
-    backgroundColor: '#ef4444',
+    backgroundColor: Colors.error,
     borderRadius: 6,
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
-  saleBadgeText: { fontSize: 9, fontWeight: '900', color: '#fff', letterSpacing: 0.5 },
+  saleBadgeText: { fontSize: 9, fontWeight: '900', color: Colors.white, letterSpacing: 0.5 },
 
   cardBody: { padding: 10, gap: 5 },
   productName: {

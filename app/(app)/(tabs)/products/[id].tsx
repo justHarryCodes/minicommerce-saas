@@ -190,7 +190,7 @@ export default function EditProductScreen() {
           title="Edit Product"
           right={
             <Pressable onPress={handleDelete} hitSlop={8} style={({ pressed }) => [styles.deleteBtn, { opacity: pressed ? 0.6 : 1 }]}>
-              <Trash2 size={20} color="#EF4444" />
+              <Trash2 size={20} color={Colors.error} />
             </Pressable>
           }
         />

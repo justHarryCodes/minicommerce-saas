@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import type { ViewStyle } from 'react-native';
+import { Colors } from '@/constants/theme';
 
 // ─── Base pulsing block ───────────────────────────────────────────────────────
 
@@ -27,7 +28,7 @@ export function Skeleton({ width, height, borderRadius = 6, style }: SkeletonPro
 
   return (
     <Animated.View
-      style={[{ width, height, borderRadius, backgroundColor: '#CBD5E1', opacity }, style]}
+      style={[{ width, height, borderRadius, backgroundColor: Colors.surface[300], opacity }, style]}
     />
   );
 }
@@ -94,9 +95,9 @@ const skeletonStyles = StyleSheet.create({
     width: 148,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: Colors.surface[200],
     overflow: 'hidden',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
   },
   productBody: {
     padding: 9,
@@ -114,12 +115,12 @@ const skeletonStyles = StyleSheet.create({
 
   vendorCard: {
     width: 148,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
     borderRadius: 14,
     padding: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: Colors.surface[200],
     gap: 6,
   },
 

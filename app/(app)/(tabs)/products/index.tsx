@@ -114,7 +114,7 @@ export default function ProductsScreen() {
 
       {atLimit && (
         <Pressable onPress={() => router.push('/(app)/billing')} style={styles.limitBanner}>
-          <AlertTriangle size={16} color="#b45309" />
+          <AlertTriangle size={16} color={Colors.brandDark} />
           <Text style={styles.limitBannerText}>
             {store?.plan?.name} plan limit reached ({maxProducts} products). Upgrade to add more →
           </Text>
@@ -147,7 +147,7 @@ export default function ProductsScreen() {
             </View>
           ) : error ? (
             <View style={styles.center}>
-              <AlertTriangle size={28} color="#b45309" style={{ marginBottom: 8 }} />
+              <AlertTriangle size={28} color={Colors.brandDark} style={{ marginBottom: 8 }} />
               <Text style={styles.errorTitle}>Failed to load products</Text>
               <Text style={styles.errorSub}>{(error as Error).message}</Text>
             </View>
@@ -234,15 +234,15 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     padding: 12,
     borderRadius: 12,
-    backgroundColor: '#fffbeb',
+    backgroundColor: Colors.brandLight,
     borderWidth: 1,
-    borderColor: '#fde68a',
+    borderColor: Colors.brandBorder,
   },
   limitBannerText: {
     flex: 1,
     fontSize: 12,
     fontWeight: '600',
-    color: '#92400e',
+    color: Colors.brandDark,
   },
   list: {
     paddingHorizontal: 16,

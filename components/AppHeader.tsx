@@ -36,7 +36,7 @@ export function AppHeader({ right }: Props) {
           style={({ pressed }) => [styles.iconBtn, { opacity: pressed ? 0.65 : 1 }]}
           hitSlop={10}
         >
-          <Menu size={24} color="#fff" strokeWidth={2.2} />
+          <Menu size={24} color={Colors.white} strokeWidth={2.2} />
         </Pressable>
 
         {/* ── Centre: logo ─────────────────────────────────────── */}

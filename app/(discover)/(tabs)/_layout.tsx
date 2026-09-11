@@ -10,7 +10,7 @@ export default function DiscoverTabsLayout() {
   const tabBarHeight = TAB_CONTENT_HEIGHT + insets.bottom;
 
   const defaultTabBar = {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
     borderTopColor: Colors.surface[200],
     borderTopWidth: 1,
     height: tabBarHeight,
@@ -48,7 +48,7 @@ export default function DiscoverTabsLayout() {
           title: 'Reels',
           tabBarIcon: ({ color }) => <Play size={22} color={color} />,
           tabBarStyle: {
-            backgroundColor: '#000',
+            backgroundColor: Colors.black,
             borderTopColor: '#111',
             borderTopWidth: 1,
             height: tabBarHeight,

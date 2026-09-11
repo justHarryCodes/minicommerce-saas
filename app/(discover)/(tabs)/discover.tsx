@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
 import { ChevronRight, Eye, Globe, Store } from 'lucide-react-native';
 import { API_BASE } from '@/lib/api';
-import { Colors } from '@/constants/theme';
+import { CategoryMeta, Colors } from '@/constants/theme';
 import { getCachedVendors, isVendorCacheStale, setCachedVendors } from '@/lib/discover-cache';
 import { SectionHeaderSkeleton, StoryRingSkeleton, VendorCardSkeleton } from '@/components/Skeleton';
 import type { DiscoverVendor } from '@/types/discover';
@@ -22,22 +22,10 @@ import type { DiscoverVendor } from '@/types/discover';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const logo = require('../../../assets/logo.png') as number;
 
-const CATEGORY_META: Record<string, { icon: string }> = {
-  'Fashion and Clothing':    { icon: '👗' },
-  'Shoes and Sneakers':      { icon: '👟' },
-  'Bags and Accessories':    { icon: '👜' },
-  'Beauty and Makeup':       { icon: '💄' },
-  'Hair and Wigs':           { icon: '💇' },
-  'Food and Catering':       { icon: '🍽️' },
-  'Electronics and Gadgets': { icon: '⚡' },
-  'Phones and Accessories':  { icon: '📱' },
-  'Laptops and Computing':   { icon: '💻' },
-  'Furniture and Home':      { icon: '🛋️' },
-  'Artwork and Paintings':   { icon: '🎨' },
-  'Jewelry and Watches':     { icon: '💎' },
-  'Books and Stationery':    { icon: '📚' },
-  'Other':                   { icon: '📦' },
-};
+// Shared with home.tsx and products/[category].tsx via constants/theme.ts
+// (was duplicated three times, this copy had silently dropped the `accent`
+// field kept by home.tsx's version).
+const CATEGORY_META = CategoryMeta;
 
 function fmt(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
@@ -139,7 +127,7 @@ export default function DiscoverVendors() {
 
   return (
     <View style={styles.root}>
-      <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+      <StatusBar backgroundColor={Colors.white} barStyle="dark-content" />
 
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
@@ -165,7 +153,7 @@ export default function DiscoverVendors() {
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           {/* Story ring skeletons */}
           <View style={styles.storiesBlock}>
-            <View style={{ width: 80, height: 9, backgroundColor: '#CBD5E1', borderRadius: 4, marginHorizontal: 16, marginBottom: 14, opacity: 0.5 }} />
+            <View style={{ width: 80, height: 9, backgroundColor: Colors.surface[300], borderRadius: 4, marginHorizontal: 16, marginBottom: 14, opacity: 0.5 }} />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storiesList} scrollEnabled={false}>
               {Array.from({ length: 6 }).map((_, i) => <StoryRingSkeleton key={i} />)}
             </ScrollView>
@@ -280,9 +268,9 @@ export default function DiscoverVendors() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#fff' },
+  root: { flex: 1, backgroundColor: Colors.white },
 
-  header: { backgroundColor: '#fff', paddingHorizontal: 16 },
+  header: { backgroundColor: Colors.white, paddingHorizontal: 16 },
   headerRow: { flexDirection: 'row', alignItems: 'center', paddingBottom: 12, gap: 10 },
   headerLogo: {
     width: 34,
@@ -304,7 +292,7 @@ const styles = StyleSheet.create({
   divider: { height: 8, backgroundColor: Colors.surface[50], borderTopWidth: 1, borderTopColor: Colors.surface[100] },
 
   // Story rings
-  storiesBlock: { paddingTop: 16, paddingBottom: 8, backgroundColor: '#fff' },
+  storiesBlock: { paddingTop: 16, paddingBottom: 8, backgroundColor: Colors.white },
   storiesLabel: {
     fontSize: 9, fontWeight: '800', color: Colors.surface[400],
     letterSpacing: 1.2, paddingHorizontal: 16, marginBottom: 12,
@@ -323,7 +311,7 @@ const styles = StyleSheet.create({
   storyName: { fontSize: 10, color: Colors.dark, fontWeight: '700', textAlign: 'center' },
 
   // Category section
-  catSection: { backgroundColor: '#fff', paddingTop: 20 },
+  catSection: { backgroundColor: Colors.white, paddingTop: 20 },
   catSectionHeader: {
     flexDirection: 'row', alignItems: 'center',
     justifyContent: 'space-between', paddingHorizontal: 16, marginBottom: 12,
@@ -337,7 +325,7 @@ const styles = StyleSheet.create({
   vendorRow: { paddingHorizontal: 16, gap: 10, paddingBottom: 4 },
   vendorCard: {
     width: 148,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
     borderRadius: 14,
     padding: 12,
     alignItems: 'center',

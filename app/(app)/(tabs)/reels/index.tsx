@@ -148,7 +148,7 @@ export default function ReelsScreen() {
               onPress={() => toggleActive.mutate({ id: item.id, isActive: !item.is_active })}
               style={[styles.liveBadge, { backgroundColor: item.is_active ? Colors.brand : 'rgba(0,0,0,0.6)' }]}
             >
-              <Text style={[styles.liveBadgeText, { color: item.is_active ? Colors.dark : '#fff' }]}>
+              <Text style={[styles.liveBadgeText, { color: item.is_active ? Colors.dark : Colors.white }]}>
                 {item.is_active ? 'LIVE' : 'HIDDEN'}
               </Text>
             </Pressable>
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   durationText: {
-    color: '#fff',
+    color: Colors.white,
     fontSize: 11,
     fontWeight: '700',
   },
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface[900],
   },
   reelTitle: {
-    color: '#fff',
+    color: Colors.white,
     fontSize: 12,
     fontWeight: '700',
     marginBottom: 6,

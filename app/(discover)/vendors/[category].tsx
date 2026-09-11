@@ -60,7 +60,7 @@ export default function CategoryVendors() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+      <StatusBar backgroundColor={Colors.white} barStyle="dark-content" />
 
       <View style={styles.header}>
         <Pressable
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     gap: 12,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
   },
   backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   title: { flex: 1, fontSize: 18, fontWeight: '900', color: Colors.dark, letterSpacing: -0.3 },
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   row: { gap: 12 },
   card: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',

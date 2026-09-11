@@ -26,7 +26,7 @@ export function SubHeader({ title, onBack, right }: Props) {
           hitSlop={12}
           style={styles.backBtn}
         >
-          <ArrowLeft size={20} color="#FFFFFF" />
+          <ArrowLeft size={20} color={Colors.white} />
         </Pressable>
         <Image source={logo} style={styles.logo} contentFit="contain" />
         <Text style={styles.title} numberOfLines={1}>{title}</Text>
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 17,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: Colors.white,
     letterSpacing: -0.2,
   },
   right: {

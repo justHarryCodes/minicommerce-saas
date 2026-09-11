@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { ChevronDown, FolderOpen } from 'lucide-react-native';
 import { api } from '@/lib/api';
-import { Colors } from '@/constants/theme';
+import { CategoryAccents, Colors } from '@/constants/theme';
 import { SubHeader } from '@/components/SubHeader';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -17,16 +17,9 @@ const TILE_GAP = 10;
 const TILE_PAD = 16;
 const TILE_W   = (SCREEN_W - TILE_PAD * 2 - TILE_GAP) / 2;
 
-const ACCENTS = [
-  { bg: '#FEF3C7', icon: '#D97706' },
-  { bg: '#DBEAFE', icon: '#2563EB' },
-  { bg: '#EDE9FE', icon: '#7C3AED' },
-  { bg: '#D1FAE5', icon: '#059669' },
-  { bg: '#FCE7F3', icon: '#DB2777' },
-  { bg: '#FFEDD5', icon: '#EA580C' },
-  { bg: '#CCFBF1', icon: '#0D9488' },
-  { bg: '#FEE2E2', icon: '#DC2626' },
-];
+// Shared with categories/index.tsx and categories/new.tsx via
+// constants/theme.ts (was duplicated verbatim in all three files).
+const ACCENTS = CategoryAccents;
 
 export default function EditCategoryScreen() {
   const { id, name: initialName, parentId: initialParentId } = useLocalSearchParams<{

@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Check, CheckCircle, Clock, Crown, Info, RefreshCw, XCircle } from 'lucide-react-native';
 import { api, API_BASE } from '@/lib/api';
-import { Colors } from '@/constants/theme';
+import { Colors, Status } from '@/constants/theme';
 import { SubHeader } from '@/components/SubHeader';
 import type { Store } from '@/types';
 
@@ -26,12 +26,15 @@ function StatusIcon({ status, color }: { status: string; color: string }) {
   }
 }
 
+// Re-uses the same bg/text pairs as the shared order/payment Status map
+// (constants/theme.ts) — same visual language for "pending"/"active"/
+// "expired" everywhere in the app, subscription screen included.
 const STATUS_META: Record<string, { label: string; color: string; bg: string; desc: string }> = {
-  pending:          { label: 'Pending setup',       color: '#854d0e', bg: '#fef9c3', desc: 'Complete your setup fee to activate your store.' },
-  setup_fee_pending:{ label: 'Payment processing',  color: '#1e40af', bg: '#dbeafe', desc: 'Your setup fee payment is being processed.' },
-  setup_fee_paid:   { label: 'Setup complete',      color: '#166534', bg: '#dcfce7', desc: 'Setup fee paid. Subscribe to keep your store active.' },
-  subscribed:       { label: 'Active',              color: '#166534', bg: '#dcfce7', desc: 'Your store is active and accepting orders.' },
-  expired:          { label: 'Subscription expired', color: '#991b1b', bg: '#fee2e2', desc: 'Renew your subscription to reactivate your store.' },
+  pending:          { label: 'Pending setup',       color: Status.pending.text,    bg: Status.pending.bg,    desc: 'Complete your setup fee to activate your store.' },
+  setup_fee_pending:{ label: 'Payment processing',  color: Status.processing.text, bg: Status.processing.bg, desc: 'Your setup fee payment is being processed.' },
+  setup_fee_paid:   { label: 'Setup complete',      color: Status.confirmed.text,  bg: Status.confirmed.bg,  desc: 'Setup fee paid. Subscribe to keep your store active.' },
+  subscribed:       { label: 'Active',              color: Status.confirmed.text,  bg: Status.confirmed.bg,  desc: 'Your store is active and accepting orders.' },
+  expired:          { label: 'Subscription expired', color: Status.cancelled.text, bg: Status.cancelled.bg,  desc: 'Renew your subscription to reactivate your store.' },
 };
 
 export default function BillingScreen() {
@@ -91,7 +94,7 @@ export default function BillingScreen() {
           <View style={styles.planCard}>
             <View style={styles.planTop}>
               <View style={styles.planNameRow}>
-                <Crown size={18} color={store.plan.isPro ? '#166534' : Colors.surface[400]} />
+                <Crown size={18} color={store.plan.isPro ? Colors.successDark : Colors.surface[400]} />
                 <Text style={styles.planName}>{store.plan.name} plan</Text>
               </View>
               <Text style={styles.planLimit}>Up to {store.plan.maxProducts} products</Text>
@@ -99,7 +102,7 @@ export default function BillingScreen() {
 
             {store.plan.isPro ? (
               <View style={styles.proActiveRow}>
-                <Check size={16} color="#166534" />
+                <Check size={16} color={Colors.successDark} />
                 <Text style={styles.proActiveText}>You have full access to Reels and higher product limits</Text>
               </View>
             ) : (
@@ -144,7 +147,7 @@ export default function BillingScreen() {
 
         {/* Info note */}
         <View style={styles.infoCard}>
-          <Info size={20} color="#92400e" />
+          <Info size={20} color={Colors.brandDark} />
           <View style={styles.infoText}>
             <Text style={styles.infoTitle}>Payments handled on the web</Text>
             <Text style={styles.infoBody}>
@@ -239,7 +242,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#dcfce7',
+    backgroundColor: Colors.successLight,
     borderRadius: 10,
     padding: 10,
   },
@@ -247,7 +250,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     fontWeight: '600',
-    color: '#166534',
+    color: Colors.successDark,
   },
   perksList: {
     gap: 8,
@@ -309,25 +312,25 @@ const styles = StyleSheet.create({
   paidBadge: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#166534',
-    backgroundColor: '#dcfce7',
+    color: Colors.successDark,
+    backgroundColor: Colors.successLight,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
     overflow: 'hidden',
   },
   infoCard: {
-    backgroundColor: '#fffbeb',
+    backgroundColor: Colors.brandLight,
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#fde68a',
+    borderColor: Colors.brandBorder,
     flexDirection: 'row',
     gap: 10,
   },
   infoText: { flex: 1, gap: 4 },
-  infoTitle: { fontSize: 13, fontWeight: '700', color: '#92400e' },
-  infoBody: { fontSize: 12, color: '#92400e', lineHeight: 18 },
+  infoTitle: { fontSize: 13, fontWeight: '700', color: Colors.brandDark },
+  infoBody: { fontSize: 12, color: Colors.brandDark, lineHeight: 18 },
   ctaBtn: {
     backgroundColor: Colors.brand,
     borderRadius: 14,

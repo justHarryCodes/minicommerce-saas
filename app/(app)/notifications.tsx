@@ -105,7 +105,7 @@ export default function NotificationsScreen() {
           style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.7 : 1 }]}
           hitSlop={8}
         >
-          <ArrowLeft size={22} color="#fff" />
+          <ArrowLeft size={22} color={Colors.white} />
         </Pressable>
         <Text style={styles.headerTitle}>Notifications</Text>
       </View>
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#fff',
+    color: Colors.white,
     letterSpacing: -0.3,
   },
   headerAccent: { height: 3, backgroundColor: Colors.brand },
@@ -172,11 +172,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
     gap: 12,
   },
   itemUnread: {
-    backgroundColor: '#FFFBEB',
+    backgroundColor: Colors.brandLight,
   },
 
   iconWrap: {
