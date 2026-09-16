@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifySession } from '@/lib/auth'
 import { queryOne, query } from '@/lib/db'
 import { getPlatformSettings } from '@/lib/admin-auth'
-import { initializeTransaction } from '@/lib/paystack'
+import { initializeTransaction, getAppUrl } from '@/lib/paystack'
 import { v4 as uuidv4 } from 'uuid'
 
 export async function POST(_req: NextRequest) {
@@ -60,13 +60,12 @@ export async function POST(_req: NextRequest) {
   }
 
   const reference = `SUB-${store.id}-${uuidv4().slice(0, 8).toUpperCase()}`
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
   const paystackRes = await initializeTransaction({
     email: user.email,
     amount: settings.monthly_fee_amount,
     reference,
-    callbackUrl: `${baseUrl}/api/billing/verify?type=monthly&reference=${reference}`,
+    callbackUrl: `${getAppUrl()}/api/billing/verify?type=monthly&reference=${reference}`,
     metadata: {
       store_id: store.id,
       store_name: store.name,

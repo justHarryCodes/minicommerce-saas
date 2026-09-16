@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { queryOne } from "@/lib/db";
-import { initializeTransaction } from "@/lib/paystack";
+import { initializeTransaction, getAppUrl } from "@/lib/paystack";
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     }
 
     const reference = `${order.order_number}-${Date.now()}`;
-    const callbackUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/paystack/callback?orderId=${orderId}`;
+    const callbackUrl = `${getAppUrl()}/api/paystack/callback?orderId=${orderId}`;
 
     const result = await initializeTransaction({
       email,
