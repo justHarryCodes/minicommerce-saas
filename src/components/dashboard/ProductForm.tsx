@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -43,13 +44,16 @@ export default function ProductForm({ categories, product }: Props) {
   const [sizes, setSizes] = useState<ProductSize[]>(product?.sizes ?? []);
 
   // AI assist — hidden entirely until GROQ_API_KEY/GEMINI_API_KEY are configured.
-  const [aiAvailable, setAiAvailable] = useState({ groq: false, gemini: false });
+  // product-description and suggest-category are both Pro-only server-side
+  // (requirePro()) — isPro gates whether the button is clickable at all
+  // rather than rendering it live for every plan and letting it 403.
+  const [aiAvailable, setAiAvailable] = useState({ groq: false, gemini: false, isPro: false });
   const [writingDescription, setWritingDescription] = useState(false);
   const [categorySuggestion, setCategorySuggestion] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     fetch("/api/ai/status")
-      .then((res) => (res.ok ? res.json() : { groq: false, gemini: false }))
+      .then((res) => (res.ok ? res.json() : { groq: false, gemini: false, isPro: false }))
       .then(setAiAvailable)
       .catch(() => {});
   }, []);
@@ -86,7 +90,7 @@ export default function ProductForm({ categories, product }: Props) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setImageUrl(data.url);
-      if (aiAvailable.gemini) suggestCategory(data.url);
+      if (aiAvailable.gemini && aiAvailable.isPro) suggestCategory(data.url);
     } catch { toast.error("Image upload failed"); }
     finally { setUploading(false); }
   }
@@ -140,7 +144,15 @@ export default function ProductForm({ categories, product }: Props) {
         body: JSON.stringify({ name, category: categoryName }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error?.message ?? "AI generation failed");
+      // data.error is a plain string from every route this calls except the
+      // Zod-validation-failure case, which is a Zod .flatten() object — this
+      // used to only handle the object shape (data.error?.message), so the
+      // far more common plain-string errors (like "This feature requires a
+      // Pro plan…") silently fell through to the generic fallback below and
+      // never reached the merchant.
+      if (!res.ok) throw new Error(
+        typeof data.error === "string" ? data.error : "AI generation failed"
+      );
       if (data.description) setValue("description", data.description);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "AI generation failed");
@@ -236,17 +248,30 @@ export default function ProductForm({ categories, product }: Props) {
             Description
           </label>
           {aiAvailable.groq && (
-            <button
-              type="button"
-              onClick={generateDescription}
-              disabled={writingDescription}
-              className="flex items-center gap-1 text-xs font-semibold text-accent-600 dark:text-accent-400 hover:text-accent-700 disabled:opacity-50"
-            >
-              {writingDescription
-                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                : <Sparkles className="w-3.5 h-3.5" />}
-              {writingDescription ? "Writing…" : "AI-assist"}
-            </button>
+            aiAvailable.isPro ? (
+              <button
+                type="button"
+                onClick={generateDescription}
+                disabled={writingDescription}
+                className="flex items-center gap-1 text-xs font-semibold text-accent-600 dark:text-accent-400 hover:text-accent-700 disabled:opacity-50"
+              >
+                {writingDescription
+                  ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  : <Sparkles className="w-3.5 h-3.5" />}
+                {writingDescription ? "Writing…" : "AI-assist"}
+              </button>
+            ) : (
+              // Same feature, but requirePro() would 403 this for a
+              // non-Pro store — a locked/upgrade link here instead of a
+              // button that looks live but always fails.
+              <Link
+                href="/dashboard/billing"
+                className="flex items-center gap-1 text-xs font-semibold text-surface-400 hover:text-accent-600 dark:hover:text-accent-400"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                AI-assist · Pro
+              </Link>
+            )
           )}
         </div>
         <textarea {...register("description")} rows={4}
