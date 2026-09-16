@@ -178,6 +178,21 @@ export default async function HomePage() {
                   Become a Vendor
                 </Link>
               </div>
+
+              <p
+                className="mt-6 text-xs font-medium flex flex-wrap items-center justify-center lg:justify-start gap-x-4 gap-y-1.5"
+                style={{ color: "var(--text-muted)" }}
+              >
+                <span className="inline-flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5" style={{ color: "var(--accent)" }} /> Free to start
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5" style={{ color: "var(--accent)" }} /> No card required
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5" style={{ color: "var(--accent)" }} /> Live store in 10 minutes
+                </span>
+              </p>
             </div>
 
             {/* Right: category image grid */}
@@ -405,6 +420,89 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ── How to get started ─────────────────────────── */}
+      <section className="py-24 px-4" style={{ background: "var(--bg-secondary)" }}>
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--accent)" }}>
+              How it works
+            </p>
+            <h2 className="text-3xl sm:text-4xl font-black mb-4" style={{ color: "var(--text-primary)" }}>
+              Get started in minutes
+            </h2>
+            <p className="text-lg max-w-xl mx-auto" style={{ color: "var(--text-secondary)" }}>
+              No tech skills, no setup fees to start. Describe your business and let AI
+              organise your store for you.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              {
+                step: "1",
+                title: "Create your account",
+                caption: "Sign up free with your email or phone — takes under a minute, no card required.",
+              },
+              {
+                step: "2",
+                title: "Describe your store to AI",
+                caption: "Tell it what you sell in plain language — it sets up your categories and subcategories automatically.",
+              },
+              {
+                step: "3",
+                title: "Add your products",
+                caption: "Upload photos, set prices and stock. AI can even help write your product descriptions.",
+              },
+              {
+                step: "4",
+                title: "Share your link & sell",
+                caption: "Get your own dukanigeria.com store link, accept Paystack or bank transfer, and start taking orders.",
+              },
+            ].map(({ step, title, caption }, i, arr) => (
+              <div key={step} className="relative">
+                <div
+                  className="rounded-2xl border p-6 h-full flex flex-col"
+                  style={{ background: "var(--bg)", borderColor: "var(--border)" }}
+                >
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black mb-5 text-black"
+                    style={{ background: "var(--accent)" }}
+                  >
+                    {step}
+                  </div>
+                  <h3 className="text-base font-bold mb-2" style={{ color: "var(--text-primary)" }}>
+                    {title}
+                  </h3>
+                  <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                    {caption}
+                  </p>
+                </div>
+                {/* Connector arrow between steps on desktop */}
+                {i < arr.length - 1 && (
+                  <div
+                    className="hidden lg:flex absolute top-1/2 -right-3 -translate-y-1/2 z-10 w-6 h-6 items-center justify-center"
+                    aria-hidden="true"
+                  >
+                    <ArrowRight className="w-4 h-4" style={{ color: "var(--border-strong)" }} />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center mt-12">
+            <Link
+              href="/auth/signup"
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-black text-lg transition-all hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]"
+              style={{ background: "var(--accent)" }}
+            >
+              Start your store free
+              <ArrowRight className="w-5 h-5" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* ── Product slider ─────────────────────────────── */}
       {products.length > 0 && (
         <section className="py-20 px-4" style={{ background: "var(--bg-secondary)" }}>
@@ -475,7 +573,7 @@ export default async function HomePage() {
       </section>
 
       {/* ── Vendor CTA ─────────────────────────────────── */}
-      <section className="py-20 px-4">
+      <section id="for-vendors" className="py-20 px-4 scroll-mt-16">
         <div className="max-w-7xl mx-auto">
           <div
             className="rounded-3xl p-10 sm:p-16 text-center relative overflow-hidden"
@@ -526,18 +624,27 @@ export default async function HomePage() {
           <p className="text-xs" style={{ color: "var(--text-muted)" }}>
             © {new Date().getFullYear()} Duka by Awarizon. All rights reserved.
           </p>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
             <Link href="/discover" className="text-xs hover:underline" style={{ color: "var(--text-secondary)" }}>
               Discover
+            </Link>
+            <Link href="/pricing" className="text-xs hover:underline" style={{ color: "var(--text-secondary)" }}>
+              Pricing
+            </Link>
+            <Link href="/resources" className="text-xs hover:underline" style={{ color: "var(--text-secondary)" }}>
+              Resources
+            </Link>
+            <Link href="/affiliate" className="text-xs hover:underline" style={{ color: "var(--text-secondary)" }}>
+              Affiliates
+            </Link>
+            <Link href="/terms" className="text-xs hover:underline" style={{ color: "var(--text-secondary)" }}>
+              Terms
             </Link>
             <Link href="/auth/login" className="text-xs hover:underline" style={{ color: "var(--text-secondary)" }}>
               Login
             </Link>
             <Link href="/auth/signup" className="text-xs hover:underline" style={{ color: "var(--text-secondary)" }}>
               Sign Up
-            </Link>
-            <Link href="/affiliate" className="text-xs hover:underline" style={{ color: "var(--text-secondary)" }}>
-              Affiliates
             </Link>
           </div>
         </div>
