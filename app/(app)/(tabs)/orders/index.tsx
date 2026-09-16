@@ -1,15 +1,16 @@
 import { useState } from 'react';
-import { FlatList, Pressable, RefreshControl, Text, TextInput, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AlertTriangle, Inbox, Search, X } from 'lucide-react-native';
+import { AlertTriangle, Inbox } from 'lucide-react-native';
 import { api } from '@/lib/api';
 import { Colors } from '@/constants/theme';
 import { AppHeader } from '@/components/AppHeader';
 import { OrderCard } from '@/components/OrderCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingState } from '@/components/ui/LoadingState';
+import { SearchBar } from '@/components/ui/SearchBar';
 import type { Order } from '@/types';
 
 function mapOrder(raw: Record<string, unknown>): Order {
@@ -83,26 +84,7 @@ export default function OrdersScreen() {
 
       {/* Search */}
       <View style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 2 }}>
-        <View style={{
-          flexDirection: 'row', alignItems: 'center',
-          backgroundColor: Colors.white, borderRadius: 12,
-          borderWidth: 1.5, borderColor: Colors.surface[200],
-          paddingHorizontal: 12, gap: 8,
-        }}>
-          <Search size={16} color={Colors.surface[400]} />
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search by name, phone, or order #"
-            placeholderTextColor={Colors.surface[400]}
-            style={{ flex: 1, paddingVertical: 11, fontSize: 14, color: Colors.surface[900] }}
-          />
-          {search.length > 0 && (
-            <Pressable onPress={() => setSearch('')}>
-              <X size={16} color={Colors.surface[400]} />
-            </Pressable>
-          )}
-        </View>
+        <SearchBar value={search} onChangeText={setSearch} placeholder="Search by name, phone, or order #" />
       </View>
 
       {/* Filter chips */}

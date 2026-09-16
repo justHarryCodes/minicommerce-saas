@@ -1,15 +1,16 @@
 import { useMemo, useState } from 'react';
-import { Pressable, RefreshControl, SectionList, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AlertTriangle, FolderOpen, Package, Plus, Search, X } from 'lucide-react-native';
+import { AlertTriangle, FolderOpen, Package, Plus } from 'lucide-react-native';
 import { api } from '@/lib/api';
 import { Colors } from '@/constants/theme';
 import { AppHeader } from '@/components/AppHeader';
 import { ProductCard } from '@/components/ProductCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingState } from '@/components/ui/LoadingState';
+import { SearchBar } from '@/components/ui/SearchBar';
 import type { Product, Store } from '@/types';
 
 function snakeToCamel(obj: Record<string, unknown>): Record<string, unknown> {
@@ -96,21 +97,7 @@ export default function ProductsScreen() {
       <AppHeader title="Products" subtitle={subtitle} right={headerRight} />
 
       <View style={styles.searchWrap}>
-        <View style={styles.searchBar}>
-          <Search size={16} color={Colors.surface[400]} />
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search products…"
-            placeholderTextColor={Colors.surface[400]}
-            style={styles.searchInput}
-          />
-          {search.length > 0 && (
-            <Pressable onPress={() => setSearch('')}>
-              <X size={16} color={Colors.surface[400]} />
-            </Pressable>
-          )}
-        </View>
+        <SearchBar value={search} onChangeText={setSearch} placeholder="Search products…" />
       </View>
 
       {atLimit && (
@@ -208,22 +195,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 10,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: Colors.surface[200],
-    paddingHorizontal: 12,
-    gap: 8,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 11,
-    fontSize: 14,
-    color: Colors.surface[900],
   },
   limitBanner: {
     flexDirection: 'row',
