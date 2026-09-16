@@ -4,6 +4,7 @@ import {
   ArrowRight, CheckCircle2, DollarSign, Users, Wallet,
   BarChart3, Link2, ShieldCheck, Clock, HelpCircle,
 } from "lucide-react";
+import HomeNav from "../HomeNav";
 
 export const metadata = { title: "Affiliate Program — Duka by Awarizon" };
 
@@ -66,92 +67,64 @@ const FAQS = [
 
 export default function AffiliateLandingPage() {
   return (
-    <div className="min-h-screen bg-white text-gray-900">
+    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
 
-      {/* ── Navbar ───────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-100">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-          <Link href="/" className="flex items-center gap-2.5 shrink-0">
-            <Image src="/logo.png" alt="Duka" width={80} height={32} className="h-8 w-auto object-contain" />
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider hidden sm:block">Affiliates</span>
-          </Link>
-          <nav className="hidden sm:flex items-center gap-6 text-sm font-medium text-gray-500">
-            <a href="#how-it-works" className="hover:text-gray-900 transition-colors">How it works</a>
-            <a href="#earnings"     className="hover:text-gray-900 transition-colors">Earnings</a>
-            <a href="#faq"          className="hover:text-gray-900 transition-colors">FAQ</a>
-          </nav>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Link href="/affiliate/login"
-              className="text-sm font-semibold text-gray-600 hover:text-gray-900 transition-colors px-3 py-2">
-              Sign in
-            </Link>
-            <Link href="/affiliate/signup"
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-400 text-black font-bold text-sm hover:bg-amber-300 transition-all shadow-sm whitespace-nowrap">
-              Join free <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-        </div>
-      </header>
+      <HomeNav />
 
       {/* ── Hero ─────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-amber-50 to-white py-20 sm:py-28 px-4">
+      <section className="relative overflow-hidden py-20 sm:py-28 px-4">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full opacity-40 blur-3xl"
-            style={{ background: "radial-gradient(ellipse, #fbbf24 0%, transparent 70%)" }} />
+          <div
+            className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full opacity-[0.15] blur-3xl"
+            style={{ background: "radial-gradient(ellipse, #f59e0b 0%, transparent 70%)" }}
+          />
         </div>
         <div className="relative max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
 
             {/* Left: text */}
             <div className="text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-100 border border-amber-200 text-amber-800 text-xs font-bold mb-6">
+              <div
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold mb-6"
+                style={{ background: "var(--accent-light)", color: "var(--accent-dark)" }}
+              >
                 <DollarSign className="w-3 h-3" /> Earn ₦2,000 per referral — no cap
               </div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.1] tracking-tight mb-6 text-gray-900">
+              <h1
+                className="text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.1] tracking-tight mb-6"
+                style={{ color: "var(--text-primary)" }}
+              >
                 Turn your network into
                 <br className="hidden sm:block" />
-                <span className="text-amber-500"> real income.</span>
+                <span style={{ color: "var(--accent)" }}> real income.</span>
               </h1>
-              <p className="text-lg sm:text-xl text-gray-500 max-w-2xl mx-auto lg:mx-0 mb-8 leading-relaxed">
+              <p
+                className="text-lg sm:text-xl max-w-2xl mx-auto lg:mx-0 mb-10 leading-relaxed"
+                style={{ color: "var(--text-secondary)" }}
+              >
                 Join the Duka Affiliate Program. Share your unique link, invite vendors to sell on Duka,
                 and earn ₦2,000 every time one activates — with no limit on how much you can make.
               </p>
 
-              {/* Social proof avatars */}
-              <div className="flex items-center justify-center lg:justify-start gap-3 mb-8">
-                <div className="flex -space-x-2">
-                  {[
-                    "photo-1494790108377-be9c29b29330",
-                    "photo-1507003211169-0a1dd7228f2d",
-                    "photo-1438761681033-6461ffad8d80",
-                    "photo-1472099645785-5658abf4ff4e",
-                  ].map((id) => (
-                    <Image
-                      key={id}
-                      src={`https://images.unsplash.com/${id}?w=40&h=40&fit=crop&q=80`}
-                      alt=""
-                      width={36}
-                      height={36}
-                      className="w-9 h-9 rounded-full border-2 border-white object-cover shadow-sm"
-                    />
-                  ))}
-                </div>
-                <p className="text-sm text-gray-500">
-                  <span className="font-bold text-gray-700">200+</span> affiliates already earning
-                </p>
-              </div>
-
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-4">
-                <Link href="/affiliate/signup"
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-amber-400 text-black font-black text-base hover:bg-amber-300 transition-all shadow-[0_4px_24px_rgba(251,191,36,0.35)] hover:shadow-[0_6px_32px_rgba(251,191,36,0.45)]">
+                <Link
+                  href="/affiliate/signup"
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-black text-base text-black transition-all hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]"
+                  style={{ background: "var(--accent)" }}
+                >
                   Start earning free <ArrowRight className="w-5 h-5" />
                 </Link>
-                <Link href="/affiliate/login"
-                  className="w-full sm:w-auto flex items-center justify-center px-8 py-4 rounded-2xl border-2 border-gray-200 text-gray-700 font-semibold text-base hover:border-gray-400 transition-colors">
+                <Link
+                  href="/affiliate/login"
+                  className="w-full sm:w-auto flex items-center justify-center px-8 py-4 rounded-2xl border-2 font-semibold text-base transition-colors hover:opacity-80"
+                  style={{ color: "var(--text-primary)", borderColor: "var(--border-strong)" }}
+                >
                   I have an account
                 </Link>
               </div>
-              <p className="text-xs text-gray-400 mt-5 text-center lg:text-left">Free to join · No approval needed · Instant link</p>
+              <p className="text-xs mt-5 text-center lg:text-left" style={{ color: "var(--text-muted)" }}>
+                Free to join · No approval needed · Instant link
+              </p>
             </div>
 
             {/* Right: photo with floating widgets */}
@@ -167,21 +140,29 @@ export default function AffiliateLandingPage() {
                 <div className="absolute inset-0 bg-gradient-to-br from-amber-400/15 to-transparent pointer-events-none" />
               </div>
 
-              {/* Floating earnings card */}
-              <div className="absolute bottom-8 left-6 bg-white rounded-2xl shadow-2xl p-4 min-w-[160px] border border-gray-100">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Your balance</p>
-                <p className="text-2xl font-black text-amber-500">₦18,000</p>
-                <p className="text-xs text-gray-500 mt-0.5">9 active referrals</p>
+              {/* Floating earnings card — illustrative example, not a real user's data */}
+              <div
+                className="absolute bottom-8 left-6 rounded-2xl shadow-2xl p-4 min-w-[160px] border"
+                style={{ background: "var(--bg)", borderColor: "var(--border)" }}
+              >
+                <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: "var(--text-muted)" }}>
+                  Example balance
+                </p>
+                <p className="text-2xl font-black" style={{ color: "var(--accent)" }}>₦18,000</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>9 active referrals</p>
               </div>
 
               {/* Floating notification */}
-              <div className="absolute top-8 right-6 bg-white rounded-2xl shadow-2xl p-3.5 flex items-center gap-3 border border-gray-100">
+              <div
+                className="absolute top-8 right-6 rounded-2xl shadow-2xl p-3.5 flex items-center gap-3 border"
+                style={{ background: "var(--bg)", borderColor: "var(--border)" }}
+              >
                 <div className="w-9 h-9 rounded-xl bg-green-100 flex items-center justify-center shrink-0">
                   <span className="text-green-600 font-black text-base">✓</span>
                 </div>
                 <div>
-                  <p className="text-sm font-black text-gray-900">+₦2,000</p>
-                  <p className="text-[10px] text-gray-500">New referral paid!</p>
+                  <p className="text-sm font-black" style={{ color: "var(--text-primary)" }}>+₦2,000</p>
+                  <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>New referral paid!</p>
                 </div>
               </div>
             </div>
@@ -191,7 +172,7 @@ export default function AffiliateLandingPage() {
       </section>
 
       {/* ── Stats bar ────────────────────────────────────────────── */}
-      <section className="border-y border-gray-100 bg-white py-10 px-4">
+      <section className="border-y py-10 px-4" style={{ borderColor: "var(--border)" }}>
         <div className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 text-center">
           {[
             { value: "₦2,000",  label: "Per active referral" },
@@ -200,95 +181,68 @@ export default function AffiliateLandingPage() {
             { value: "∞",       label: "Maximum you can earn" },
           ].map(({ value, label }) => (
             <div key={label}>
-              <p className="text-3xl sm:text-4xl font-black text-amber-500 mb-1">{value}</p>
-              <p className="text-xs sm:text-sm text-gray-400 font-medium">{label}</p>
+              <p className="text-3xl sm:text-4xl font-black mb-1" style={{ color: "var(--accent)" }}>{value}</p>
+              <p className="text-xs sm:text-sm font-medium" style={{ color: "var(--text-muted)" }}>{label}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* ── How it works ─────────────────────────────────────────── */}
-      <section id="how-it-works" className="py-20 sm:py-24 px-4 bg-gray-50">
+      <section id="how-it-works" className="py-20 sm:py-24 px-4" style={{ background: "var(--bg-secondary)" }}>
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
-            <p className="text-xs font-bold uppercase tracking-widest text-amber-500 mb-3">Simple process</p>
-            <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mb-4">How it works</h2>
-            <p className="text-gray-500 max-w-xl mx-auto">Three steps stand between you and your first commission.</p>
+            <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--accent)" }}>Simple process</p>
+            <h2 className="text-3xl sm:text-4xl font-black mb-4" style={{ color: "var(--text-primary)" }}>How it works</h2>
+            <p className="max-w-xl mx-auto" style={{ color: "var(--text-secondary)" }}>Three steps stand between you and your first commission.</p>
           </div>
 
           <div className="grid sm:grid-cols-3 gap-6 lg:gap-8">
             {STEPS.map(({ step, icon: Icon, title, desc }) => (
-              <div key={step}
-                className="relative bg-white rounded-3xl p-8 border border-gray-100 shadow-[0_2px_16px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)] transition-shadow">
+              <div
+                key={step}
+                className="relative rounded-3xl p-8 border transition-shadow hover:shadow-lg"
+                style={{ background: "var(--bg)", borderColor: "var(--border)" }}
+              >
                 <div className="flex items-center gap-3 mb-5">
-                  <div className="w-12 h-12 rounded-2xl bg-amber-400 flex items-center justify-center shrink-0">
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "var(--accent)" }}>
                     <Icon className="w-5 h-5 text-black" />
                   </div>
-                  <span className="text-3xl font-black text-gray-100">{step}</span>
+                  <span className="text-3xl font-black" style={{ color: "var(--border-strong)" }}>{step}</span>
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">{title}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed">{desc}</p>
+                <h3 className="text-lg font-bold mb-2" style={{ color: "var(--text-primary)" }}>{title}</h3>
+                <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Testimonial banner ───────────────────────────────────── */}
-      <section className="relative overflow-hidden">
-        <Image
-          src="https://images.unsplash.com/photo-1551434678-e076c223a692?w=1400&h=320&fit=crop&q=80"
-          alt=""
-          aria-hidden="true"
-          fill
-          sizes="100vw"
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-gray-900/78" />
-        <div className="relative py-16 px-4 text-center">
-          <blockquote className="max-w-3xl mx-auto">
-            <p className="text-white text-xl sm:text-2xl font-bold italic leading-relaxed mb-6">
-              &ldquo;I referred 12 vendors in my first month just by posting in my WhatsApp groups.
-              Earned ₦24,000 without doing anything complicated.&rdquo;
-            </p>
-            <div className="flex items-center justify-center gap-3">
-              <Image
-                src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=48&h=48&fit=crop&q=80"
-                alt="Adaeze"
-                width={44}
-                height={44}
-                className="w-11 h-11 rounded-full object-cover border-2 border-amber-400"
-              />
-              <cite className="not-italic text-left">
-                <span className="block text-white font-bold text-sm">Adaeze O.</span>
-                <span className="text-white/50 text-xs">Affiliate — Lagos, Nigeria</span>
-              </cite>
-            </div>
-          </blockquote>
-        </div>
-      </section>
-
       {/* ── Earnings showcase ────────────────────────────────────── */}
-      <section id="earnings" className="py-20 sm:py-24 px-4 bg-white">
+      <section id="earnings" className="py-20 sm:py-24 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-amber-500 mb-3">Your earnings</p>
-              <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mb-5">
+              <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--accent)" }}>Your earnings</p>
+              <h2 className="text-3xl sm:text-4xl font-black mb-5" style={{ color: "var(--text-primary)" }}>
                 The more you share,<br />the more you earn.
               </h2>
-              <p className="text-gray-500 leading-relaxed mb-8">
+              <p className="leading-relaxed mb-8" style={{ color: "var(--text-secondary)" }}>
                 There&apos;s no limit on referrals or earnings. Every vendor you bring to Duka who activates their store puts ₦2,000 straight into your affiliate balance. Reach ₦5,000 and you can cash out to any Nigerian bank account.
               </p>
               <div className="grid grid-cols-2 gap-3">
                 {PERKS.map(({ icon: Icon, label, desc }) => (
-                  <div key={label} className="flex items-start gap-3 p-4 rounded-2xl bg-gray-50 border border-gray-100">
-                    <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
-                      <Icon className="w-4 h-4 text-amber-600" />
+                  <div
+                    key={label}
+                    className="flex items-start gap-3 p-4 rounded-2xl border"
+                    style={{ background: "var(--bg-secondary)", borderColor: "var(--border)" }}
+                  >
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5" style={{ background: "var(--accent-light)" }}>
+                      <Icon className="w-4 h-4" style={{ color: "var(--accent-dark)" }} />
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-gray-900 leading-tight">{label}</p>
-                      <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{desc}</p>
+                      <p className="text-sm font-bold leading-tight" style={{ color: "var(--text-primary)" }}>{label}</p>
+                      <p className="text-xs mt-0.5 leading-relaxed" style={{ color: "var(--text-secondary)" }}>{desc}</p>
                     </div>
                   </div>
                 ))}
@@ -297,8 +251,8 @@ export default function AffiliateLandingPage() {
 
             {/* Earnings calculator preview */}
             <div className="space-y-4">
-              <div className="bg-gray-50 rounded-3xl border border-gray-100 p-6 sm:p-8">
-                <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-5">Earnings example</p>
+              <div className="rounded-3xl border p-6 sm:p-8" style={{ background: "var(--bg-secondary)", borderColor: "var(--border)" }}>
+                <p className="text-xs font-bold uppercase tracking-widest mb-5" style={{ color: "var(--text-muted)" }}>Earnings example</p>
                 <div className="space-y-3">
                   {[
                     { referrals: 5,   earning: "₦10,000" },
@@ -307,28 +261,31 @@ export default function AffiliateLandingPage() {
                     { referrals: 50,  earning: "₦100,000" },
                     { referrals: 100, earning: "₦200,000" },
                   ].map(({ referrals, earning }) => (
-                    <div key={referrals}
-                      className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100">
+                    <div
+                      key={referrals}
+                      className="flex items-center justify-between p-4 rounded-2xl border"
+                      style={{ background: "var(--bg)", borderColor: "var(--border)" }}
+                    >
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center">
-                          <Users className="w-4 h-4 text-amber-600" />
+                        <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "var(--accent-light)" }}>
+                          <Users className="w-4 h-4" style={{ color: "var(--accent-dark)" }} />
                         </div>
-                        <span className="text-sm font-semibold text-gray-700">
+                        <span className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>
                           {referrals} active vendor{referrals !== 1 ? "s" : ""}
                         </span>
                       </div>
-                      <span className="text-base font-black text-amber-500">{earning}</span>
+                      <span className="text-base font-black" style={{ color: "var(--accent)" }}>{earning}</span>
                     </div>
                   ))}
                 </div>
-                <p className="text-xs text-gray-400 mt-4 text-center">Based on ₦2,000 per active referral</p>
+                <p className="text-xs mt-4 text-center" style={{ color: "var(--text-muted)" }}>Based on ₦2,000 per active referral</p>
               </div>
 
-              {/* Dashboard preview card */}
-              <div className="bg-white rounded-3xl border border-gray-100 shadow-[0_2px_20px_rgba(0,0,0,0.06)] p-6">
+              {/* Dashboard preview card — illustrative mockup, not real user data */}
+              <div className="rounded-3xl border shadow-sm p-6" style={{ background: "var(--bg)", borderColor: "var(--border)" }}>
                 <div className="flex items-center justify-between mb-4">
-                  <p className="text-sm font-bold text-gray-900">Your dashboard</p>
-                  <span className="text-[10px] font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Live preview</span>
+                  <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Your dashboard</p>
+                  <span className="text-[10px] font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Example preview</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   {[
@@ -339,14 +296,14 @@ export default function AffiliateLandingPage() {
                   ].map(({ label, value, color, bg }) => (
                     <div key={label} className={`${bg} rounded-2xl p-3`}>
                       <p className={`text-xl font-black ${color}`}>{value}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+                      <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>{label}</p>
                     </div>
                   ))}
                 </div>
-                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                  <div className="h-full w-3/4 bg-amber-400 rounded-full" />
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--bg-tertiary)" }}>
+                  <div className="h-full w-3/4 rounded-full" style={{ background: "var(--accent)" }} />
                 </div>
-                <p className="text-xs text-gray-400 mt-1.5">Balance · 3 referrals to next ₦5,000 milestone</p>
+                <p className="text-xs mt-1.5" style={{ color: "var(--text-muted)" }}>Balance · 3 referrals to next ₦5,000 milestone</p>
               </div>
             </div>
           </div>
@@ -354,7 +311,7 @@ export default function AffiliateLandingPage() {
       </section>
 
       {/* ── Trust signals ────────────────────────────────────────── */}
-      <section className="py-16 px-4 bg-amber-400">
+      <section className="py-16 px-4" style={{ background: "var(--accent)" }}>
         <div className="max-w-5xl mx-auto grid sm:grid-cols-3 gap-8 text-center">
           {[
             { icon: "🔒", title: "Secure payouts",     desc: "All payouts are manually reviewed and sent directly to your verified bank account." },
@@ -371,21 +328,21 @@ export default function AffiliateLandingPage() {
       </section>
 
       {/* ── FAQ ──────────────────────────────────────────────────── */}
-      <section id="faq" className="py-20 sm:py-24 px-4 bg-white">
+      <section id="faq" className="py-20 sm:py-24 px-4">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-14">
-            <HelpCircle className="w-8 h-8 text-amber-400 mx-auto mb-4" />
-            <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mb-4">Frequently asked questions</h2>
-            <p className="text-gray-500">Everything you need to know before you start.</p>
+            <HelpCircle className="w-8 h-8 mx-auto mb-4" style={{ color: "var(--accent)" }} />
+            <h2 className="text-3xl sm:text-4xl font-black mb-4" style={{ color: "var(--text-primary)" }}>Frequently asked questions</h2>
+            <p style={{ color: "var(--text-secondary)" }}>Everything you need to know before you start.</p>
           </div>
           <div className="space-y-3">
             {FAQS.map(({ q, a }) => (
-              <div key={q} className="rounded-2xl border border-gray-100 p-6 bg-gray-50">
+              <div key={q} className="rounded-2xl border p-6" style={{ background: "var(--bg-secondary)", borderColor: "var(--border)" }}>
                 <div className="flex items-start gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" style={{ color: "var(--accent)" }} />
                   <div>
-                    <p className="font-bold text-gray-900 mb-2">{q}</p>
-                    <p className="text-gray-500 text-sm leading-relaxed">{a}</p>
+                    <p className="font-bold mb-2" style={{ color: "var(--text-primary)" }}>{q}</p>
+                    <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>{a}</p>
                   </div>
                 </div>
               </div>
@@ -395,35 +352,45 @@ export default function AffiliateLandingPage() {
       </section>
 
       {/* ── Final CTA ────────────────────────────────────────────── */}
-      <section className="py-20 sm:py-24 px-4 bg-gray-50 border-t border-gray-100">
+      <section className="py-20 sm:py-24 px-4 border-t" style={{ background: "var(--bg-secondary)", borderColor: "var(--border)" }}>
         <div className="max-w-2xl mx-auto text-center">
           <Image src="/logo.png" alt="Duka" width={100} height={40} className="h-10 w-auto object-contain mx-auto mb-8" />
-          <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mb-4">
+          <h2 className="text-3xl sm:text-4xl font-black mb-4" style={{ color: "var(--text-primary)" }}>
             Ready to start earning?
           </h2>
-          <p className="text-gray-500 mb-8 leading-relaxed">
-            Join hundreds of affiliates already earning by promoting Duka. Free to join, instant access, no approval needed.
+          <p className="mb-8 leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+            Join affiliates already earning by promoting Duka. Free to join, instant access, no approval needed.
           </p>
-          <Link href="/affiliate/signup"
-            className="inline-flex items-center gap-2 px-10 py-4 rounded-2xl bg-amber-400 text-black font-black text-lg hover:bg-amber-300 transition-all shadow-[0_4px_24px_rgba(251,191,36,0.35)]">
+          <Link
+            href="/affiliate/signup"
+            className="inline-flex items-center gap-2 px-10 py-4 rounded-2xl font-black text-lg text-black transition-all hover:opacity-90"
+            style={{ background: "var(--accent)" }}
+          >
             Create free affiliate account <ArrowRight className="w-5 h-5" />
           </Link>
-          <p className="text-xs text-gray-400 mt-4">Already a member? <Link href="/affiliate/login" className="text-amber-600 font-semibold hover:underline">Sign in →</Link></p>
+          <p className="text-xs mt-4" style={{ color: "var(--text-muted)" }}>
+            Already a member?{" "}
+            <Link href="/affiliate/login" className="font-semibold hover:underline" style={{ color: "var(--accent-dark)" }}>
+              Sign in →
+            </Link>
+          </p>
         </div>
       </section>
 
       {/* ── Footer ───────────────────────────────────────────────── */}
-      <footer className="border-t border-gray-100 py-8 px-4">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo.png" alt="Duka" width={64} height={24} className="h-6 w-auto object-contain" />
-            <span className="text-xs text-gray-400">by Awarizon</span>
+      <footer className="py-10 px-4 border-t" style={{ borderColor: "var(--border)" }}>
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <Link href="/" className="flex flex-col items-start gap-0.5">
+            <Image src="/logo.png" alt="Duka" width={112} height={28} className="h-7 w-auto object-contain" />
+            <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>by Awarizon</span>
           </Link>
-          <p className="text-xs text-gray-400">&copy; {new Date().getFullYear()} Awarizon. All rights reserved.</p>
-          <div className="flex items-center gap-4 text-xs text-gray-400">
-            <Link href="/" className="hover:text-gray-700 transition-colors">Home</Link>
-            <Link href="/discover" className="hover:text-gray-700 transition-colors">Discover stores</Link>
-            <Link href="/affiliate/signup" className="hover:text-gray-700 transition-colors font-semibold text-amber-600">Join affiliate</Link>
+          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+            © {new Date().getFullYear()} Duka by Awarizon. All rights reserved.
+          </p>
+          <div className="flex items-center gap-4">
+            <Link href="/discover" className="text-xs hover:underline" style={{ color: "var(--text-secondary)" }}>Discover</Link>
+            <Link href="/pricing" className="text-xs hover:underline" style={{ color: "var(--text-secondary)" }}>Pricing</Link>
+            <Link href="/affiliate/signup" className="text-xs font-semibold hover:underline" style={{ color: "var(--accent-dark)" }}>Join affiliate</Link>
           </div>
         </div>
       </footer>
