@@ -9,6 +9,7 @@ import { Colors } from '@/constants/theme';
 import { AppHeader } from '@/components/AppHeader';
 import { ProductCard } from '@/components/ProductCard';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { LoadingState } from '@/components/ui/LoadingState';
 import type { Product, Store } from '@/types';
 
 function snakeToCamel(obj: Record<string, unknown>): Record<string, unknown> {
@@ -142,15 +143,13 @@ export default function ProductsScreen() {
         )}
         ListEmptyComponent={
           isLoading ? (
-            <View style={styles.center}>
-              <Text style={styles.loadingText}>Loading products…</Text>
-            </View>
+            <LoadingState label="Loading products…" />
           ) : error ? (
-            <View style={styles.center}>
-              <AlertTriangle size={28} color={Colors.brandDark} style={{ marginBottom: 8 }} />
-              <Text style={styles.errorTitle}>Failed to load products</Text>
-              <Text style={styles.errorSub}>{(error as Error).message}</Text>
-            </View>
+            <EmptyState
+              icon={<AlertTriangle size={56} color={Colors.brandDark} />}
+              title="Failed to load products"
+              subtitle={(error as Error).message}
+            />
           ) : (
             <EmptyState
               icon={<Package size={56} color={Colors.surface[300]} />}
@@ -278,28 +277,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.surface[400],
     fontWeight: '600',
-  },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 60,
-    paddingHorizontal: 24,
-  },
-  loadingText: {
-    color: Colors.surface[400],
-    fontSize: 14,
-  },
-  errorTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.surface[700],
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  errorSub: {
-    fontSize: 12,
-    color: Colors.surface[400],
-    textAlign: 'center',
   },
 });

@@ -9,6 +9,7 @@ import { api, API_BASE } from '@/lib/api';
 import { Colors } from '@/constants/theme';
 import { SubHeader } from '@/components/SubHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { LoadingState } from '@/components/ui/LoadingState';
 import type { Reel } from '@/types/reels';
 import type { Store } from '@/types';
 
@@ -116,9 +117,7 @@ export default function ReelsScreen() {
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={Colors.brand} />}
         ListEmptyComponent={
           isLoading ? (
-            <View style={styles.center}>
-              <Text style={styles.loadingText}>Loading…</Text>
-            </View>
+            <LoadingState label="Loading reels…" />
           ) : (
             <EmptyState
               icon={<Film size={56} color={Colors.surface[300]} />}
@@ -229,16 +228,6 @@ const styles = StyleSheet.create({
   },
   columnWrapper: {
     gap: 10,
-  },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 60,
-  },
-  loadingText: {
-    color: Colors.surface[400],
-    fontSize: 14,
   },
   reelCard: {
     flex: 1,

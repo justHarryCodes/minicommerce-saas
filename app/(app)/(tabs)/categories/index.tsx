@@ -6,6 +6,8 @@ import { FolderOpen, Pencil, Plus, Trash2 } from 'lucide-react-native';
 import { api } from '@/lib/api';
 import { CategoryAccents, Colors } from '@/constants/theme';
 import { SubHeader } from '@/components/SubHeader';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { LoadingState } from '@/components/ui/LoadingState';
 import type { Category } from '@/types';
 
 const { width: SCREEN_W } = Dimensions.get('window');
@@ -137,23 +139,14 @@ export default function CategoriesScreen() {
       <SubHeader title={`Categories${subtitle ? ` · ${subtitle}` : ''}`} right={addButton} />
 
       {isLoading ? (
-        <View style={styles.center}>
-          <Text style={styles.loadingText}>Loading…</Text>
-        </View>
+        <LoadingState label="Loading categories…" />
       ) : categories.length === 0 ? (
-        <View style={styles.emptyWrap}>
-          <FolderOpen size={56} color={Colors.surface[300]} />
-          <Text style={styles.emptyTitle}>No categories yet</Text>
-          <Text style={styles.emptySub}>
-            Group your products into categories so customers can browse more easily.
-          </Text>
-          <Pressable
-            onPress={() => router.push('/(app)/categories/new')}
-            style={styles.emptyBtn}
-          >
-            <Text style={styles.emptyBtnLabel}>+ Add Category</Text>
-          </Pressable>
-        </View>
+        <EmptyState
+          icon={<FolderOpen size={56} color={Colors.surface[300]} />}
+          title="No categories yet"
+          subtitle="Group your products into categories so customers can browse more easily."
+          action={{ label: '+ Add Category', onPress: () => router.push('/(app)/categories/new') }}
+        />
       ) : (
         <FlatList
           data={categories}
@@ -203,15 +196,6 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   addBtnLabel: { color: Colors.brand, fontWeight: '800', fontSize: 13 },
-
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  loadingText: { color: Colors.surface[400], fontSize: 14 },
-
-  emptyWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
-  emptyTitle: { fontSize: 18, fontWeight: '800', color: Colors.surface[800] },
-  emptySub:   { fontSize: 14, color: Colors.surface[500], textAlign: 'center', lineHeight: 20 },
-  emptyBtn:   { marginTop: 8, backgroundColor: Colors.brand, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12 },
-  emptyBtnLabel: { fontWeight: '800', fontSize: 14, color: Colors.dark },
 
   list: { padding: TILE_PAD, paddingBottom: 32 },
   row:  { gap: TILE_GAP, marginBottom: TILE_GAP },

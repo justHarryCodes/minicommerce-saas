@@ -9,6 +9,7 @@ import { Colors } from '@/constants/theme';
 import { AppHeader } from '@/components/AppHeader';
 import { OrderCard } from '@/components/OrderCard';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { LoadingState } from '@/components/ui/LoadingState';
 import type { Order } from '@/types';
 
 function mapOrder(raw: Record<string, unknown>): Order {
@@ -143,15 +144,13 @@ export default function OrdersScreen() {
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={Colors.brand} />}
         ListEmptyComponent={
           isLoading ? (
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60 }}>
-              <Text style={{ color: Colors.surface[400], fontSize: 14 }}>Loading orders…</Text>
-            </View>
+            <LoadingState label="Loading orders…" />
           ) : error ? (
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60, paddingHorizontal: 24 }}>
-              <AlertTriangle size={28} color={Colors.brandDark} style={{ marginBottom: 8 }} />
-              <Text style={{ fontSize: 14, fontWeight: '700', color: Colors.surface[700], textAlign: 'center', marginBottom: 4 }}>Failed to load orders</Text>
-              <Text style={{ fontSize: 12, color: Colors.surface[400], textAlign: 'center' }}>{(error as Error).message}</Text>
-            </View>
+            <EmptyState
+              icon={<AlertTriangle size={56} color={Colors.brandDark} />}
+              title="Failed to load orders"
+              subtitle={(error as Error).message}
+            />
           ) : (
             <EmptyState icon={<Inbox size={56} color={Colors.surface[300]} />} title="No orders found" subtitle="Orders will appear here once customers start buying." />
           )
