@@ -15,10 +15,12 @@ function createRedis(): Redis {
   return client
 }
 
-export const redis: Redis =
-  process.env.NODE_ENV === 'development'
-    ? (global._redis ??= createRedis())
-    : createRedis()
+// Always reuse a cached client via `global` — see the matching comment in
+// lib/db.ts for why this can't be dev-only on serverless hosting (Vercel):
+// a fresh Redis client per module evaluation is harmless on a traditional
+// long-running server but piles up unclosed connections across cold
+// invocations there.
+export const redis: Redis = (global._redis ??= createRedis())
 
 // ─── Cache helpers ────────────────────────────────────────────────
 const DEFAULT_TTL = 300 // 5 minutes
