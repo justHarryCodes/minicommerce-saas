@@ -40,7 +40,7 @@ storefront-saas/
 │   └── auth/            # Merchant signup/login/forgot-password
 ├── src/components/      # dashboard/, storefront/, ui/ — no top-level design-system package
 ├── src/lib/             # db, redis, auth, admin-auth, affiliate-auth, plan, billing-fulfillment,
-│                         # paystack, cloudinary, reels, push, rate-limit, recaptcha, ai/
+│                         # paystack, cloudinary, reels, push, rate-limit, ai/
 ├── migrations/           # 4 newer, hand-run SQL migrations (Postgres, idempotent `IF NOT EXISTS`)
 ├── scripts/              # 17 older migrations + the migration runner + 3 one-off inspection scripts
 ├── cloudflare-worker/    # Standalone Worker script for subdomain proxying (see §14)
@@ -162,7 +162,7 @@ Four distinct actor types, each with its own auth mechanism and no shared RBAC t
 
 - **Merchants**: Firebase client SDK (email/password) → ID token → `POST /api/auth/session` exchanges it for a 14-day HttpOnly session cookie (`firebase-admin` `createSessionCookie`). `verifySession()` also accepts a raw `Authorization: Bearer <idToken>` for the mobile app, so the same session helper serves both surfaces.
 - **Password reset / email verification**: delegated to Firebase's own flows (`auth/forgot-password` page exists); no custom token/email code in this repo.
-- **Signup**: `auth/signup` → creates Firebase user client-side, then store creation happens in onboarding, gated by reCAPTCHA v2 (`react-google-recaptcha`, `lib/recaptcha.ts`) and `platform_settings.allow_new_registrations`.
+- **Signup**: `auth/signup` → creates Firebase user client-side, then store creation happens in onboarding, gated by `platform_settings.allow_new_registrations`. (reCAPTCHA v2 was removed from login/signup, including the affiliate flow — no bot-protection widget on these forms as of this writing.)
 - **Admin**: no separate signup — piggybacks on the same Firebase auth, auto-promoted by matching email against `ADMIN_EMAILS`.
 - **Affiliates**: independent — either `bcryptjs`-hashed password or Firebase UID (`affiliate-firebase-migration.sql` added `firebase_uid` and made `password_hash` nullable, i.e. Google sign-in was added after the fact).
 - **Rate limiting**: `checkRateLimit()` (Redis fixed-window, fails open) applied selectively — confirmed on the AI assistant (10/hr) and referenced generally in `rate-limit.ts`; not verified on login/signup routes specifically (see Open Questions).
@@ -203,7 +203,6 @@ The README's "API Routes" table lists ~18 endpoints; the actual count is closer 
 | Cloudinary | Image/video hosting + transforms | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_UPLOAD_PRESET`, optional `CLOUDINARY_API_KEY/SECRET` |
 | Groq | AI text generation (descriptions, chat assistant) | `GROQ_API_KEY`, `GROQ_MODEL` |
 | Google Gemini | AI vision (category suggestion) | `GEMINI_API_KEY`, `GEMINI_MODEL` |
-| Google reCAPTCHA v2 | Signup bot protection | `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`, `RECAPTCHA_SECRET_KEY` |
 | Sentry | Error monitoring | `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG/PROJECT/AUTH_TOKEN` (optional; app functions without it) |
 | Tawk.to | Live chat widget (dashboard) | Embedded via `TawkChat.tsx`, allow-listed in CSP, no env var (site ID likely hardcoded in component — verify before treating as unconfigured) |
 | Expo Push API | Mobile push notifications | No secret needed (public Expo push endpoint); tokens stored in `vendor_push_tokens` |
