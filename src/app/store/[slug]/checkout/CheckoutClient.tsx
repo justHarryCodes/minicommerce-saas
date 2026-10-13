@@ -52,10 +52,12 @@ export default function CheckoutClient({
   const { storeBase } = useStore();
   const homeHref = storeBase || "/";
 
-  const [step, setStep] = useState<"details" | "payment" | "success">("details");
+  const [step, setStep] = useState<"details" | "payment" | "success">(
+    "details",
+  );
   const [loading, setLoading] = useState(false);
   const [payMethod, setPayMethod] = useState<"paystack" | "transfer">(
-    paymentMethods.includes("paystack") ? "paystack" : "transfer"
+    paymentMethods.includes("paystack") ? "paystack" : "transfer",
   );
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [showBankModal, setShowBankModal] = useState(false);
@@ -64,7 +66,9 @@ export default function CheckoutClient({
   const [placedTotal, setPlacedTotal] = useState(0);
 
   const [couponCode, setCouponCode] = useState("");
-  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(
+    null,
+  );
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [policyOpen, setPolicyOpen] = useState(false);
 
@@ -78,8 +82,9 @@ export default function CheckoutClient({
     deliveryNote: "",
   });
 
-  const change = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+  const change = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
   const discountAmount = appliedCoupon?.discountAmount ?? 0;
   const finalTotal = Math.max(0, totalAmount - discountAmount);
@@ -88,8 +93,14 @@ export default function CheckoutClient({
     return (
       <div className="max-w-lg mx-auto px-4 py-20 text-center">
         <p className="text-4xl mb-4">🛒</p>
-        <p className="font-semibold text-surface-900 dark:text-white mb-2">Your cart is empty</p>
-        <Link href={homeHref} className="text-sm font-semibold underline" style={{ color: "var(--sf-accent)" }}>
+        <p className="font-semibold text-surface-900 dark:text-white mb-2">
+          Your cart is empty
+        </p>
+        <Link
+          href={homeHref}
+          className="text-sm font-semibold underline"
+          style={{ color: "var(--sf-accent)" }}
+        >
           Continue shopping
         </Link>
       </div>
@@ -107,9 +118,18 @@ export default function CheckoutClient({
         body: JSON.stringify({ code, order_amount: totalAmount }),
       });
       const data = await res.json();
-      if (!data.valid) { toast.error(data.error ?? "Invalid coupon code"); return; }
-      setAppliedCoupon({ code, discountAmount: data.discount_amount, couponId: data.coupon_id });
-      toast.success(`Coupon applied! You save ${formatCurrency(data.discount_amount)}`);
+      if (!data.valid) {
+        toast.error(data.error ?? "Invalid coupon code");
+        return;
+      }
+      setAppliedCoupon({
+        code,
+        discountAmount: data.discount_amount,
+        couponId: data.coupon_id,
+      });
+      toast.success(
+        `Coupon applied! You save ${formatCurrency(data.discount_amount)}`,
+      );
     } catch {
       toast.error("Failed to validate coupon");
     } finally {
@@ -155,7 +175,8 @@ export default function CheckoutClient({
 
       const data = await res.json();
       if (!res.ok) {
-        const msg = typeof data.error === "string" ? data.error : "Failed to place order";
+        const msg =
+          typeof data.error === "string" ? data.error : "Failed to place order";
         throw new Error(msg);
       }
 
@@ -183,8 +204,19 @@ export default function CheckoutClient({
         // Save to localStorage so customer can track from the track page
         try {
           const key = `recent-orders-${storeSlug}`;
-          const prev = JSON.parse(localStorage.getItem(key) ?? "[]") as { orderNumber: string; phone: string; date: string }[];
-          const next = [{ orderNumber: data.orderNumber, phone: form.customerPhone, date: new Date().toISOString() }, ...prev].slice(0, 5);
+          const prev = JSON.parse(localStorage.getItem(key) ?? "[]") as {
+            orderNumber: string;
+            phone: string;
+            date: string;
+          }[];
+          const next = [
+            {
+              orderNumber: data.orderNumber,
+              phone: form.customerPhone,
+              date: new Date().toISOString(),
+            },
+            ...prev,
+          ].slice(0, 5);
           localStorage.setItem(key, JSON.stringify(next));
         } catch {}
         clearCart();
@@ -202,29 +234,41 @@ export default function CheckoutClient({
     return (
       <div className="max-w-lg mx-auto px-4 py-16 text-center">
         <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
-        <h1 className="text-2xl font-black text-surface-900 dark:text-white mb-1">Order placed!</h1>
-        <p className="text-surface-500 dark:text-surface-400 mb-1">Order #{orderNumber}</p>
+        <h1 className="text-2xl font-black text-surface-900 dark:text-white mb-1">
+          Order placed!
+        </h1>
+        <p className="text-surface-500 dark:text-surface-400 mb-1">
+          Order #{orderNumber}
+        </p>
 
         {payMethod === "transfer" && (
           <div className="mt-6 p-5 rounded-2xl bg-surface-50 dark:bg-surface-900 border border-surface-100 dark:border-surface-800 text-left space-y-3">
-            <p className="font-bold text-surface-900 dark:text-white">Bank Transfer Details</p>
+            <p className="font-bold text-surface-900 dark:text-white">
+              Bank Transfer Details
+            </p>
             <div className="space-y-2 text-sm text-surface-600 dark:text-surface-400">
               {bankName && (
                 <div className="flex justify-between gap-4">
                   <span className="shrink-0">Bank:</span>
-                  <span className="font-medium text-surface-900 dark:text-white text-right">{bankName}</span>
+                  <span className="font-medium text-surface-900 dark:text-white text-right">
+                    {bankName}
+                  </span>
                 </div>
               )}
               {accountNumber && (
                 <div className="flex justify-between gap-4">
                   <span className="shrink-0">Account No:</span>
-                  <span className="font-bold text-surface-900 dark:text-white font-mono text-right">{accountNumber}</span>
+                  <span className="font-bold text-surface-900 dark:text-white font-mono text-right">
+                    {accountNumber}
+                  </span>
                 </div>
               )}
               {accountName && (
                 <div className="flex justify-between gap-4">
                   <span className="shrink-0">Account Name:</span>
-                  <span className="font-medium text-surface-900 dark:text-white text-right">{accountName}</span>
+                  <span className="font-medium text-surface-900 dark:text-white text-right">
+                    {accountName}
+                  </span>
                 </div>
               )}
               <div className="flex justify-between gap-4 pt-2 border-t border-surface-200 dark:border-surface-700">
@@ -235,8 +279,9 @@ export default function CheckoutClient({
               </div>
             </div>
             <p className="text-xs text-surface-400 pt-1">
-              Use your order number <strong>{orderNumber}</strong> as payment reference. Your order
-              will be confirmed after payment verification.
+              Use your order number <strong>{orderNumber}</strong> as payment
+              reference. Your order will be confirmed after payment
+              verification.
             </p>
           </div>
         )}
@@ -281,13 +326,17 @@ export default function CheckoutClient({
       </button>
     ) : (
       <button
-        onClick={payMethod === "transfer" ? () => setShowBankModal(true) : placeOrder}
+        onClick={
+          payMethod === "transfer" ? () => setShowBankModal(true) : placeOrder
+        }
         disabled={loading}
         className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm text-black hover:opacity-90 transition-all disabled:opacity-60"
         style={{ backgroundColor: "var(--sf-accent)" }}
       >
         {loading ? (
-          <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" /> Processing...
+          </>
         ) : payMethod === "paystack" ? (
           "Pay with Paystack"
         ) : (
@@ -308,7 +357,9 @@ export default function CheckoutClient({
           Back to shop
         </Link>
 
-        <h1 className="text-xl font-black text-surface-900 dark:text-white mb-6">Checkout</h1>
+        <h1 className="text-xl font-black text-surface-900 dark:text-white mb-6">
+          Checkout
+        </h1>
 
         <div className="grid lg:grid-cols-[1fr_360px] gap-6">
           {/* ── Left: form ── */}
@@ -332,7 +383,10 @@ export default function CheckoutClient({
                       Full name <span className="text-red-500">*</span>
                     </label>
                     <input
-                      name="customerName" value={form.customerName} onChange={change} required
+                      name="customerName"
+                      value={form.customerName}
+                      onChange={change}
+                      required
                       placeholder="e.g. Jane Doe"
                       className="w-full px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-transparent text-surface-900 dark:text-white placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-[var(--sf-accent)] text-sm"
                     />
@@ -343,7 +397,11 @@ export default function CheckoutClient({
                       Phone <span className="text-red-500">*</span>
                     </label>
                     <input
-                      name="customerPhone" value={form.customerPhone} onChange={change} required type="tel"
+                      name="customerPhone"
+                      value={form.customerPhone}
+                      onChange={change}
+                      required
+                      type="tel"
                       placeholder="080xxxxxxxx"
                       className="w-full px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-transparent text-surface-900 dark:text-white placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-[var(--sf-accent)] text-sm"
                     />
@@ -354,7 +412,10 @@ export default function CheckoutClient({
                       Email (optional)
                     </label>
                     <input
-                      name="customerEmail" value={form.customerEmail} onChange={change} type="email"
+                      name="customerEmail"
+                      value={form.customerEmail}
+                      onChange={change}
+                      type="email"
                       placeholder="jane@example.com"
                       className="w-full px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-transparent text-surface-900 dark:text-white placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-[var(--sf-accent)] text-sm"
                     />
@@ -365,25 +426,36 @@ export default function CheckoutClient({
                       Delivery address <span className="text-red-500">*</span>
                     </label>
                     <input
-                      name="deliveryAddress" value={form.deliveryAddress} onChange={change} required
+                      name="deliveryAddress"
+                      value={form.deliveryAddress}
+                      onChange={change}
+                      required
                       placeholder="Street address"
                       className="w-full px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-transparent text-surface-900 dark:text-white placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-[var(--sf-accent)] text-sm"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">City</label>
+                    <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
+                      City
+                    </label>
                     <input
-                      name="deliveryCity" value={form.deliveryCity} onChange={change}
+                      name="deliveryCity"
+                      value={form.deliveryCity}
+                      onChange={change}
                       placeholder="Lagos"
                       className="w-full px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-transparent text-surface-900 dark:text-white placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-[var(--sf-accent)] text-sm"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">State</label>
+                    <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
+                      State
+                    </label>
                     <input
-                      name="deliveryState" value={form.deliveryState} onChange={change}
+                      name="deliveryState"
+                      value={form.deliveryState}
+                      onChange={change}
                       placeholder="Lagos State"
                       className="w-full px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-transparent text-surface-900 dark:text-white placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-[var(--sf-accent)] text-sm"
                     />
@@ -394,7 +466,10 @@ export default function CheckoutClient({
                       Order note (optional)
                     </label>
                     <textarea
-                      name="deliveryNote" value={form.deliveryNote} onChange={change} rows={2}
+                      name="deliveryNote"
+                      value={form.deliveryNote}
+                      onChange={change}
+                      rows={2}
                       placeholder="Any special instructions?"
                       className="w-full px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-transparent text-surface-900 dark:text-white placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-[var(--sf-accent)] text-sm resize-none"
                     />
@@ -418,23 +493,49 @@ export default function CheckoutClient({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {paymentMethods.includes("paystack") && (
-                    <label className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${payMethod === "paystack" ? "border-[var(--sf-accent)] bg-[var(--sf-accent)]/5" : "border-surface-200 dark:border-surface-700"}`}>
-                      <input type="radio" name="payMethod" value="paystack" checked={payMethod === "paystack"} onChange={() => setPayMethod("paystack")} className="sr-only" />
+                    <label
+                      className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${payMethod === "paystack" ? "border-[var(--sf-accent)] bg-[var(--sf-accent)]/5" : "border-surface-200 dark:border-surface-700"}`}
+                    >
+                      <input
+                        type="radio"
+                        name="payMethod"
+                        value="paystack"
+                        checked={payMethod === "paystack"}
+                        onChange={() => setPayMethod("paystack")}
+                        className="sr-only"
+                      />
                       <CreditCard className="w-5 h-5 text-surface-600 dark:text-surface-300 shrink-0" />
                       <div>
-                        <p className="font-semibold text-surface-900 dark:text-white text-sm">Pay online</p>
-                        <p className="text-xs text-surface-400">Cards, bank transfer via Paystack</p>
+                        <p className="font-semibold text-surface-900 dark:text-white text-sm">
+                          Pay online
+                        </p>
+                        <p className="text-xs text-surface-400">
+                          Cards, bank transfer via Paystack
+                        </p>
                       </div>
                     </label>
                   )}
 
                   {paymentMethods.includes("transfer") && (
-                    <label className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${payMethod === "transfer" ? "border-[var(--sf-accent)] bg-[var(--sf-accent)]/5" : "border-surface-200 dark:border-surface-700"}`}>
-                      <input type="radio" name="payMethod" value="transfer" checked={payMethod === "transfer"} onChange={() => setPayMethod("transfer")} className="sr-only" />
+                    <label
+                      className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${payMethod === "transfer" ? "border-[var(--sf-accent)] bg-[var(--sf-accent)]/5" : "border-surface-200 dark:border-surface-700"}`}
+                    >
+                      <input
+                        type="radio"
+                        name="payMethod"
+                        value="transfer"
+                        checked={payMethod === "transfer"}
+                        onChange={() => setPayMethod("transfer")}
+                        className="sr-only"
+                      />
                       <Building2 className="w-5 h-5 text-surface-600 dark:text-surface-300 shrink-0" />
                       <div>
-                        <p className="font-semibold text-surface-900 dark:text-white text-sm">Bank transfer</p>
-                        <p className="text-xs text-surface-400">Pay manually to store&apos;s bank</p>
+                        <p className="font-semibold text-surface-900 dark:text-white text-sm">
+                          Bank transfer
+                        </p>
+                        <p className="text-xs text-surface-400">
+                          Pay manually to store&apos;s bank
+                        </p>
                       </div>
                     </label>
                   )}
@@ -442,21 +543,29 @@ export default function CheckoutClient({
 
                 {payMethod === "transfer" && bankName && (
                   <div className="mt-4 p-4 rounded-xl bg-surface-50 dark:bg-surface-800 text-sm space-y-2">
-                    <p className="font-semibold text-surface-900 dark:text-white">Bank account details:</p>
+                    <p className="font-semibold text-surface-900 dark:text-white">
+                      Bank account details:
+                    </p>
                     <div className="flex justify-between gap-4 text-surface-600 dark:text-surface-400">
                       <span className="shrink-0">Bank:</span>
-                      <span className="font-medium text-surface-900 dark:text-white text-right">{bankName}</span>
+                      <span className="font-medium text-surface-900 dark:text-white text-right">
+                        {bankName}
+                      </span>
                     </div>
                     {accountNumber && (
                       <div className="flex justify-between gap-4 text-surface-600 dark:text-surface-400">
                         <span className="shrink-0">Account No:</span>
-                        <span className="font-bold font-mono text-surface-900 dark:text-white text-right break-all">{accountNumber}</span>
+                        <span className="font-bold font-mono text-surface-900 dark:text-white text-right break-all">
+                          {accountNumber}
+                        </span>
                       </div>
                     )}
                     {accountName && (
                       <div className="flex justify-between gap-4 text-surface-600 dark:text-surface-400">
                         <span className="shrink-0">Name:</span>
-                        <span className="font-medium text-surface-900 dark:text-white text-right">{accountName}</span>
+                        <span className="font-medium text-surface-900 dark:text-white text-right">
+                          {accountName}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -470,7 +579,11 @@ export default function CheckoutClient({
                       className="flex items-center justify-between w-full px-4 py-3 text-sm font-semibold text-surface-700 dark:text-surface-300 bg-surface-50 dark:bg-surface-800 hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors"
                     >
                       <span>Return &amp; Refund Policy</span>
-                      {policyOpen ? <ChevronUp className="w-4 h-4 text-surface-400" /> : <ChevronDown className="w-4 h-4 text-surface-400" />}
+                      {policyOpen ? (
+                        <ChevronUp className="w-4 h-4 text-surface-400" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-surface-400" />
+                      )}
                     </button>
                     {policyOpen && (
                       <div className="px-4 py-4 text-sm text-surface-600 dark:text-surface-400 whitespace-pre-wrap leading-relaxed">
@@ -487,22 +600,35 @@ export default function CheckoutClient({
           <div className="min-w-0">
             <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-5 lg:sticky lg:top-20">
               <h2 className="font-bold text-surface-900 dark:text-white mb-4">
-                Order summary ({items.length} item{items.length !== 1 ? "s" : ""})
+                Order summary ({items.length} item
+                {items.length !== 1 ? "s" : ""})
               </h2>
 
               {/* Cart items */}
               <div className="space-y-3 mb-4">
                 {items.map((item) => (
-                  <div key={`${item.product_id}:${item.size ?? ''}`} className="flex items-center gap-3 min-w-0">
+                  <div
+                    key={`${item.product_id}:${item.size ?? ""}`}
+                    className="flex items-center gap-3 min-w-0"
+                  >
                     {item.image_url ? (
-                      <Image src={clThumb(item.image_url)} alt={item.name} width={44} height={44} className="w-11 h-11 rounded-lg object-cover border border-surface-100 dark:border-surface-700 shrink-0" />
+                      <Image
+                        src={clThumb(item.image_url)}
+                        alt={item.name}
+                        width={44}
+                        height={44}
+                        className="w-11 h-11 rounded-lg object-cover border border-surface-100 dark:border-surface-700 shrink-0"
+                      />
                     ) : (
                       <div className="w-11 h-11 rounded-lg bg-surface-100 dark:bg-surface-800 shrink-0" />
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-surface-900 dark:text-white truncate">{item.name}</p>
+                      <p className="text-sm font-medium text-surface-900 dark:text-white truncate">
+                        {item.name}
+                      </p>
                       <p className="text-xs text-surface-400">
-                        {item.size ? `Size: ${item.size} · ` : ""}Qty: {item.quantity}
+                        {item.size ? `Size: ${item.size} · ` : ""}Qty:{" "}
+                        {item.quantity}
                       </p>
                     </div>
                     <span className="text-sm font-bold text-surface-900 dark:text-white shrink-0">
@@ -518,10 +644,17 @@ export default function CheckoutClient({
                   <div className="flex items-center justify-between p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
                     <div className="flex items-center gap-2 min-w-0">
                       <Tag className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0" />
-                      <span className="text-sm font-bold text-green-700 dark:text-green-400 font-mono truncate">{appliedCoupon.code}</span>
-                      <span className="text-xs text-green-600 dark:text-green-400 shrink-0">-{formatCurrency(appliedCoupon.discountAmount)}</span>
+                      <span className="text-sm font-bold text-green-700 dark:text-green-400 font-mono truncate">
+                        {appliedCoupon.code}
+                      </span>
+                      <span className="text-xs text-green-600 dark:text-green-400 shrink-0">
+                        -{formatCurrency(appliedCoupon.discountAmount)}
+                      </span>
                     </div>
-                    <button onClick={handleRemoveCoupon} className="p-1 rounded-lg text-green-500 hover:text-green-700 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors shrink-0 ml-2">
+                    <button
+                      onClick={handleRemoveCoupon}
+                      className="p-1 rounded-lg text-green-500 hover:text-green-700 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors shrink-0 ml-2"
+                    >
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -530,18 +663,29 @@ export default function CheckoutClient({
                     <div className="flex-1 flex items-center rounded-xl border border-surface-200 dark:border-surface-700 overflow-hidden min-w-0">
                       <Tag className="w-4 h-4 text-surface-400 ml-3 shrink-0" />
                       <input
-                        type="text" value={couponCode}
-                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                        onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
-                        placeholder="Coupon code" maxLength={30}
+                        type="text"
+                        value={couponCode}
+                        onChange={(e) =>
+                          setCouponCode(e.target.value.toUpperCase())
+                        }
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && handleApplyCoupon()
+                        }
+                        placeholder="Coupon code"
+                        maxLength={30}
                         className="flex-1 min-w-0 px-3 py-2.5 bg-transparent text-surface-900 dark:text-white placeholder:text-surface-400 text-sm font-mono focus:outline-none"
                       />
                     </div>
                     <button
-                      onClick={handleApplyCoupon} disabled={validatingCoupon || !couponCode.trim()}
+                      onClick={handleApplyCoupon}
+                      disabled={validatingCoupon || !couponCode.trim()}
                       className="px-3 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-50 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 shrink-0"
                     >
-                      {validatingCoupon ? <Loader2 className="w-4 h-4 animate-spin" /> : "Apply"}
+                      {validatingCoupon ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        "Apply"
+                      )}
                     </button>
                   </div>
                 )}
@@ -570,9 +714,7 @@ export default function CheckoutClient({
               </div>
 
               {/* CTA — desktop only (mobile uses sticky bottom bar) */}
-              <div className="mt-4 hidden lg:block">
-                {ctaButton}
-              </div>
+              <div className="mt-4 hidden lg:block">{ctaButton}</div>
             </div>
           </div>
         </div>
@@ -582,8 +724,12 @@ export default function CheckoutClient({
       <div className="lg:hidden fixed bottom-0 inset-x-0 z-50 p-4 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border-t border-surface-200 dark:border-surface-800">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-surface-500 dark:text-surface-400">Total</span>
-            <span className="font-black text-surface-900 dark:text-white">{formatCurrency(finalTotal)}</span>
+            <span className="text-xs text-surface-500 dark:text-surface-400">
+              Total
+            </span>
+            <span className="font-black text-surface-900 dark:text-white">
+              {formatCurrency(finalTotal)}
+            </span>
           </div>
           {ctaButton}
         </div>
@@ -602,8 +748,13 @@ export default function CheckoutClient({
             {/* header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-surface-100 dark:border-surface-800">
               <div className="flex items-center gap-2">
-                <Building2 className="w-5 h-5" style={{ color: "var(--sf-accent)" }} />
-                <h3 className="font-black text-surface-900 dark:text-white text-base">Bank Transfer Details</h3>
+                <Building2
+                  className="w-5 h-5"
+                  style={{ color: "var(--sf-accent)" }}
+                />
+                <h3 className="font-black text-surface-900 dark:text-white text-base">
+                  Bank Transfer Details
+                </h3>
               </div>
               <button
                 onClick={() => setShowBankModal(false)}
@@ -620,21 +771,31 @@ export default function CheckoutClient({
                 className="rounded-xl px-4 py-3 text-center"
                 style={{ backgroundColor: "var(--sf-accent)" }}
               >
-                <p className="text-xs font-semibold text-black/60 mb-0.5">Amount to pay</p>
-                <p className="text-3xl font-black text-black">{formatCurrency(finalTotal)}</p>
+                <p className="text-xs font-semibold text-black/60 mb-0.5">
+                  Amount to pay
+                </p>
+                <p className="text-3xl font-black text-black">
+                  {formatCurrency(finalTotal)}
+                </p>
               </div>
 
               {/* account details */}
               <div className="rounded-xl border border-surface-200 dark:border-surface-700 divide-y divide-surface-100 dark:divide-surface-800 overflow-hidden">
                 {bankName && (
                   <div className="flex items-center justify-between px-4 py-3">
-                    <span className="text-sm text-surface-500 dark:text-surface-400 shrink-0">Bank</span>
-                    <span className="text-sm font-semibold text-surface-900 dark:text-white text-right">{bankName}</span>
+                    <span className="text-sm text-surface-500 dark:text-surface-400 shrink-0">
+                      Bank
+                    </span>
+                    <span className="text-sm font-semibold text-surface-900 dark:text-white text-right">
+                      {bankName}
+                    </span>
                   </div>
                 )}
                 {accountNumber && (
                   <div className="flex items-center justify-between px-4 py-3">
-                    <span className="text-sm text-surface-500 dark:text-surface-400 shrink-0">Account No</span>
+                    <span className="text-sm text-surface-500 dark:text-surface-400 shrink-0">
+                      Account No
+                    </span>
                     <div className="flex items-center gap-2">
                       <span className="text-base font-black font-mono tracking-widest text-surface-900 dark:text-white">
                         {accountNumber}
@@ -644,37 +805,52 @@ export default function CheckoutClient({
                         className="p-1.5 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
                         title="Copy account number"
                       >
-                        {copied
-                          ? <Check className="w-4 h-4 text-green-500" />
-                          : <Copy className="w-4 h-4 text-surface-400" />}
+                        {copied ? (
+                          <Check className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <Copy className="w-4 h-4 text-surface-400" />
+                        )}
                       </button>
                     </div>
                   </div>
                 )}
                 {accountName && (
                   <div className="flex items-center justify-between px-4 py-3">
-                    <span className="text-sm text-surface-500 dark:text-surface-400 shrink-0">Account Name</span>
-                    <span className="text-sm font-semibold text-surface-900 dark:text-white text-right">{accountName}</span>
+                    <span className="text-sm text-surface-500 dark:text-surface-400 shrink-0">
+                      Account Name
+                    </span>
+                    <span className="text-sm font-semibold text-surface-900 dark:text-white text-right">
+                      {accountName}
+                    </span>
                   </div>
                 )}
               </div>
 
               <p className="text-xs text-surface-400 text-center leading-relaxed">
-                Transfer the exact amount above to this account, then tap the button below to place your order.
+                Transfer the exact amount above to this account, then tap the
+                button below to place your order.
               </p>
             </div>
 
             {/* footer */}
             <div className="px-5 pb-5 space-y-2">
               <button
-                onClick={() => { setShowBankModal(false); placeOrder(); }}
+                onClick={() => {
+                  setShowBankModal(false);
+                  placeOrder();
+                }}
                 disabled={loading}
                 className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-black text-sm text-black hover:opacity-90 transition-all disabled:opacity-60"
                 style={{ backgroundColor: "var(--sf-accent)" }}
               >
-                {loading
-                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Placing order...</>
-                  : "✓ I have made the payment"}
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Placing
+                    order...
+                  </>
+                ) : (
+                  "✓ I have made the payment"
+                )}
               </button>
               <button
                 onClick={() => setShowBankModal(false)}

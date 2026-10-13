@@ -1,12 +1,25 @@
 import Link from "next/link";
-import { Check, ArrowRight, Sparkles } from "lucide-react";
+import Image from "next/image";
+import {
+  Check,
+  ArrowRight,
+  Sparkles,
+  Store,
+  Wallet,
+  LayoutDashboard,
+  ShieldCheck,
+  MessageCircle,
+  Smartphone,
+  Plus,
+  Minus,
+} from "lucide-react";
 import { query } from "@/lib/db";
 import HomeNav from "../HomeNav";
-import Image from "next/image";
 
 export const metadata = {
   title: "Pricing · Duka by Awarizon",
-  description: "Simple, transparent pricing for Nigerian vendors — start free, upgrade when you grow.",
+  description:
+    "Simple, transparent pricing for Nigerian vendors — start free, upgrade when you grow.",
 };
 
 interface Plan {
@@ -19,137 +32,322 @@ interface Plan {
 }
 
 function fmtNaira(n: number) {
-  return n === 0 ? "Free" : `₦${n.toLocaleString("en-NG")}`;
+  return n === 0 ? "₦0" : `₦${n.toLocaleString("en-NG")}`;
 }
+
+function productsLabel(n: number) {
+  return `${n.toLocaleString("en-NG")} product${n === 1 ? "" : "s"}`;
+}
+
+const INCLUDED = [
+  {
+    icon: Store,
+    title: "Your own store link",
+    text: "A branded storefront on dukanigeria.com you can share anywhere.",
+  },
+  {
+    icon: Wallet,
+    title: "Paystack and bank transfer",
+    text: "Cards, bank transfer and USSD. Duka never holds your money.",
+  },
+  {
+    icon: LayoutDashboard,
+    title: "Orders and inventory dashboard",
+    text: "Track every order and your stock in one place.",
+  },
+  {
+    icon: Sparkles,
+    title: "AI-assisted setup",
+    text: "Describe what you sell and your categories are built for you.",
+  },
+  {
+    icon: MessageCircle,
+    title: "WhatsApp contact",
+    text: "Shoppers can reach you directly with one tap.",
+  },
+  {
+    icon: Smartphone,
+    title: "Mobile-friendly shopping",
+    text: "Fast, clean and easy to browse on any phone.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Marketplace listing",
+    text: "Your store appears in the Duka vendor directory.",
+  },
+];
+
+const FAQ = [
+  {
+    q: "Is there really no setup fee?",
+    a: "Correct. You can create a store and start listing products for free, with no upfront cost. You only pay if you choose to upgrade for more products or reels.",
+  },
+  {
+    q: "Can I switch plans later?",
+    a: "Yes. Upgrade or downgrade any time from your dashboard's Billing page. Changes apply to your next billing cycle.",
+  },
+  {
+    q: "How do I get paid?",
+    a: "Customers pay you directly via Paystack (cards, bank transfer, USSD) or manual bank transfer confirmed in your dashboard. Duka never holds your money.",
+  },
+  {
+    q: "What happens if I go over my product limit?",
+    a: "You'll see a clear prompt in your dashboard to upgrade before you can add more. Nothing you've already listed gets removed or hidden.",
+  },
+  {
+    q: "Can I cancel anytime?",
+    a: "Yes. There are no contracts. You can cancel whenever you like.",
+  },
+];
 
 export default async function PricingPage() {
   const plans = await query<Plan>(
     `SELECT id, name, description, price_monthly, max_products, max_reels
      FROM plans WHERE is_active = true ORDER BY sort_order ASC`,
-    []
+    [],
   );
+
+  const popularIndex = plans.length > 2 ? 1 : -1;
+
+  const gridCols =
+    plans.length >= 4
+      ? "lg:grid-cols-4 max-w-7xl"
+      : plans.length === 3
+        ? "lg:grid-cols-3 max-w-6xl"
+        : plans.length === 2
+          ? "sm:grid-cols-2 max-w-3xl"
+          : "max-w-md";
 
   return (
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
       <HomeNav />
 
-      {/* ── Header ───────────────────────────────────────── */}
-      <section className="pt-20 pb-16 px-4 text-center">
-        <div className="max-w-2xl mx-auto">
-          <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--accent)" }}>
-            Pricing
-          </p>
-          <h1 className="text-4xl sm:text-5xl font-black tracking-tight mb-5" style={{ color: "var(--text-primary)" }}>
-            Simple, honest pricing
+      {/* ═════════════ HEADER ═════════════ */}
+      <section className="relative overflow-hidden px-4 pb-14 pt-16 text-center sm:pt-24">
+        <div className="pointer-events-none absolute inset-0">
+          <div
+            className="absolute left-1/2 top-[-140px] h-[520px] w-[900px] -translate-x-1/2 rounded-full opacity-[0.16] blur-3xl"
+            style={{
+              background:
+                "radial-gradient(ellipse, #f59e0b 0%, transparent 70%)",
+            }}
+          />
+        </div>
+        <div className="relative mx-auto max-w-3xl">
+          <div
+            className="mb-6 inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-bold text-black"
+            style={{ background: "var(--accent-light)" }}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            Start free, upgrade when you grow
+          </div>
+          <h1
+            className="mb-5 text-4xl font-black leading-[1.08] tracking-tight sm:text-6xl"
+            style={{ color: "var(--text-primary)" }}
+          >
+            One store.{" "}
+            <span style={{ color: "var(--accent)" }}>Honest pricing.</span>
           </h1>
-          <p className="text-lg leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-            Start selling for free. Upgrade only when your store outgrows the free tier —
-            no setup fees, no hidden charges, cancel anytime.
+          <p
+            className="mx-auto max-w-xl text-lg leading-relaxed"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            Launch your online store for free. Pay only when you need more
+            products or reels. No setup fees, no hidden charges, cancel anytime.
           </p>
+
+          <ul
+            className="mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm font-medium"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            {["No setup fees", "No card to start", "Cancel anytime"].map(
+              (t) => (
+                <li key={t} className="inline-flex items-center gap-1.5">
+                  <Check
+                    className="h-4 w-4"
+                    style={{ color: "var(--accent)" }}
+                  />
+                  {t}
+                </li>
+              ),
+            )}
+          </ul>
         </div>
       </section>
 
-      {/* ── Plan cards ───────────────────────────────────── */}
-      <section className="px-4 pb-24">
-        <div className="max-w-5xl mx-auto grid sm:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
-          {plans.map((plan) => {
+      {/* ═════════════ PLAN CARDS ═════════════ */}
+      <section className="px-4 pb-20">
+        <div className={`mx-auto grid items-stretch gap-6 pt-4 ${gridCols}`}>
+          {plans.map((plan, idx) => {
             const isFree = plan.price_monthly === 0;
-            const isMiddle = !isFree && plans.indexOf(plan) === 1;
+            const popular = idx === popularIndex;
+
+            const features = [
+              {
+                text: `Up to ${productsLabel(plan.max_products)}`,
+                strong: true,
+              },
+              {
+                text:
+                  plan.max_reels > 0
+                    ? `${plan.max_reels} short-video reels / month`
+                    : "No video reels",
+                strong: true,
+                muted: plan.max_reels === 0,
+              },
+              { text: "Your own store link on dukanigeria.com" },
+              { text: "Paystack and bank transfer checkout" },
+              { text: "Order and inventory dashboard" },
+              { text: "AI-assisted store setup" },
+            ];
+
             return (
               <div
                 key={plan.id}
-                className="relative rounded-3xl p-8 flex flex-col h-full"
+                className={`relative flex flex-col rounded-3xl p-7 transition-all sm:p-8 ${
+                  popular
+                    ? "shadow-2xl lg:-translate-y-4"
+                    : "hover:-translate-y-1 hover:shadow-lg"
+                }`}
                 style={
-                  isMiddle
-                    ? { background: "var(--accent)", border: "1px solid transparent" }
-                    : { background: "var(--bg-secondary)", border: "1px solid var(--border)" }
+                  popular
+                    ? {
+                        background: "var(--accent)",
+                        border: "1px solid transparent",
+                      }
+                    : {
+                        background: "var(--bg-secondary)",
+                        border: "1px solid var(--border)",
+                      }
                 }
               >
-                {isMiddle && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wide bg-black text-white">
-                    <Sparkles className="w-3 h-3" /> Most popular
+                {popular && (
+                  <span className="absolute -top-3.5 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-full bg-black px-3.5 py-1.5 text-[11px] font-black uppercase tracking-wide text-white">
+                    <Sparkles className="h-3 w-3" /> Most popular
                   </span>
                 )}
 
                 <h2
-                  className="text-xl font-black mb-1"
-                  style={{ color: isMiddle ? "#000" : "var(--text-primary)" }}
+                  className="mb-1 text-xl font-black"
+                  style={{ color: popular ? "#000" : "var(--text-primary)" }}
                 >
                   {plan.name}
                 </h2>
                 <p
-                  className="text-sm mb-6 leading-relaxed"
-                  style={{ color: isMiddle ? "rgba(0,0,0,0.6)" : "var(--text-secondary)" }}
+                  className="mb-6 min-h-[2.5rem] text-sm leading-relaxed"
+                  style={{
+                    color: popular
+                      ? "rgba(0,0,0,0.65)"
+                      : "var(--text-secondary)",
+                  }}
                 >
                   {plan.description}
                 </p>
 
-                <div className="mb-6">
+                <div className="mb-1 flex items-baseline gap-1">
                   <span
-                    className="text-4xl font-black"
-                    style={{ color: isMiddle ? "#000" : "var(--text-primary)" }}
+                    className="text-5xl font-black tracking-tight"
+                    style={{ color: popular ? "#000" : "var(--text-primary)" }}
                   >
                     {fmtNaira(plan.price_monthly)}
                   </span>
-                  {!isFree && (
-                    <span
-                      className="text-sm font-medium ml-1"
-                      style={{ color: isMiddle ? "rgba(0,0,0,0.6)" : "var(--text-muted)" }}
-                    >
-                      /month
-                    </span>
-                  )}
+                  <span
+                    className="text-sm font-semibold"
+                    style={{
+                      color: popular ? "rgba(0,0,0,0.6)" : "var(--text-muted)",
+                    }}
+                  >
+                    {isFree ? "forever" : "/ month"}
+                  </span>
                 </div>
+                <p
+                  className="mb-7 text-xs"
+                  style={{
+                    color: popular ? "rgba(0,0,0,0.55)" : "var(--text-muted)",
+                  }}
+                >
+                  {isFree ? "No card required" : "Cancel anytime"}
+                </p>
 
-                <ul className="space-y-3 flex-1 mb-8">
-                  {[
-                    `Up to ${plan.max_products.toLocaleString("en-NG")} product${plan.max_products === 1 ? "" : "s"}`,
-                    plan.max_reels > 0
-                      ? `${plan.max_reels} short-video reels / month`
-                      : "No video reels",
-                    "Your own store link on dukanigeria.com",
-                    "Paystack & bank transfer checkout",
-                    "Order & inventory dashboard",
-                    "AI-assisted store setup",
-                  ].map((f) => (
-                    <li key={f} className="flex items-start gap-2.5">
+                <Link
+                  href="/auth/signup"
+                  className="mb-7 inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-bold transition-all hover:scale-[1.02] hover:opacity-90"
+                  style={
+                    popular
+                      ? { background: "#000", color: "#fff" }
+                      : isFree
+                        ? {
+                            background: "transparent",
+                            color: "var(--text-primary)",
+                            border: "2px solid var(--border-strong)",
+                          }
+                        : { background: "var(--accent)", color: "#000" }
+                  }
+                >
+                  {isFree ? "Start for free" : `Get ${plan.name}`}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+
+                <div
+                  className="mb-4 h-px w-full"
+                  style={{
+                    background: popular ? "rgba(0,0,0,0.12)" : "var(--border)",
+                  }}
+                />
+
+                <ul className="flex-1 space-y-3">
+                  {features.map((f) => (
+                    <li key={f.text} className="flex items-start gap-2.5">
                       <span
-                        className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5"
-                        style={{ background: isMiddle ? "rgba(0,0,0,0.12)" : "var(--accent-light)" }}
+                        className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
+                        style={{
+                          background: popular
+                            ? "rgba(0,0,0,0.12)"
+                            : "var(--accent-light)",
+                        }}
                       >
-                        <Check className="w-3 h-3" style={{ color: isMiddle ? "#000" : "var(--accent-dark)" }} />
+                        <Check
+                          className="h-3 w-3"
+                          style={{
+                            color: popular ? "#000" : "var(--accent-dark)",
+                          }}
+                        />
                       </span>
                       <span
-                        className="text-sm leading-relaxed"
-                        style={{ color: isMiddle ? "rgba(0,0,0,0.8)" : "var(--text-secondary)" }}
+                        className={`text-sm leading-relaxed ${f.strong ? "font-bold" : ""}`}
+                        style={{
+                          color: popular
+                            ? f.muted
+                              ? "rgba(0,0,0,0.55)"
+                              : "rgba(0,0,0,0.85)"
+                            : f.muted
+                              ? "var(--text-muted)"
+                              : f.strong
+                                ? "var(--text-primary)"
+                                : "var(--text-secondary)",
+                        }}
                       >
-                        {f}
+                        {f.text}
                       </span>
                     </li>
                   ))}
                 </ul>
-
-                <Link
-                  href="/auth/signup"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-bold text-sm transition-all hover:opacity-90 hover:scale-[1.02]"
-                  style={
-                    isMiddle
-                      ? { background: "#000", color: "#fff" }
-                      : { background: "var(--accent)", color: "#000" }
-                  }
-                >
-                  {isFree ? "Start free" : "Get started"}
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
               </div>
             );
           })}
         </div>
 
         {plans.length === 0 && (
-          <p className="text-center text-sm" style={{ color: "var(--text-muted)" }}>
-            Pricing is being updated — check back shortly, or{" "}
-            <Link href="/auth/signup" className="underline font-semibold" style={{ color: "var(--accent)" }}>
+          <p
+            className="text-center text-sm"
+            style={{ color: "var(--text-muted)" }}
+          >
+            Pricing is being updated. Check back shortly, or{" "}
+            <Link
+              href="/auth/signup"
+              className="font-semibold underline"
+              style={{ color: "var(--accent)" }}
+            >
               sign up free
             </Link>{" "}
             to get started now.
@@ -157,60 +355,334 @@ export default async function PricingPage() {
         )}
       </section>
 
-      {/* ── FAQ ──────────────────────────────────────────── */}
-      <section className="px-4 pb-24">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-black text-center mb-10" style={{ color: "var(--text-primary)" }}>
-            Questions, answered
-          </h2>
-          <div className="space-y-4">
-            {[
-              {
-                q: "Is there really no setup fee?",
-                a: "Correct — you can create a store and start listing products for free, with no upfront cost. You only pay if you choose to upgrade for more products or reels.",
-              },
-              {
-                q: "Can I switch plans later?",
-                a: "Yes. Upgrade or downgrade any time from your dashboard's Billing page — changes apply to your next billing cycle.",
-              },
-              {
-                q: "How do I get paid?",
-                a: "Customers pay you directly via Paystack (cards, bank transfer, USSD) or manual bank transfer confirmed in your dashboard. Duka never holds your money.",
-              },
-              {
-                q: "What happens if I go over my product limit?",
-                a: "You'll see a clear prompt in your dashboard to upgrade before you can add more — nothing you've already listed gets removed or hidden.",
-              },
-            ].map(({ q, a }) => (
-              <div
-                key={q}
-                className="rounded-2xl border p-6"
-                style={{ background: "var(--bg-secondary)", borderColor: "var(--border)" }}
+      {/* ═════════════ COMPARE PLANS ═════════════ */}
+      {plans.length > 1 && (
+        <section
+          className="px-4 py-20"
+          style={{ background: "var(--bg-secondary)" }}
+        >
+          <div className="mx-auto max-w-5xl">
+            <div className="mb-10 text-center">
+              <p
+                className="mb-3 text-xs font-bold uppercase tracking-widest"
+                style={{ color: "var(--accent)" }}
               >
-                <h3 className="text-sm font-bold mb-2" style={{ color: "var(--text-primary)" }}>
-                  {q}
-                </h3>
-                <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                  {a}
-                </p>
+                Compare plans
+              </p>
+              <h2
+                className="text-3xl font-black tracking-tight sm:text-4xl"
+                style={{ color: "var(--text-primary)" }}
+              >
+                See what changes as you grow
+              </h2>
+            </div>
+
+            <div
+              className="overflow-x-auto rounded-3xl border"
+              style={{ borderColor: "var(--border)", background: "var(--bg)" }}
+            >
+              <table className="w-full min-w-[560px] text-sm">
+                <thead>
+                  <tr style={{ background: "var(--bg-tertiary)" }}>
+                    <th
+                      className="p-4 text-left font-semibold"
+                      style={{ color: "var(--text-muted)" }}
+                    />
+                    {plans.map((p, idx) => (
+                      <th
+                        key={p.id}
+                        className="p-4 text-center font-black"
+                        style={
+                          idx === popularIndex
+                            ? { background: "var(--accent)", color: "#000" }
+                            : { color: "var(--text-primary)" }
+                        }
+                      >
+                        {p.name}
+                        <div className="text-xs font-semibold opacity-70">
+                          {p.price_monthly === 0
+                            ? "Free"
+                            : `${fmtNaira(p.price_monthly)}/mo`}
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    className="border-t"
+                    style={{ borderColor: "var(--border)" }}
+                  >
+                    <td
+                      className="p-4 font-semibold"
+                      style={{ color: "var(--text-primary)" }}
+                    >
+                      Products
+                    </td>
+                    {plans.map((p) => (
+                      <td
+                        key={p.id}
+                        className="p-4 text-center font-bold"
+                        style={{ color: "var(--text-primary)" }}
+                      >
+                        {p.max_products.toLocaleString("en-NG")}
+                      </td>
+                    ))}
+                  </tr>
+                  <tr
+                    className="border-t"
+                    style={{ borderColor: "var(--border)" }}
+                  >
+                    <td
+                      className="p-4 font-semibold"
+                      style={{ color: "var(--text-primary)" }}
+                    >
+                      Video reels / month
+                    </td>
+                    {plans.map((p) => (
+                      <td
+                        key={p.id}
+                        className="p-4 text-center font-bold"
+                        style={{
+                          color:
+                            p.max_reels > 0
+                              ? "var(--text-primary)"
+                              : "var(--text-muted)",
+                        }}
+                      >
+                        {p.max_reels > 0 ? p.max_reels : "—"}
+                      </td>
+                    ))}
+                  </tr>
+                  {[
+                    "Store link on dukanigeria.com",
+                    "Paystack and bank transfer checkout",
+                    "Order and inventory dashboard",
+                    "AI-assisted store setup",
+                    "Marketplace listing",
+                  ].map((row) => (
+                    <tr
+                      key={row}
+                      className="border-t"
+                      style={{ borderColor: "var(--border)" }}
+                    >
+                      <td
+                        className="p-4 font-semibold"
+                        style={{ color: "var(--text-primary)" }}
+                      >
+                        {row}
+                      </td>
+                      {plans.map((p) => (
+                        <td key={p.id} className="p-4 text-center">
+                          <Check className="mx-auto h-5 w-5 text-green-600" />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ═════════════ INCLUDED IN EVERY PLAN ═════════════ */}
+      <section className="px-4 py-20 sm:py-24">
+        <div className="mx-auto max-w-6xl">
+          <div className="mx-auto mb-12 max-w-2xl text-center">
+            <p
+              className="mb-3 text-xs font-bold uppercase tracking-widest"
+              style={{ color: "var(--accent)" }}
+            >
+              In every plan
+            </p>
+            <h2
+              className="mb-3 text-3xl font-black tracking-tight sm:text-4xl"
+              style={{ color: "var(--text-primary)" }}
+            >
+              Every store gets the essentials
+            </h2>
+            <p className="text-lg" style={{ color: "var(--text-secondary)" }}>
+              Plans only change your limits. The tools you need to sell are
+              always included.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {INCLUDED.map(({ icon: Icon, title, text }) => (
+              <div
+                key={title}
+                className="flex gap-4 rounded-2xl border p-5"
+                style={{
+                  background: "var(--bg)",
+                  borderColor: "var(--border)",
+                }}
+              >
+                <div
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                  style={{ background: "var(--accent)" }}
+                >
+                  <Icon className="h-5 w-5 text-black" />
+                </div>
+                <div>
+                  <h3
+                    className="mb-1 text-sm font-bold"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    {title}
+                  </h3>
+                  <p
+                    className="text-sm leading-relaxed"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
+                    {text}
+                  </p>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Footer ───────────────────────────────────────── */}
-      <footer className="py-10 px-4 border-t" style={{ borderColor: "var(--border)" }}>
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+      {/* ═════════════ FAQ ═════════════ */}
+      <section className="px-4 pb-20" style={{ background: "var(--bg)" }}>
+        <div className="mx-auto max-w-3xl">
+          <h2
+            className="mb-10 text-center text-3xl font-black tracking-tight sm:text-4xl"
+            style={{ color: "var(--text-primary)" }}
+          >
+            Questions, answered
+          </h2>
+          <div className="space-y-3">
+            {FAQ.map(({ q, a }) => (
+              <details
+                key={q}
+                className="group rounded-2xl border px-6 py-5 open:shadow-md"
+                style={{
+                  background: "var(--bg-secondary)",
+                  borderColor: "var(--border)",
+                }}
+              >
+                <summary
+                  className="flex cursor-pointer list-none items-center justify-between gap-4 text-base font-bold [&::-webkit-details-marker]:hidden"
+                  style={{ color: "var(--text-primary)" }}
+                >
+                  {q}
+                  <span className="shrink-0" style={{ color: "var(--accent)" }}>
+                    <Plus className="h-5 w-5 group-open:hidden" />
+                    <Minus className="hidden h-5 w-5 group-open:block" />
+                  </span>
+                </summary>
+                <p
+                  className="mt-3 text-sm leading-relaxed sm:text-base"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  {a}
+                </p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═════════════ FINAL CTA ═════════════ */}
+      <section className="px-4 pb-20">
+        <div
+          className="relative mx-auto max-w-5xl overflow-hidden rounded-[2rem] px-8 py-14 text-center sm:px-16 sm:py-20"
+          style={{ background: "var(--accent)" }}
+        >
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white opacity-10" />
+            <div className="absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-black opacity-5" />
+          </div>
+          <div className="relative">
+            <h2 className="mb-4 text-3xl font-black text-black sm:text-5xl">
+              Your store is 10 minutes away
+            </h2>
+            <p className="mx-auto mb-8 max-w-xl text-lg text-black/70">
+              Start on the free plan today. Upgrade only when your business
+              needs more room.
+            </p>
+            <div className="flex flex-col justify-center gap-3 sm:flex-row">
+              <Link
+                href="/auth/signup"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-black px-8 py-4 text-lg font-bold text-white transition-all hover:scale-[1.02] hover:opacity-85"
+              >
+                Create free store <ArrowRight className="h-5 w-5" />
+              </Link>
+              <Link
+                href="/discover"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-black/20 px-8 py-4 text-lg font-semibold text-black transition-all hover:border-black/40 hover:bg-black/5"
+              >
+                See live stores
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═════════════ FOOTER ═════════════ */}
+      <footer
+        className="border-t px-4 py-10 pb-28 lg:pb-10"
+        style={{ borderColor: "var(--border)" }}
+      >
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 sm:flex-row">
           <Link href="/" className="flex flex-col items-start gap-0.5">
-            <Image src="/logo.png" alt="Duka" width={112} height={28} className="h-7 w-auto object-contain" />
-            <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>by Awarizon</span>
+            <Image
+              src="/logo.png"
+              alt="Duka"
+              width={112}
+              height={28}
+              className="h-7 w-auto object-contain"
+            />
+            <span
+              className="text-xs font-medium"
+              style={{ color: "var(--text-muted)" }}
+            >
+              by Awarizon
+            </span>
           </Link>
           <p className="text-xs" style={{ color: "var(--text-muted)" }}>
             © {new Date().getFullYear()} Duka by Awarizon. All rights reserved.
           </p>
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
+            {[
+              ["/discover", "Discover"],
+              ["/pricing", "Pricing"],
+              ["/resources", "Resources"],
+              ["/affiliate", "Affiliates"],
+              ["/terms", "Terms"],
+              ["/auth/login", "Login"],
+            ].map(([href, label]) => (
+              <Link
+                key={href}
+                href={href}
+                className="text-xs hover:underline"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
         </div>
       </footer>
+
+      {/* Sticky mobile CTA */}
+      <div
+        className="fixed inset-x-0 bottom-0 z-40 border-t p-3 backdrop-blur-md lg:hidden"
+        style={{
+          background: "color-mix(in srgb, var(--bg) 92%, transparent)",
+          borderColor: "var(--border)",
+        }}
+      >
+        <Link
+          href="/auth/signup"
+          className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-base font-bold text-black"
+          style={{ background: "var(--accent)" }}
+        >
+          Start free <ArrowRight className="h-5 w-5" />
+        </Link>
+      </div>
     </div>
   );
 }
