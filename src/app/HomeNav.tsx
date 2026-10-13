@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { Sora } from "next/font/google";
 import type { LucideIcon } from "lucide-react";
 import {
   Menu,
@@ -22,6 +23,13 @@ import {
   Banknote,
   CornerDownLeft,
 } from "lucide-react";
+
+/* Wordmark font */
+const wordmarkFont = Sora({
+  subsets: ["latin"],
+  weight: ["800"],
+  display: "swap",
+});
 
 /* ─────────────────────────────── Menu config ─────────────────────────────── */
 
@@ -291,20 +299,26 @@ export default function HomeNav() {
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between gap-3">
-            {/* Logo */}
+            {/* Logo + wordmark */}
             <Link
               href="/"
-              className="flex shrink-0 items-center"
+              className="flex shrink-0 items-center gap-2"
               aria-label="Duka home"
             >
               <Image
                 src="/logo.png"
-                alt="Duka"
+                alt=""
                 width={108}
                 height={36}
                 className="h-9 w-auto object-contain"
                 priority
               />
+              <span
+                className={`${wordmarkFont.className} text-[22px] leading-none tracking-[0.04em]`}
+                style={{ color: "var(--text-primary)" }}
+              >
+                DUKA
+              </span>
             </Link>
 
             {/* ───────── Desktop navigation ───────── */}
