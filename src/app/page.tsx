@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import ProductSlider, { type ProductSlide } from "./ProductSlider";
 import HomeNav from "./HomeNav";
+import Footer from "@/components/Footer";
 
 const CATEGORY_META: Record<string, { icon: string; color: string }> = {
   "Fashion and Clothing": { icon: "👗", color: "#ec4899" },
@@ -1191,51 +1192,7 @@ export default async function HomePage() {
       </section>
 
       {/* ═════════════ FOOTER ═════════════ */}
-      <footer
-        className="border-t px-4 py-10 pb-28 lg:pb-10"
-        style={{ borderColor: "var(--border)" }}
-      >
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 sm:flex-row">
-          <Link href="/" className="flex flex-col items-start gap-0.5">
-            <Image
-              src="/logo.png"
-              alt="Duka"
-              width={112}
-              height={28}
-              className="h-7 w-auto object-contain"
-            />
-            <span
-              className="text-xs font-medium"
-              style={{ color: "var(--text-muted)" }}
-            >
-              by Awarizon
-            </span>
-          </Link>
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-            © {new Date().getFullYear()} Duka by Awarizon. All rights reserved.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
-            {[
-              ["/discover", "Discover"],
-              ["/pricing", "Pricing"],
-              ["/resources", "Resources"],
-              ["/affiliate", "Affiliates"],
-              ["/terms", "Terms"],
-              ["/auth/login", "Login"],
-              ["/auth/signup", "Sign Up"],
-            ].map(([href, label]) => (
-              <Link
-                key={href}
-                href={href}
-                className="text-xs hover:underline"
-                style={{ color: "var(--text-secondary)" }}
-              >
-                {label}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </footer>
+      <Footer />
 
       {/* Sticky mobile CTA */}
       <div

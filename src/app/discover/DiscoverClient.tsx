@@ -22,6 +22,7 @@ import {
 import { formatPrice } from "@/lib/utils";
 import ReelStoryStrip from "@/components/discover/ReelStoryStrip";
 import type { Reel } from "@/types";
+import Footer from "@/components/Footer";
 
 // Discover is a cross-vendor marketplace page — link within it using the
 // reliable path-based routes (dukanigeria.com/store/[slug]/...) rather than
@@ -902,31 +903,7 @@ export default function DiscoverClient({
       </main>
 
       {/* Footer */}
-      <footer
-        className="border-t px-4 py-10"
-        style={{ borderColor: "var(--border)" }}
-      >
-        <div className="mx-auto max-w-7xl text-center">
-          <Link href="/" className="inline-flex flex-col items-center gap-1">
-            <Image
-              src="/logo.png"
-              alt="Duka"
-              width={112}
-              height={28}
-              className="h-7 w-auto object-contain"
-            />
-            <span
-              className="text-xs font-medium"
-              style={{ color: "var(--text-muted)" }}
-            >
-              by Awarizon
-            </span>
-          </Link>
-          <p className="mt-3 text-xs" style={{ color: "var(--text-muted)" }}>
-            © {new Date().getFullYear()} Duka by Awarizon. All rights reserved.
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
