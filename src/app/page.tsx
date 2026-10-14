@@ -1035,7 +1035,7 @@ export default async function HomePage() {
       </section>
 
       {/* ═════════════ AFFILIATE ═════════════ */}
-      <section className="px-4 pb-6">
+      {/* <section className="px-4 pb-6">
         <div className="mx-auto max-w-7xl">
           <div
             className="flex flex-col items-center gap-6 rounded-3xl border px-8 py-10 sm:flex-row sm:gap-10 sm:px-14"
@@ -1077,7 +1077,7 @@ export default async function HomePage() {
             </Link>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* ═════════════ FAQ ═════════════ */}
       <section className="px-4 py-20 sm:py-28">

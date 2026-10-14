@@ -128,12 +128,12 @@ const GROUPS: NavGroup[] = [
             desc: "Live in about 10 minutes",
             icon: Rocket,
           },
-          {
-            href: "/affiliate",
-            title: "Affiliate program",
-            desc: "Earn ₦2,000 per vendor you refer",
-            icon: Gift,
-          },
+          // {
+          //   href: "/affiliate",
+          //   title: "Affiliate program",
+          //   desc: "Earn ₦2,000 per vendor you refer",
+          //   icon: Gift,
+          // },
         ],
       },
     ],
