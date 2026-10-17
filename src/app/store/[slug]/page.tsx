@@ -402,7 +402,7 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
       {isHome && (
         <>
           {/* Hero */}
-          <section className="px-4 pt-4 lg:px-6 lg:pt-6">
+          <section className="px-2 pt-0 lg:px-6 lg:pt-6">
             {hasBanner ? (
               <>
                 <h1 className="sr-only lg:hidden">{store.name}</h1>
