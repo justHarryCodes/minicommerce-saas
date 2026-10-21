@@ -17,6 +17,7 @@ import {
   X,
   Store as StoreIcon,
   Maximize2,
+  Truck,
 } from "lucide-react";
 import { useCart } from "@/components/storefront/CartProvider";
 import ProductCard from "@/components/storefront/ProductCard";
@@ -24,6 +25,13 @@ import { useStore } from "@/lib/store-context";
 import { clLogo } from "@/lib/cloudinary";
 import { formatCurrency, getProductUrl, waLink } from "@/lib/utils";
 import type { Product, Store } from "@/types";
+import { optionNamesOf, optionsOf } from "@/lib/variants";
+import { lagosParts } from "@/lib/hours";
+import { formatAppointment } from "@/lib/booking";
+import { parseSizeGuide } from "@/lib/size-guide";
+import BookingPicker, { type BookingSelection } from "@/components/storefront/BookingPicker";
+import SizeGuideButton from "@/components/storefront/SizeGuideButton";
+import BackInStockForm from "@/components/storefront/BackInStockForm";
 
 interface Props {
   product: Product & { category_name?: string; category_slug?: string };
@@ -127,12 +135,39 @@ export default function ProductDetailClient({
   const [activeImg, setActiveImg] = useState(0);
   const [lightbox, setLightbox] = useState(false);
 
+  // Variants: one picker per option (legacy size-only products → "Size").
+  // Once every option is chosen, the matching variant's label becomes
+  // `selectedSize` — the key the cart and order API already understand.
+  const rawOptionNames = product.option_names ?? product.optionNames;
+  const optionNames = optionNamesOf(rawOptionNames);
   const sizes = (product.sizes ?? []).map((s) => ({
     label: s.label,
     stockQuantity: s.stockQuantity ?? s.stock_quantity ?? 0,
+    options: optionsOf(rawOptionNames, s),
+    price: s.price != null ? Number(s.price) : null,
+    imageUrl: s.imageUrl ?? s.image_url ?? null,
   }));
   const hasSizes = sizes.length > 0;
-  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [picked, setPicked] = useState<Record<string, string>>({});
+  const selectedVariant = hasSizes && optionNames.every((n) => picked[n])
+    ? sizes.find((s) => optionNames.every((n) => s.options[n] === picked[n])) ?? null
+    : null;
+  const selectedSize = selectedVariant?.label ?? null;
+  // Values of one option still available given the other picks
+  const valuesFor = (name: string) =>
+    Array.from(new Set(sizes.map((s) => s.options[name]).filter(Boolean))) as string[];
+  const availableWith = (name: string, value: string) =>
+    sizes.some(
+      (s) =>
+        s.options[name] === value &&
+        s.stockQuantity > 0 &&
+        optionNames.every((n) => n === name || !picked[n] || s.options[n] === picked[n]),
+    );
+  const unitPrice = selectedVariant?.price ?? product.price;
+  const priceRange = useMemo(() => {
+    const prices = sizes.map((s) => s.price ?? product.price);
+    return prices.length ? { min: Math.min(...prices), max: Math.max(...prices) } : null;
+  }, [sizes, product.price]);
 
   const [reviews, setReviews] = useState<Review[]>([]);
   const [avgRating, setAvgRating] = useState(0);
@@ -164,15 +199,20 @@ export default function ProductDetailClient({
   // Without sizes, the plain product stock governs everything below (add to
   // cart, qty stepper). With sizes, nothing is purchasable until a size with
   // stock is chosen.
-  const effectiveStock = hasSizes ? selectedSizeStock : stockQty;
+  // Services: booked by time, never "out of stock"; food: can be sold out for today
+  const isBookable = Boolean(product.is_bookable);
+  const sizeGuide = parseSizeGuide(product.size_guide);
+  const soldOutToday = !!product.sold_out_until && String(product.sold_out_until).slice(0, 10) >= lagosParts(new Date()).date;
+  const [booking, setBooking] = useState<BookingSelection | null>(null);
+  const effectiveStock = isBookable ? 1 : hasSizes ? selectedSizeStock : stockQty;
   const comparePrice = product.compare_price ?? product.comparePrice;
-  const hasDiscount = !!comparePrice && comparePrice > product.price;
+  const hasDiscount = !!comparePrice && comparePrice > unitPrice;
   const discountPct = hasDiscount
-    ? Math.round((1 - product.price / comparePrice!) * 100)
+    ? Math.round((1 - unitPrice / comparePrice!) * 100)
     : 0;
-  const savings = hasDiscount ? comparePrice! - product.price : 0;
-  const needsSize = hasSizes && !selectedSize;
-  const inStock = stockQty > 0;
+  const savings = hasDiscount ? comparePrice! - unitPrice : 0;
+  const needsSize = (hasSizes && !selectedSize) || (isBookable && !booking);
+  const inStock = isBookable || (stockQty > 0 && !soldOutToday);
 
   const distribution = useMemo(() => {
     const counts = [0, 0, 0, 0, 0];
@@ -228,12 +268,27 @@ export default function ProductDetailClient({
 
   function handleAdd() {
     if (needsSize || !inStock) return;
+    if (isBookable && booking) {
+      addItem({
+        product_id: product.id,
+        name: product.name,
+        price: unitPrice,
+        image_url: images[0],
+        stock_quantity: 1,
+        quantity: 1,
+        booking: { startsAt: booking.startsAt, staffId: booking.staffId, staffName: booking.staffName },
+      });
+      setBooking(null);
+      setAdded(true);
+      setTimeout(() => setAdded(false), 2000);
+      return;
+    }
     for (let i = 0; i < qty; i++) {
       addItem({
         product_id: product.id,
         name: product.name,
-        price: product.price,
-        image_url: images[0],
+        price: unitPrice,
+        image_url: selectedVariant?.imageUrl ?? images[0],
         stock_quantity: effectiveStock,
         quantity: 1,
         size: hasSizes ? selectedSize : undefined,
@@ -297,12 +352,20 @@ export default function ProductDetailClient({
   }
 
   const waNumber = store.whatsapp as string | undefined;
-  const lineTotal = formatCurrency(product.price * qty);
+  const lineTotal = formatCurrency(unitPrice * qty);
 
-  const addLabel = !inStock
+  const addLabel = soldOutToday
+    ? "Sold out today"
+    : !inStock
     ? "Out of stock"
+    : isBookable
+      ? added
+        ? "Booked — added to cart"
+        : booking
+          ? `Book ${formatAppointment(booking.startsAt)}`
+          : "Choose a time"
     : needsSize
-      ? "Select a size"
+      ? `Select ${optionNames.length > 1 ? "options" : optionNames[0].toLowerCase()}`
       : added
         ? "Added to cart"
         : "Add to cart";
@@ -493,7 +556,9 @@ export default function ProductDetailClient({
           <div className="rounded-2xl bg-surface-50 dark:bg-surface-900 border border-surface-100 dark:border-surface-800 p-4">
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <span className="text-3xl sm:text-4xl font-black text-surface-900 dark:text-white">
-                {formatCurrency(product.price)}
+                {!selectedVariant && priceRange && priceRange.min !== priceRange.max
+                  ? `${formatCurrency(priceRange.min)} – ${formatCurrency(priceRange.max)}`
+                  : formatCurrency(unitPrice)}
               </span>
               {hasDiscount && (
                 <>
@@ -524,67 +589,121 @@ export default function ProductDetailClient({
                 <span className="text-red-500">Out of stock</span>
               )}
             </div>
+
+            {store.delivery_time_frame && (
+              <div className="mt-2 flex items-center gap-2 text-sm text-surface-600 dark:text-surface-300">
+                <Truck className="w-4 h-4 shrink-0 text-surface-400" />
+                <span>
+                  Delivery: <span className="font-semibold text-surface-900 dark:text-white">{store.delivery_time_frame}</span>
+                </span>
+              </div>
+            )}
           </div>
 
-          {/* Size picker */}
-          {hasSizes && (
-            <div>
-              <div className="flex items-center justify-between mb-2.5">
-                <span className="text-sm font-bold text-surface-900 dark:text-white">
-                  Size
-                  {selectedSize ? (
-                    <span className="font-medium text-surface-500">
-                      : {selectedSize}
-                    </span>
-                  ) : (
-                    ""
-                  )}
-                </span>
-                {needsSize && inStock && (
-                  <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-                    Please choose a size
-                  </span>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {sizes.map((s) => {
-                  const outOfStock = s.stockQuantity <= 0;
-                  const active = selectedSize === s.label;
-                  return (
-                    <button
-                      key={s.label}
-                      type="button"
-                      disabled={outOfStock}
-                      aria-pressed={active}
-                      onClick={() => setSelectedSize(s.label)}
-                      className={`min-w-[3rem] px-4 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${
-                        outOfStock
-                          ? "border-surface-100 dark:border-surface-800 text-surface-300 dark:text-surface-700 line-through cursor-not-allowed"
-                          : active
-                            ? "text-black"
-                            : "border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-300 hover:border-surface-400"
-                      }`}
-                      style={
-                        active && !outOfStock
-                          ? {
-                              backgroundColor: "var(--sf-accent)",
-                              borderColor: "var(--sf-accent)",
-                            }
-                          : undefined
-                      }
-                    >
-                      {s.label}
-                    </button>
-                  );
-                })}
-              </div>
+          {/* Services: pick a date + time instead of a quantity */}
+          {isBookable && (
+            <BookingPicker
+              storeSlug={storeSlug}
+              productId={product.id}
+              durationMinutes={product.duration_minutes ?? null}
+              value={booking}
+              onChange={setBooking}
+            />
+          )}
+
+          {soldOutToday && (
+            <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+              Sold out for today — check back tomorrow.
+            </p>
+          )}
+
+          {sizeGuide && !isBookable && (
+            <div className="-mb-2 flex justify-end">
+              <SizeGuideButton guide={sizeGuide} productName={product.name} />
             </div>
+          )}
+
+          {/* Variant pickers — one row per option (Size, Colour, …) */}
+          {hasSizes && (
+            <div className="space-y-4">
+              {optionNames.map((name) => (
+                <div key={name}>
+                  <div className="flex items-center justify-between mb-2.5">
+                    <span className="text-sm font-bold text-surface-900 dark:text-white">
+                      {name}
+                      {picked[name] ? (
+                        <span className="font-medium text-surface-500">: {picked[name]}</span>
+                      ) : (
+                        ""
+                      )}
+                    </span>
+                    {!picked[name] && inStock && (
+                      <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                        Please choose a {name.toLowerCase()}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {valuesFor(name).map((value) => {
+                      const unavailable = !availableWith(name, value);
+                      const active = picked[name] === value;
+                      return (
+                        <button
+                          key={value}
+                          type="button"
+                          disabled={unavailable}
+                          aria-pressed={active}
+                          onClick={() =>
+                            setPicked((p) => {
+                              const next = { ...p, [name]: value };
+                              // Drop picks that no longer form an in-stock combination
+                              for (const other of optionNames) {
+                                if (other === name || !next[other]) continue;
+                                const ok = sizes.some(
+                                  (s) => s.stockQuantity > 0 && optionNames.every((n) => !next[n] || s.options[n] === next[n]),
+                                );
+                                if (!ok) delete next[other];
+                              }
+                              return next;
+                            })
+                          }
+                          className={`min-w-[3rem] px-4 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${
+                            unavailable
+                              ? "border-surface-100 dark:border-surface-800 text-surface-300 dark:text-surface-700 line-through cursor-not-allowed"
+                              : active
+                                ? "text-[color:var(--sf-on-accent)]"
+                                : "border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-300 hover:border-surface-400"
+                          }`}
+                          style={
+                            active && !unavailable
+                              ? { backgroundColor: "var(--sf-accent)", borderColor: "var(--sf-accent)" }
+                              : undefined
+                          }
+                        >
+                          {value}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Back-in-stock sign-up: whole product sold out, or some variants are */}
+          {!isBookable && !soldOutToday && (!inStock || (hasSizes && sizes.some((s) => s.stockQuantity <= 0))) && (
+            <BackInStockForm
+              storeSlug={storeSlug}
+              productId={product.id}
+              variantLabel={null}
+              prompt={inStock ? "Your option sold out? Get a text when it's back" : undefined}
+            />
           )}
 
           {/* Qty + actions (desktop/tablet; mobile uses sticky bar for the add button) */}
           {inStock && (
             <div className="space-y-3">
-              <div className="flex items-center gap-4">
+              {!isBookable && (<div className="flex items-center gap-4">
                 <span className="text-sm font-bold text-surface-900 dark:text-white">
                   Quantity
                 </span>
@@ -618,7 +737,7 @@ export default function ProductDetailClient({
                     = {lineTotal}
                   </span>
                 )}
-              </div>
+              </div>)}
 
               <div className="flex gap-2.5">
                 <button
@@ -631,7 +750,7 @@ export default function ProductDetailClient({
                   style={
                     added
                       ? {}
-                      : { backgroundColor: "var(--sf-accent)", color: "#000" }
+                      : { backgroundColor: "var(--sf-accent)", color: "var(--sf-on-accent)" }
                   }
                 >
                   {added ? (
@@ -674,9 +793,9 @@ export default function ProductDetailClient({
                 `Hello! I'd like to order from *${store.name}* 🛍️`,
                 ``,
                 `*${product.name}*`,
-                selectedSize ? `📏 Size: ${selectedSize}` : "",
+                selectedSize ? `📏 ${optionNames.length > 1 ? "Options" : optionNames[0]}: ${selectedSize}` : "",
                 `📦 Quantity: ${qty}`,
-                `💰 Price: ${formatCurrency(product.price)} each`,
+                `💰 Price: ${formatCurrency(unitPrice)} each`,
                 `💳 Total: ${lineTotal}`,
                 blurb ? `📝 ${blurb}${blurb.length === 120 ? "…" : ""}` : "",
                 ``,
@@ -725,7 +844,7 @@ export default function ProductDetailClient({
               </span>
             ) : (
               <span
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-lg font-black text-black"
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-lg font-black text-[color:var(--sf-on-accent)]"
                 style={{ background: "var(--sf-accent)" }}
               >
                 {store.name.charAt(0).toUpperCase()}
@@ -780,7 +899,7 @@ export default function ProductDetailClient({
             <button
               type="button"
               onClick={() => setShowReviewForm(true)}
-              className="text-sm font-bold px-4 py-2.5 rounded-xl text-black transition-opacity hover:opacity-90"
+              className="text-sm font-bold px-4 py-2.5 rounded-xl text-[color:var(--sf-on-accent)] transition-opacity hover:opacity-90"
               style={{ backgroundColor: "var(--sf-accent)" }}
             >
               Write a review
@@ -891,7 +1010,7 @@ export default function ProductDetailClient({
                     reviewForm.rating === 0
                   }
                   className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all hover:opacity-90 disabled:opacity-50 active:scale-[0.98]"
-                  style={{ backgroundColor: "var(--sf-accent)", color: "#000" }}
+                  style={{ backgroundColor: "var(--sf-accent)", color: "var(--sf-on-accent)" }}
                 >
                   {submittingReview ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -981,7 +1100,7 @@ export default function ProductDetailClient({
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="flex items-center gap-2.5">
                       <div
-                        className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-black text-black shrink-0"
+                        className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-black text-[color:var(--sf-on-accent)] shrink-0"
                         style={{ backgroundColor: "var(--sf-accent)" }}
                       >
                         {review.customer_name.charAt(0).toUpperCase()}
@@ -1055,7 +1174,7 @@ export default function ProductDetailClient({
               style={
                 added
                   ? {}
-                  : { backgroundColor: "var(--sf-accent)", color: "#000" }
+                  : { backgroundColor: "var(--sf-accent)", color: "var(--sf-on-accent)" }
               }
             >
               {added ? (

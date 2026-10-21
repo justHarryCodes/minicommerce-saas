@@ -6,6 +6,8 @@ import Link from "next/link";
 import { Plus, Package, Pencil } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import DeleteProductButton from "@/components/dashboard/DeleteProductButton";
+import SoldOutTodayToggle from "@/components/dashboard/SoldOutTodayToggle";
+import { isSoldOutToday } from "@/lib/hours";
 import type { Product } from "@/types";
 import { Tip } from "@/components/dashboard/Tip";
 
@@ -151,17 +153,21 @@ export default async function ProductsPage() {
                       )}
                     </td>
                     <td className="py-3.5 px-4">
-                      <span
-                        className={`text-sm font-medium ${
-                          product.stock_quantity ?? 0 === 0
-                            ? "text-red-500"
-                            : product.stock_quantity ?? 0 <= 5
-                            ? "text-yellow-500"
-                            : "text-surface-700 dark:text-surface-300"
-                        }`}
-                      >
-                        {product.stock_quantity ?? 0}
-                      </span>
+                      {product.is_bookable ? (
+                        <span className="text-xs font-medium text-surface-500 dark:text-surface-400">Service</span>
+                      ) : (
+                        <span
+                          className={`text-sm font-medium ${
+                            (product.stock_quantity ?? 0) === 0
+                              ? "text-red-500"
+                              : (product.stock_quantity ?? 0) <= 5
+                              ? "text-yellow-500"
+                              : "text-surface-700 dark:text-surface-300"
+                          }`}
+                        >
+                          {product.stock_quantity ?? 0}
+                        </span>
+                      )}
                     </td>
                     <td className="py-3.5 px-4">
                       <span
@@ -176,6 +182,9 @@ export default async function ProductsPage() {
                     </td>
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-1 justify-end">
+                        {!product.is_bookable && (
+                          <SoldOutTodayToggle productId={product.id} soldOut={isSoldOutToday(product.sold_out_until)} />
+                        )}
                         <Link
                           href={`/dashboard/products/${product.id}/edit`}
                           className="p-1.5 rounded-lg text-surface-400 hover:text-surface-600 hover:bg-surface-100 dark:hover:bg-surface-800 transition-all"
@@ -213,9 +222,12 @@ export default async function ProductsPage() {
                     {product.name}
                   </div>
                   <div className="text-xs text-surface-400 mt-0.5">
-                    {formatCurrency(product.price)} · {product.stock_quantity ?? 0} in stock
+                    {formatCurrency(product.price)} · {product.is_bookable ? "Service" : `${product.stock_quantity ?? 0} in stock`}
                   </div>
                 </div>
+                {!product.is_bookable && (
+                  <SoldOutTodayToggle productId={product.id} soldOut={isSoldOutToday(product.sold_out_until)} />
+                )}
                 <Link
                   href={`/dashboard/products/${product.id}/edit`}
                   className="p-2 rounded-lg text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800"

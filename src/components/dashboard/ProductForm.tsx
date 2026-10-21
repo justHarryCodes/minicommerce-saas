@@ -16,8 +16,10 @@ import {
   UploadCloud,
   Lock,
 } from "lucide-react";
-import { SizeEditor } from "@/components/dashboard/SizeEditor";
-import type { Category, Product, ProductSize } from "@/types";
+import { VariantEditor, initialVariantState, variantPayload, type VariantState } from "@/components/dashboard/VariantEditor";
+import { BookableFields, SizeGuideEditor } from "@/components/dashboard/ProductExtras";
+import { parseSizeGuide, type SizeGuide } from "@/lib/size-guide";
+import type { Category, Product } from "@/types";
 
 const schema = z.object({
   name: z.string().min(2, "Product name is required"),
@@ -67,7 +69,18 @@ export default function ProductForm({ categories, product }: Props) {
   const [selectedCatId, setSelectedCatId] = useState(
     product?.category_id ?? "",
   );
-  const [sizes, setSizes] = useState<ProductSize[]>(product?.sizes ?? []);
+  const [variants, setVariants] = useState<VariantState>(() =>
+    initialVariantState(product?.option_names ?? product?.optionNames, product?.sizes),
+  );
+  const sizes = variants.variants;
+  const [service, setService] = useState<{ isBookable: boolean; durationMinutes: number | null }>({
+    isBookable: Boolean(product?.is_bookable ?? product?.isBookable),
+    durationMinutes: product?.duration_minutes ?? product?.durationMinutes ?? null,
+  });
+  const [sizeGuide, setSizeGuide] = useState<SizeGuide | null>(() => parseSizeGuide(product?.size_guide ?? product?.sizeGuide));
+  const [lowStockThreshold, setLowStockThreshold] = useState<string>(
+    String(product?.low_stock_threshold ?? product?.lowStockThreshold ?? ""),
+  );
 
   // AI assist — hidden entirely until GROQ_API_KEY/GEMINI_API_KEY are configured.
   // product-description and suggest-category are both Pro-only server-side
@@ -244,10 +257,12 @@ export default function ProductForm({ categories, product }: Props) {
           images: imageUrl ? [imageUrl] : [],
           categoryId: data.categoryId || undefined,
           subcategoryId: data.subcategoryId || undefined,
-          sizes: sizes.map((s) => ({
-            label: s.label,
-            stockQuantity: s.stockQuantity ?? 0,
-          })),
+          ...variantPayload(variants),
+          lowStockThreshold:
+            lowStockThreshold.trim() === "" ? null : Math.max(0, parseInt(lowStockThreshold, 10) || 0),
+          isBookable: service.isBookable,
+          durationMinutes: service.durationMinutes,
+          sizeGuide,
         }),
       });
 
@@ -414,6 +429,10 @@ export default function ProductForm({ categories, product }: Props) {
           {/* Inventory */}
           <section className={cardClass}>
             <SectionTitle title="Inventory" />
+            <div className="mb-5 pb-5 border-b border-surface-100 dark:border-surface-800">
+              <BookableFields isBookable={service.isBookable} durationMinutes={service.durationMinutes} onChange={setService} />
+            </div>
+            {!service.isBookable && (<>
             <div>
               <label className={labelClass} htmlFor="pf-stock">
                 Stock quantity <span className="text-red-500">*</span>
@@ -435,7 +454,7 @@ export default function ProductForm({ categories, product }: Props) {
               />
               {sizes.length > 0 ? (
                 <p className="text-xs text-surface-400 mt-1">
-                  Auto-calculated from the sizes below
+                  Auto-calculated from the variants below
                 </p>
               ) : (
                 errors.stockQuantity && (
@@ -446,9 +465,33 @@ export default function ProductForm({ categories, product }: Props) {
               )}
             </div>
 
-            <div className="mt-5 pt-5 border-t border-surface-100 dark:border-surface-800">
-              <SizeEditor sizes={sizes} onChange={setSizes} />
+            <div className="mt-4">
+              <label className={labelClass} htmlFor="pf-low-stock">
+                Low-stock alert at
+              </label>
+              <input
+                id="pf-low-stock"
+                type="number"
+                min="0"
+                inputMode="numeric"
+                value={lowStockThreshold}
+                onChange={(e) => setLowStockThreshold(e.target.value)}
+                className={inputClass + " sm:max-w-xs"}
+                placeholder="Store default"
+              />
+              <p className="text-xs text-surface-400 mt-1">
+                We&apos;ll notify you when {sizes.length > 0 ? "any variant" : "stock"} drops to this number.
+              </p>
             </div>
+
+            <div className="mt-5 pt-5 border-t border-surface-100 dark:border-surface-800">
+              <VariantEditor value={variants} onChange={setVariants} basePrice={Number(watch("price")) || undefined} />
+            </div>
+
+            <div className="mt-5 pt-5 border-t border-surface-100 dark:border-surface-800">
+              <SizeGuideEditor value={sizeGuide} onChange={setSizeGuide} />
+            </div>
+            </>)}
           </section>
         </div>
 

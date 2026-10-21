@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -15,12 +15,21 @@ import {
   X,
   Copy,
   Check,
+  HandCoins,
+  MapPin,
+  Receipt,
+  Store as StoreIcon,
+  Truck,
 } from "lucide-react";
 import { useCart } from "@/components/storefront/CartProvider";
 import { useStore } from "@/lib/store-context";
 import { formatCurrency } from "@/lib/utils";
 import { clThumb } from "@/lib/cloudinary";
 import toast from "react-hot-toast";
+import { hasDeliveryOptions, quoteDelivery, type DeliverySettings, type PayOnDeliverySettings } from "@/lib/delivery";
+import { computeTotals } from "@/lib/order-pricing";
+import { openStatus, type WeeklyHours } from "@/lib/hours";
+import { formatAppointment } from "@/lib/booking";
 
 interface CheckoutProps {
   storeSlug: string;
@@ -31,6 +40,14 @@ interface CheckoutProps {
   accountName?: string;
   paystackPublicKey?: string;
   returnPolicy?: string;
+  /** Merchant-set estimate, e.g. "1–3 business days" */
+  deliveryTimeFrame?: string;
+  delivery?: DeliverySettings;
+  payOnDelivery?: PayOnDeliverySettings;
+  /** Opening hours / order-ahead / minimum order (food stores) */
+  hours?: WeeklyHours | null;
+  allowPreorders?: boolean;
+  minimumOrder?: number | null;
 }
 
 interface AppliedCoupon {
@@ -47,8 +64,14 @@ export default function CheckoutClient({
   accountNumber,
   accountName,
   returnPolicy,
+  deliveryTimeFrame,
+  delivery = { zones: [], freeDeliveryThreshold: null, pickupEnabled: false, pickupAddress: null },
+  payOnDelivery = { enabled: false, depositPercent: 0 },
+  hours = null,
+  allowPreorders = true,
+  minimumOrder = null,
 }: CheckoutProps) {
-  const { items, totalAmount, clearCart } = useCart();
+  const { items, totalAmount, clearCart, addItem } = useCart();
   const { storeBase } = useStore();
   const homeHref = storeBase || "/";
 
@@ -56,9 +79,23 @@ export default function CheckoutClient({
     "details",
   );
   const [loading, setLoading] = useState(false);
-  const [payMethod, setPayMethod] = useState<"paystack" | "transfer">(
-    paymentMethods.includes("paystack") ? "paystack" : "transfer",
+  const [payMethod, setPayMethod] = useState<"paystack" | "transfer" | "pay_on_delivery">(
+    paymentMethods.includes("paystack") ? "paystack" : paymentMethods.includes("transfer") ? "transfer" : "pay_on_delivery",
   );
+  // Appointment-only carts have nothing to deliver
+  const allBookable = items.length > 0 && items.every((i) => i.booking);
+  const showDeliveryChoice = hasDeliveryOptions(delivery) && !allBookable;
+  const shopStatus = !allBookable ? openStatus(hours, new Date()) : null;
+  const closedNoPreorder = !!shopStatus && !shopStatus.open && !allowPreorders;
+  const [deliveryMethod, setDeliveryMethod] = useState<"delivery" | "pickup">(
+    delivery.zones.length === 0 && delivery.pickupEnabled ? "pickup" : "delivery",
+  );
+  const [zoneId, setZoneId] = useState<string | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [placedDeposit, setPlacedDeposit] = useState(0);
+  // Identifies this checkout for abandoned-cart capture; reused across
+  // visits so a recovered cart converts the same session.
+  const [checkoutToken, setCheckoutToken] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [showBankModal, setShowBankModal] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -87,7 +124,100 @@ export default function CheckoutClient({
   ) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
   const discountAmount = appliedCoupon?.discountAmount ?? 0;
-  const finalTotal = Math.max(0, totalAmount - discountAmount);
+  const goodsTotal = Math.max(0, totalAmount - discountAmount);
+
+  // Preview only — the order API recomputes everything from server prices.
+  const quote = quoteDelivery(
+    delivery,
+    deliveryMethod === "pickup" ? { method: "pickup" } : { method: "delivery", zoneId },
+    goodsTotal,
+  );
+  const totals = computeTotals({
+    subtotal: totalAmount,
+    discount: discountAmount,
+    deliveryFee: quote.ok ? quote.fee : 0,
+    payOnDelivery: payMethod === "pay_on_delivery",
+    depositPercent: payOnDelivery.depositPercent,
+  });
+  const finalTotal = totals.total;
+  // Minimum order is measured on goods after discounts (like the server)
+  const minimumGap = minimumOrder && !allBookable ? Math.max(0, minimumOrder - goodsTotal) : 0;
+  const blocked = closedNoPreorder || minimumGap > 0;
+  const freeDeliveryGap =
+    deliveryMethod === "delivery" && delivery.zones.length > 0 && delivery.freeDeliveryThreshold != null
+      ? Math.max(0, delivery.freeDeliveryThreshold - goodsTotal)
+      : 0;
+  const zoneFeeLabel = (fee: number) =>
+    fee === 0 || (delivery.freeDeliveryThreshold != null && goodsTotal >= delivery.freeDeliveryThreshold)
+      ? "Free"
+      : formatCurrency(fee);
+
+  // ── Checkout token + abandoned-cart recovery ───────────────────────────────
+  const tokenKey = `checkout-token-${storeSlug}`;
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("failed") === "true") toast.error("Payment wasn't completed. You can try again.");
+
+    const recover = params.get("recover");
+    if (recover && /^[A-Za-z0-9_-]{16,64}$/.test(recover)) {
+      setCheckoutToken(recover);
+      try { localStorage.setItem(tokenKey, recover); } catch {}
+      fetch(`/api/storefront/${storeSlug}/checkout-session?token=${encodeURIComponent(recover)}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (!Array.isArray(data.items) || !data.items.length) {
+            if (data.error) toast.error(data.error);
+            return;
+          }
+          clearCart();
+          for (const it of data.items) addItem(it);
+          setForm((f) => ({
+            ...f,
+            customerName: f.customerName || data.customerName || "",
+            customerPhone: f.customerPhone || data.customerPhone || "",
+            customerEmail: f.customerEmail || data.customerEmail || "",
+          }));
+          toast.success("Welcome back — your cart is ready.");
+        })
+        .catch(() => {});
+      return;
+    }
+
+    let token: string | null = null;
+    try { token = localStorage.getItem(tokenKey); } catch {}
+    if (!token) {
+      token = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join("");
+      try { localStorage.setItem(tokenKey, token); } catch {}
+    }
+    setCheckoutToken(token);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Save the in-progress checkout once there's a phone number to follow up on.
+  const cartSignature = useMemo(
+    () => items.map((i) => `${i.product_id}:${i.size ?? ""}:${i.quantity}`).join("|"),
+    [items],
+  );
+  useEffect(() => {
+    if (!checkoutToken || step === "success" || items.length === 0) return;
+    if (form.customerPhone.replace(/\D/g, "").length < 10) return;
+    const id = setTimeout(() => {
+      fetch(`/api/storefront/${storeSlug}/checkout-session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: checkoutToken,
+          customerName: form.customerName,
+          customerPhone: form.customerPhone,
+          customerEmail: form.customerEmail,
+          items: items.map((i) => ({ productId: i.product_id, quantity: Number(i.quantity), size: i.size ?? null })),
+        }),
+        keepalive: true,
+      }).catch(() => {});
+    }, 1500);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkoutToken, cartSignature, form.customerPhone, form.customerName, form.customerEmail, step]);
 
   if (items.length === 0 && step !== "success") {
     return (
@@ -144,8 +274,13 @@ export default function CheckoutClient({
 
   async function handleSubmitDetails(e: React.SyntheticEvent) {
     e.preventDefault();
-    if (!form.customerName || !form.customerPhone || !form.deliveryAddress) {
+    const needsAddress = deliveryMethod === "delivery" && !allBookable;
+    if (!form.customerName || !form.customerPhone || (needsAddress && !form.deliveryAddress)) {
       toast.error("Please fill in all required fields");
+      return;
+    }
+    if (!quote.ok) {
+      toast.error(quote.error);
       return;
     }
     setStep("payment");
@@ -157,19 +292,22 @@ export default function CheckoutClient({
       const res = await fetch(`/api/storefront/${storeSlug}/orders`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        // Only identifiers and choices — prices, discount, delivery fee and
+        // total are all worked out by the server.
         body: JSON.stringify({
           ...form,
           storeId,
           items: items.map((i: import("@/types").CartItem) => ({
             productId: i.product_id,
             quantity: Number(i.quantity),
-            unitPrice: Number(i.price),
             size: i.size ?? undefined,
+            booking: i.booking ? { startsAt: i.booking.startsAt, staffId: i.booking.staffId ?? null } : undefined,
           })),
           paymentMethod: payMethod,
-          totalAmount,
+          deliveryMethod: allBookable ? "appointment" : deliveryMethod,
+          deliveryZoneId: deliveryMethod === "delivery" ? zoneId : null,
           couponCode: appliedCoupon?.code ?? null,
-          discountAmount: appliedCoupon?.discountAmount ?? 0,
+          checkoutToken,
         }),
       });
 
@@ -181,15 +319,17 @@ export default function CheckoutClient({
       }
 
       setOrderNumber(data.orderNumber);
+      setAccessToken(data.accessToken ?? null);
+      // This checkout converted — start fresh next time.
+      try { localStorage.removeItem(tokenKey); } catch {}
 
-      if (payMethod === "paystack") {
+      if (data.paysOnlineNow) {
         const initRes = await fetch("/api/paystack/initialize", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             orderId: data.orderId,
             email: form.customerEmail || `${form.customerPhone}@noemail.com`,
-            amount: finalTotal,
           }),
         });
         const initData = await initRes.json();
@@ -200,7 +340,8 @@ export default function CheckoutClient({
         throw new Error("Paystack init failed");
       } else {
         // Save total BEFORE clearing cart — cart clear resets totalAmount to 0
-        setPlacedTotal(finalTotal);
+        setPlacedTotal(Number(data.totals?.total ?? finalTotal));
+        setPlacedDeposit(Number(data.totals?.deposit ?? 0));
         // Save to localStorage so customer can track from the track page
         try {
           const key = `recent-orders-${storeSlug}`;
@@ -286,10 +427,38 @@ export default function CheckoutClient({
           </div>
         )}
 
+        {payMethod === "pay_on_delivery" && (
+          <div className="mt-6 p-5 rounded-2xl bg-surface-50 dark:bg-surface-900 border border-surface-100 dark:border-surface-800 text-left flex items-start gap-3">
+            <HandCoins className="w-5 h-5 shrink-0 mt-0.5 text-surface-500" />
+            <div>
+              <p className="font-bold text-surface-900 dark:text-white">
+                Pay {formatCurrency(placedTotal - placedDeposit)} on {deliveryMethod === "pickup" ? "pickup" : "delivery"}
+              </p>
+              <p className="text-sm text-surface-500 dark:text-surface-400 mt-0.5">
+                Cash or transfer when your order arrives. The store will contact you to confirm.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {deliveryTimeFrame && deliveryMethod === "delivery" && (
+          <p className="mt-4 flex items-center justify-center gap-2 text-sm text-surface-500 dark:text-surface-400">
+            <Truck className="w-4 h-4" /> Estimated delivery: <span className="font-semibold text-surface-900 dark:text-white">{deliveryTimeFrame}</span>
+          </p>
+        )}
+
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+          {accessToken && orderNumber && (
+            <Link
+              href={`${storeBase}/receipt/${encodeURIComponent(orderNumber)}?t=${accessToken}`}
+              className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+            >
+              <Receipt className="w-4 h-4" /> View receipt
+            </Link>
+          )}
           <Link
             href={`${storeBase}/track?order=${orderNumber}&phone=${encodeURIComponent(form.customerPhone)}`}
-            className="px-6 py-3 rounded-xl font-bold text-sm text-black"
+            className="px-6 py-3 rounded-xl font-bold text-sm text-[color:var(--sf-on-accent)]"
             style={{ backgroundColor: "var(--sf-accent)" }}
           >
             Track your order
@@ -319,7 +488,8 @@ export default function CheckoutClient({
       <button
         type="submit"
         form="checkout-form"
-        className="w-full py-3.5 rounded-xl font-bold text-sm text-black hover:opacity-90 transition-all"
+        disabled={blocked}
+        className="w-full py-3.5 rounded-xl font-bold text-sm text-[color:var(--sf-on-accent)] hover:opacity-90 transition-all disabled:opacity-50"
         style={{ backgroundColor: "var(--sf-accent)" }}
       >
         Continue to payment →
@@ -329,8 +499,8 @@ export default function CheckoutClient({
         onClick={
           payMethod === "transfer" ? () => setShowBankModal(true) : placeOrder
         }
-        disabled={loading}
-        className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm text-black hover:opacity-90 transition-all disabled:opacity-60"
+        disabled={loading || blocked}
+        className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm text-[color:var(--sf-on-accent)] hover:opacity-90 transition-all disabled:opacity-60"
         style={{ backgroundColor: "var(--sf-accent)" }}
       >
         {loading ? (
@@ -338,7 +508,9 @@ export default function CheckoutClient({
             <Loader2 className="w-4 h-4 animate-spin" /> Processing...
           </>
         ) : payMethod === "paystack" ? (
-          "Pay with Paystack"
+          `Pay ${formatCurrency(finalTotal)}`
+        ) : payMethod === "pay_on_delivery" && totals.deposit > 0 ? (
+          `Pay ${formatCurrency(totals.deposit)} deposit`
         ) : (
           "Place order"
         )}
@@ -361,6 +533,20 @@ export default function CheckoutClient({
           Checkout
         </h1>
 
+        {shopStatus && !shopStatus.open && (
+          <div className={`mb-5 rounded-2xl px-4 py-3 text-sm ${closedNoPreorder ? "bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300" : "bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300"}`}>
+            <strong>We&apos;re closed right now.</strong>{" "}
+            {closedNoPreorder
+              ? `Ordering opens again ${shopStatus.label.replace(/^Closed · opens /, "")}.`
+              : `You can still order — we'll prepare it when we open (${shopStatus.label.replace(/^Closed · opens /, "")}).`}
+          </div>
+        )}
+        {minimumGap > 0 && (
+          <div className="mb-5 rounded-2xl bg-surface-100 px-4 py-3 text-sm text-surface-700 dark:bg-surface-800 dark:text-surface-200">
+            The minimum order is <strong>{formatCurrency(minimumOrder ?? 0)}</strong> — add {formatCurrency(minimumGap)} more to check out.
+          </div>
+        )}
+
         <div className="grid lg:grid-cols-[1fr_360px] gap-6">
           {/* ── Left: form ── */}
           <div className="space-y-5 min-w-0">
@@ -368,7 +554,7 @@ export default function CheckoutClient({
             <section className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-5">
               <h2 className="font-bold text-surface-900 dark:text-white mb-4 flex items-center gap-2">
                 <span
-                  className="w-6 h-6 rounded-full text-xs font-black flex items-center justify-center text-black shrink-0"
+                  className="w-6 h-6 rounded-full text-xs font-black flex items-center justify-center text-[color:var(--sf-on-accent)] shrink-0"
                   style={{ backgroundColor: "var(--sf-accent)" }}
                 >
                   1
@@ -421,6 +607,7 @@ export default function CheckoutClient({
                     />
                   </div>
 
+                  {deliveryMethod === "delivery" && !allBookable && (<>
                   <div className="sm:col-span-2">
                     <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
                       Delivery address <span className="text-red-500">*</span>
@@ -460,6 +647,7 @@ export default function CheckoutClient({
                       className="w-full px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-transparent text-surface-900 dark:text-white placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-[var(--sf-accent)] text-sm"
                     />
                   </div>
+                  </>)}
 
                   <div className="sm:col-span-2">
                     <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
@@ -478,12 +666,78 @@ export default function CheckoutClient({
               </form>
             </section>
 
+            {/* Delivery options (only for stores that set up areas / pickup) */}
+            {showDeliveryChoice && (
+              <section className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-5">
+                <h2 className="font-bold text-surface-900 dark:text-white mb-1 flex items-center gap-2">
+                  <Truck className="w-4 h-4" />
+                  Delivery
+                </h2>
+                {deliveryTimeFrame && (
+                  <p className="text-xs text-surface-400 mb-4">Usually arrives in {deliveryTimeFrame}</p>
+                )}
+                <div className={`grid gap-2 ${deliveryTimeFrame ? "" : "mt-3"}`}>
+                  {delivery.zones.map((z) => {
+                    const active = deliveryMethod === "delivery" && zoneId === z.id;
+                    return (
+                      <label
+                        key={z.id}
+                        className={`flex items-center justify-between gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-all ${active ? "border-[var(--sf-accent)] bg-[var(--sf-accent)]/5" : "border-surface-200 dark:border-surface-700"}`}
+                      >
+                        <input
+                          type="radio"
+                          name="deliveryOption"
+                          className="sr-only"
+                          checked={active}
+                          onChange={() => {
+                            setDeliveryMethod("delivery");
+                            setZoneId(z.id);
+                          }}
+                        />
+                        <span className="flex items-center gap-2.5 text-sm font-medium text-surface-900 dark:text-white">
+                          <MapPin className="w-4 h-4 text-surface-400 shrink-0" />
+                          {z.name}
+                        </span>
+                        <span className="text-sm font-bold text-surface-900 dark:text-white shrink-0">{zoneFeeLabel(z.fee)}</span>
+                      </label>
+                    );
+                  })}
+                  {delivery.pickupEnabled && (
+                    <label
+                      className={`flex items-center justify-between gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-all ${deliveryMethod === "pickup" ? "border-[var(--sf-accent)] bg-[var(--sf-accent)]/5" : "border-surface-200 dark:border-surface-700"}`}
+                    >
+                      <input
+                        type="radio"
+                        name="deliveryOption"
+                        className="sr-only"
+                        checked={deliveryMethod === "pickup"}
+                        onChange={() => setDeliveryMethod("pickup")}
+                      />
+                      <span className="flex items-start gap-2.5 text-sm text-surface-900 dark:text-white">
+                        <StoreIcon className="w-4 h-4 text-surface-400 shrink-0 mt-0.5" />
+                        <span>
+                          <span className="block font-medium">Pick up myself</span>
+                          {delivery.pickupAddress && <span className="block text-xs text-surface-400">{delivery.pickupAddress}</span>}
+                        </span>
+                      </span>
+                      <span className="text-sm font-bold text-surface-900 dark:text-white shrink-0">Free</span>
+                    </label>
+                  )}
+                </div>
+                {freeDeliveryGap > 0 && (
+                  <p className="mt-3 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                    Add {formatCurrency(freeDeliveryGap)} more to get free delivery.
+                  </p>
+                )}
+              </section>
+            )}
+
             {/* Step 2: Payment method */}
             {step === "payment" && (
               <section className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-5">
                 <h2 className="font-bold text-surface-900 dark:text-white mb-4 flex items-center gap-2">
                   <span
-                    className="w-6 h-6 rounded-full text-xs font-black flex items-center justify-center text-black shrink-0"
+                    className="w-6 h-6 rounded-full text-xs font-black flex items-center justify-center text-[color:var(--sf-on-accent)] shrink-0"
                     style={{ backgroundColor: "var(--sf-accent)" }}
                   >
                     2
@@ -539,7 +793,40 @@ export default function CheckoutClient({
                       </div>
                     </label>
                   )}
+
+                  {paymentMethods.includes("pay_on_delivery") && (
+                    <label
+                      className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${payMethod === "pay_on_delivery" ? "border-[var(--sf-accent)] bg-[var(--sf-accent)]/5" : "border-surface-200 dark:border-surface-700"}`}
+                    >
+                      <input
+                        type="radio"
+                        name="payMethod"
+                        value="pay_on_delivery"
+                        checked={payMethod === "pay_on_delivery"}
+                        onChange={() => setPayMethod("pay_on_delivery")}
+                        className="sr-only"
+                      />
+                      <HandCoins className="w-5 h-5 text-surface-600 dark:text-surface-300 shrink-0" />
+                      <div>
+                        <p className="font-semibold text-surface-900 dark:text-white text-sm">
+                          Pay on {deliveryMethod === "pickup" ? "pickup" : "delivery"}
+                        </p>
+                        <p className="text-xs text-surface-400">
+                          {payOnDelivery.depositPercent > 0
+                            ? `${payOnDelivery.depositPercent}% deposit now, rest on arrival`
+                            : "Cash or transfer when it arrives"}
+                        </p>
+                      </div>
+                    </label>
+                  )}
                 </div>
+
+                {payMethod === "pay_on_delivery" && totals.deposit > 0 && (
+                  <p className="mt-4 p-4 rounded-xl bg-surface-50 dark:bg-surface-800 text-sm text-surface-600 dark:text-surface-300">
+                    You&apos;ll pay a <strong className="text-surface-900 dark:text-white">{formatCurrency(totals.deposit)}</strong> deposit now with Paystack to confirm your order, and{" "}
+                    <strong className="text-surface-900 dark:text-white">{formatCurrency(totals.total - totals.deposit)}</strong> when it arrives.
+                  </p>
+                )}
 
                 {payMethod === "transfer" && bankName && (
                   <div className="mt-4 p-4 rounded-xl bg-surface-50 dark:bg-surface-800 text-sm space-y-2">
@@ -627,8 +914,9 @@ export default function CheckoutClient({
                         {item.name}
                       </p>
                       <p className="text-xs text-surface-400">
-                        {item.size ? `Size: ${item.size} · ` : ""}Qty:{" "}
-                        {item.quantity}
+                        {item.booking
+                          ? `📅 ${formatAppointment(item.booking.startsAt)}${item.booking.staffName ? ` · ${item.booking.staffName}` : ""}`
+                          : <>{item.size ? `${item.size} · ` : ""}Qty: {item.quantity}</>}
                       </p>
                     </div>
                     <span className="text-sm font-bold text-surface-900 dark:text-white shrink-0">
@@ -703,14 +991,42 @@ export default function CheckoutClient({
                     <span>-{formatCurrency(appliedCoupon.discountAmount)}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-sm text-surface-500 dark:text-surface-400">
-                  <span>Delivery</span>
-                  <span className="text-green-500">To be arranged</span>
+                <div className="flex justify-between gap-3 text-sm text-surface-500 dark:text-surface-400">
+                  <span>{allBookable ? "Appointment" : deliveryMethod === "pickup" ? "Pickup" : "Delivery"}</span>
+                  <span className="text-right">
+                    {allBookable ? (
+                      <span className="text-surface-500">At the store</span>
+                    ) : deliveryMethod === "pickup" ? (
+                      <span className="text-green-500">Free</span>
+                    ) : delivery.zones.length === 0 ? (
+                      <span className="text-green-500">{deliveryTimeFrame ?? "To be arranged"}</span>
+                    ) : !zoneId ? (
+                      <span className="text-surface-400">Choose your area</span>
+                    ) : totals.deliveryFee === 0 ? (
+                      <span className="text-green-500">Free</span>
+                    ) : (
+                      formatCurrency(totals.deliveryFee)
+                    )}
+                  </span>
                 </div>
                 <div className="flex justify-between font-black text-lg text-surface-900 dark:text-white border-t border-surface-100 dark:border-surface-800 pt-3 mt-1">
                   <span>Total</span>
                   <span>{formatCurrency(finalTotal)}</span>
                 </div>
+                {payMethod === "pay_on_delivery" && step === "payment" && (
+                  <div className="space-y-1 text-sm">
+                    {totals.deposit > 0 && (
+                      <div className="flex justify-between text-surface-600 dark:text-surface-300">
+                        <span>Deposit now</span>
+                        <span className="font-semibold">{formatCurrency(totals.deposit)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-surface-600 dark:text-surface-300">
+                      <span>Pay on {deliveryMethod === "pickup" ? "pickup" : "delivery"}</span>
+                      <span className="font-semibold">{formatCurrency(totals.total - totals.deposit)}</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* CTA — desktop only (mobile uses sticky bottom bar) */}
@@ -840,7 +1156,7 @@ export default function CheckoutClient({
                   placeOrder();
                 }}
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-black text-sm text-black hover:opacity-90 transition-all disabled:opacity-60"
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-black text-sm text-[color:var(--sf-on-accent)] hover:opacity-90 transition-all disabled:opacity-60"
                 style={{ backgroundColor: "var(--sf-accent)" }}
               >
                 {loading ? (

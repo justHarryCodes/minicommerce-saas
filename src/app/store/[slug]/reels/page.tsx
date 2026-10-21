@@ -52,8 +52,7 @@ export default async function StoreReelsPage({ params }: Props) {
   const storeBase = isSubdomain ? "" : `/store/${slug}`;
 
   return (
-    // Mobile: cancel layout's pt-16 for full-screen. Desktop: keep normal nav padding.
-    <div className="-mt-16 lg:mt-0 bg-black">
+    <div className="bg-black">
       {/* Preload the first reel's video so it starts instantly */}
       {reels?.[0]?.video_url && (
         <link rel="preload" as="video" href={reels[0].video_url} />

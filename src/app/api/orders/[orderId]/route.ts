@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifySession, getUserStore } from '@/lib/auth'
 import { query, queryOne } from '@/lib/db'
+import { eventsForChange, notifyCustomer } from '@/lib/notify/order-messages'
+import { restockCancelledOrder } from '@/lib/inventory'
 
 type Params = { params: Promise<{ orderId: string }> }
 
@@ -28,6 +30,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const { orderId } = await params
   const { orderStatus, paymentStatus } = await req.json()
+  const before = await queryOne<{ order_status: string; payment_status: string }>(
+    'SELECT order_status, payment_status FROM orders WHERE id=$1 AND store_id=$2',
+    [orderId, store.id]
+  )
+  if (!before) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const sets: string[] = []; const vals: unknown[] = []; let i = 1
 
   if (orderStatus)   { sets.push(`order_status=$${i++}`);   vals.push(orderStatus) }
@@ -40,5 +47,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     `UPDATE orders SET ${sets.join(',')} WHERE id=$${i++} AND store_id=$${i} RETURNING *`,
     vals
   )
+  const after = rows[0] as { order_status: string; payment_status: string } | undefined
+  if (after?.order_status === 'cancelled' && before.order_status !== 'cancelled') {
+    await restockCancelledOrder(orderId, store.id).catch((e) => console.error('[restock] failed:', e))
+  }
+  if (after) for (const event of eventsForChange(before, after)) void notifyCustomer(orderId, event)
   return NextResponse.json({ data: rows[0] })
 }

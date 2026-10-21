@@ -41,6 +41,21 @@ function devLog(message: string): void {
   if (process.env.NODE_ENV === "development") console.log(message);
 }
 
+// The dashboard theme studio previews unsaved themes by loading the store
+// with ?theme_preview=<base64url>. Layouts can't read search params, so it's
+// forwarded as a request header; any client-sent copy is dropped first.
+// The store layout validates it (src/lib/themes/resolve.ts) — it only ever
+// changes presentation, never persists.
+function withThemePreview(req: NextRequest): Headers {
+  const headers = new Headers(req.headers);
+  headers.delete("x-theme-preview");
+  const preview = req.nextUrl.searchParams.get("theme_preview");
+  if (preview && preview.length <= 6000 && /^[A-Za-z0-9_-]+$/.test(preview)) {
+    headers.set("x-theme-preview", preview);
+  }
+  return headers;
+}
+
 // ── Middleware ────────────────────────────────────────────────────────────────
 //
 // This file MUST live at src/middleware.ts, not at the project root — this
@@ -76,7 +91,7 @@ export function middleware(req: NextRequest) {
   // for any request that reaches the app directly (local dev, the Worker
   // being bypassed, DNS pointed straight here, etc).
   if (slug) {
-    const headers = new Headers(req.headers);
+    const headers = withThemePreview(req);
     headers.set("x-store-slug", slug);
     headers.set("x-is-subdomain", "1");
     headers.set("x-pathname", pathname);
@@ -111,7 +126,9 @@ export function middleware(req: NextRequest) {
 
   // Expose pathname to server components via headers() — dashboard/layout.tsx
   // and others read this.
-  const response = NextResponse.next();
+  const response = pathname.startsWith("/store/") || pathname.startsWith("/theme-demo/")
+    ? NextResponse.next({ request: { headers: withThemePreview(req) } })
+    : NextResponse.next();
   response.headers.set("x-pathname", pathname);
   return response;
 }

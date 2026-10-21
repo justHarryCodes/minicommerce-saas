@@ -23,6 +23,12 @@ vi.mock("@/lib/db", () => ({
 vi.mock("@/lib/push", () => ({
   notifyStoreNewOrder: vi.fn().mockResolvedValue(undefined),
 }));
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: vi.fn().mockResolvedValue(null),
+}));
+vi.mock("@/lib/notify/order-messages", () => ({
+  notifyCustomer: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock("@/lib/webpush", () => ({
   sendWebPushToSubject: vi.fn().mockResolvedValue(undefined),
 }));
@@ -48,6 +54,19 @@ function ctx(slug = "test-store") {
   return { params: Promise.resolve({ slug }) };
 }
 
+/** Store row as the order route selects it (bank transfer enabled, no zones). */
+const STORE_ROW = {
+  id: STORE_ID,
+  is_active: true,
+  payment_preference: "both",
+  delivery_zones: [],
+  free_delivery_threshold: null,
+  pickup_enabled: false,
+  pickup_address: null,
+  pod_enabled: false,
+  pod_deposit_percent: 0,
+};
+
 const baseOrder = {
   storeId: STORE_ID,
   customerName: "Ada",
@@ -65,8 +84,8 @@ describe("POST /api/storefront/[slug]/orders — sized products", () => {
   it("rejects with 400 when a sized product is ordered with no size chosen", async () => {
     const { POST } = await import("@/app/api/storefront/[slug]/orders/route");
     mockedQueryOne
-      .mockResolvedValueOnce({ id: STORE_ID, is_active: true }) // store lookup
-      .mockResolvedValueOnce({ id: PRODUCT_ID, stock_quantity: 10, has_sizes: true }); // product lookup
+      .mockResolvedValueOnce(STORE_ROW) // store lookup
+      .mockResolvedValueOnce({ id: PRODUCT_ID, name: "Shirt", price: 5000, stock_quantity: 10, has_sizes: true }); // product lookup
 
     const res = await POST(
       req({ ...baseOrder, items: [{ productId: PRODUCT_ID, quantity: 1, unitPrice: 5000 }] }),
@@ -81,8 +100,8 @@ describe("POST /api/storefront/[slug]/orders — sized products", () => {
   it('rejects with 400 when the chosen size doesn\'t exist on the product', async () => {
     const { POST } = await import("@/app/api/storefront/[slug]/orders/route");
     mockedQueryOne
-      .mockResolvedValueOnce({ id: STORE_ID, is_active: true })
-      .mockResolvedValueOnce({ id: PRODUCT_ID, stock_quantity: 10, has_sizes: true })
+      .mockResolvedValueOnce(STORE_ROW)
+      .mockResolvedValueOnce({ id: PRODUCT_ID, name: "Shirt", price: 5000, stock_quantity: 10, has_sizes: true })
       .mockResolvedValueOnce(null); // size lookup finds nothing
 
     const res = await POST(
@@ -98,8 +117,8 @@ describe("POST /api/storefront/[slug]/orders — sized products", () => {
   it("rejects with 400 when the chosen size doesn't have enough stock", async () => {
     const { POST } = await import("@/app/api/storefront/[slug]/orders/route");
     mockedQueryOne
-      .mockResolvedValueOnce({ id: STORE_ID, is_active: true })
-      .mockResolvedValueOnce({ id: PRODUCT_ID, stock_quantity: 10, has_sizes: true })
+      .mockResolvedValueOnce(STORE_ROW)
+      .mockResolvedValueOnce({ id: PRODUCT_ID, name: "Shirt", price: 5000, stock_quantity: 10, has_sizes: true })
       .mockResolvedValueOnce({ stock_quantity: 1 }); // only 1 left in this size
 
     const res = await POST(
@@ -115,13 +134,12 @@ describe("POST /api/storefront/[slug]/orders — sized products", () => {
   it("creates the order and decrements both the size row and the product total", async () => {
     const { POST } = await import("@/app/api/storefront/[slug]/orders/route");
     mockedQueryOne
-      .mockResolvedValueOnce({ id: STORE_ID, is_active: true })
-      .mockResolvedValueOnce({ id: PRODUCT_ID, stock_quantity: 10, has_sizes: true })
+      .mockResolvedValueOnce(STORE_ROW)
+      .mockResolvedValueOnce({ id: PRODUCT_ID, name: "Shirt", price: 5000, stock_quantity: 10, has_sizes: true })
       .mockResolvedValueOnce({ stock_quantity: 5 });
 
     const client = fakeClient([
       [{ id: "order-1", order_number: "ORD-1" }], // INSERT orders
-      [{ name: "Shirt", image_url: null, images: [], has_sizes: true }], // per-item product lookup
       [], // INSERT order_items
       [{ id: "size-row" }], // UPDATE product_sizes ... RETURNING id (found a row → success)
       [], // UPDATE products stock_quantity
@@ -155,13 +173,12 @@ describe("POST /api/storefront/[slug]/orders — sized products", () => {
   it("returns 409 (not 500) when the atomic size decrement is raced out from under it", async () => {
     const { POST } = await import("@/app/api/storefront/[slug]/orders/route");
     mockedQueryOne
-      .mockResolvedValueOnce({ id: STORE_ID, is_active: true })
-      .mockResolvedValueOnce({ id: PRODUCT_ID, stock_quantity: 10, has_sizes: true })
+      .mockResolvedValueOnce(STORE_ROW)
+      .mockResolvedValueOnce({ id: PRODUCT_ID, name: "Shirt", price: 5000, stock_quantity: 10, has_sizes: true })
       .mockResolvedValueOnce({ stock_quantity: 5 }); // pre-check saw stock…
 
     const client = fakeClient([
       [{ id: "order-1", order_number: "ORD-1" }],
-      [{ name: "Shirt", image_url: null, images: [], has_sizes: true }],
       [],
       [], // …but the atomic UPDATE finds nothing — someone else bought it first
     ]);
@@ -179,12 +196,11 @@ describe("POST /api/storefront/[slug]/orders — sized products", () => {
   it("skips per-size handling entirely for a plain (unsized) product", async () => {
     const { POST } = await import("@/app/api/storefront/[slug]/orders/route");
     mockedQueryOne
-      .mockResolvedValueOnce({ id: STORE_ID, is_active: true })
-      .mockResolvedValueOnce({ id: PRODUCT_ID, stock_quantity: 10, has_sizes: false });
+      .mockResolvedValueOnce(STORE_ROW)
+      .mockResolvedValueOnce({ id: PRODUCT_ID, name: "Mug", price: 5000, stock_quantity: 10, has_sizes: false });
 
     const client = fakeClient([
       [{ id: "order-1", order_number: "ORD-1" }],
-      [{ name: "Mug", image_url: null, images: [], has_sizes: false }],
       [],
       [], // UPDATE products stock_quantity — no product_sizes call in between
     ]);

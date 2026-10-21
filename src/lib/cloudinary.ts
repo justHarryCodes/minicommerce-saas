@@ -57,3 +57,12 @@ export const clThumb = (url: string | null | undefined) =>
 /** Medium card for discover / featured sliders — 640 px wide */
 export const clMedium = (url: string | null | undefined) =>
   cl(url, 'f_auto,q_auto:good,c_fill,w_640,h_640');
+
+/**
+ * True for hosts that already resize/compress via URL params (Unsplash demo
+ * photography) — pass as next/image `unoptimized` to skip a pointless
+ * second optimisation hop through our server.
+ */
+export function isPreOptimized(url: string | null | undefined): boolean {
+  return !!url && url.startsWith('https://images.unsplash.com/');
+}

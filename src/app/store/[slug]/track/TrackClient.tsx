@@ -249,7 +249,7 @@ export default function TrackClient({ storeSlug, initialOrder, initialPhone }: P
 
               <button
                 type="submit" disabled={loading}
-                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm text-black transition-all disabled:opacity-60 hover:opacity-90 active:scale-[0.98] shadow-[0_4px_14px_rgba(0,0,0,0.15)]"
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm text-[color:var(--sf-on-accent)] transition-all disabled:opacity-60 hover:opacity-90 active:scale-[0.98] shadow-[0_4px_14px_rgba(0,0,0,0.15)]"
                 style={{ backgroundColor: "var(--sf-accent)" }}
               >
                 {loading
@@ -330,7 +330,7 @@ export default function TrackClient({ storeSlug, initialOrder, initialPhone }: P
                     </div>
                     <button
                       onClick={() => { setOrderNo(o.order_number); fetchSingle(o.order_number, phone); }}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all text-black hover:opacity-90 active:scale-[0.98]"
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all text-[color:var(--sf-on-accent)] hover:opacity-90 active:scale-[0.98]"
                       style={{ backgroundColor: "var(--sf-accent)" }}
                     >
                       View full details <ArrowRight className="w-4 h-4" />
@@ -483,7 +483,7 @@ export default function TrackClient({ storeSlug, initialOrder, initialPhone }: P
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-surface-900 dark:text-white truncate leading-snug">
                         {item.product_name}
-                        {item.size && <span className="text-surface-400 font-normal"> · Size {item.size}</span>}
+                        {item.size && <span className="text-surface-400 font-normal"> · {item.size}</span>}
                       </p>
                       <p className="text-xs text-surface-400 mt-0.5">
                         {formatCurrency(Number(item.price))} × {item.quantity}

@@ -4,20 +4,36 @@ import { initializeTransaction, getAppUrl } from "@/lib/paystack";
 
 export async function POST(req: NextRequest) {
   try {
-    const { orderId, email, amount } = await req.json();
+    // Any client-sent `amount` is ignored — the charge always comes from the
+    // order row the server priced.
+    const { orderId, email } = await req.json();
 
-    if (!orderId || !email || !amount) {
+    if (!orderId || !email) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Verify order exists
-    const order = await queryOne<{ id: string; order_number: string; total_amount: number }>(
-      "SELECT id, order_number, total_amount FROM orders WHERE id = $1",
+    const order = await queryOne<{
+      id: string; order_number: string; total_amount: number | null; total: number;
+      deposit_amount: number; payment_method: string; payment_status: string;
+    }>(
+      `SELECT id, order_number, total_amount, total, deposit_amount, payment_method, payment_status
+       FROM orders WHERE id = $1`,
       [orderId]
     );
 
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+    if (order.payment_status !== "pending") {
+      return NextResponse.json({ error: "This order has already been paid" }, { status: 409 });
+    }
+
+    // Pay-on-delivery orders only pay their deposit online.
+    const charge = Number(
+      order.payment_method === "pay_on_delivery" ? order.deposit_amount : (order.total_amount ?? order.total)
+    );
+    if (!(charge > 0)) {
+      return NextResponse.json({ error: "Nothing to pay online for this order" }, { status: 400 });
     }
 
     const reference = `${order.order_number}-${Date.now()}`;
@@ -25,7 +41,7 @@ export async function POST(req: NextRequest) {
 
     const result = await initializeTransaction({
       email,
-      amount: order.total_amount,
+      amount: charge,
       reference,
       callbackUrl,
       metadata: { orderId, orderNumber: order.order_number },

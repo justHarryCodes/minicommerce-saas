@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { clBanner } from "@/lib/cloudinary";
+import { clBanner, isPreOptimized } from "@/lib/cloudinary";
 
 interface Props {
   images: string[];
@@ -43,6 +43,7 @@ export default function HeroSlider({ images, storeName, fillHeight = false }: Pr
         >
           <Image
             src={clBanner(src)}
+            unoptimized={isPreOptimized(src)}
             alt={`${storeName} banner ${i + 1}`}
             fill
             sizes="100vw"

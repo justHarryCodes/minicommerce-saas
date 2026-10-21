@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useCart } from "./CartProvider";
 import { useStore } from "@/lib/store-context";
 import { formatPrice, getStoreUrl, waLink } from "@/lib/utils";
+import { formatAppointment } from "@/lib/booking";
 import type { Store } from "@/types";
 import Link from "next/link";
 
@@ -67,7 +68,7 @@ export function CartDrawer({ isOpen, onClose, store }: CartDrawerProps) {
             {totalItems > 0 && (
               <span
                 className="rounded-full px-2 py-0.5 text-xs font-black"
-                style={{ background: "var(--sf-accent)", color: "#000" }}
+                style={{ background: "var(--sf-accent)", color: "var(--sf-on-accent)" }}
               >
                 {totalItems}
               </span>
@@ -111,7 +112,7 @@ export function CartDrawer({ isOpen, onClose, store }: CartDrawerProps) {
           ) : (
             items.map((item) => (
               <div
-                key={`${item.product_id}:${item.size ?? ""}`}
+                key={`${item.product_id}:${item.size ?? ""}:${item.booking?.startsAt ?? ""}`}
                 className="flex gap-3 p-3 rounded-2xl border"
                 style={{
                   background: "var(--sf-surface)",
@@ -151,7 +152,13 @@ export function CartDrawer({ isOpen, onClose, store }: CartDrawerProps) {
                       className="text-xs font-medium mt-0.5"
                       style={{ color: "var(--sf-muted)" }}
                     >
-                      Size: {item.size}
+                      {item.size}
+                    </p>
+                  )}
+                  {item.booking && (
+                    <p className="text-xs font-semibold mt-0.5" style={{ color: "var(--sf-text)" }}>
+                      📅 {formatAppointment(item.booking.startsAt)}
+                      {item.booking.staffName ? ` · with ${item.booking.staffName}` : ""}
                     </p>
                   )}
                   <p
@@ -160,7 +167,7 @@ export function CartDrawer({ isOpen, onClose, store }: CartDrawerProps) {
                   >
                     {formatPrice(item.price)}
                   </p>
-                  <div className="flex items-center gap-2 mt-2">
+                  {!item.booking && (<div className="flex items-center gap-2 mt-2">
                     <button
                       onClick={() =>
                         updateQuantity(
@@ -193,18 +200,18 @@ export function CartDrawer({ isOpen, onClose, store }: CartDrawerProps) {
                         )
                       }
                       className="h-6 w-6 rounded-lg flex items-center justify-center transition-colors"
-                      style={{ background: "var(--sf-accent)", color: "#000" }}
+                      style={{ background: "var(--sf-accent)", color: "var(--sf-on-accent)" }}
                       aria-label="Increase quantity"
                     >
                       <Plus className="h-3 w-3" />
                     </button>
-                  </div>
+                  </div>)}
                 </div>
 
                 {/* Right: total + remove */}
                 <div className="flex flex-col items-end justify-between shrink-0">
                   <button
-                    onClick={() => removeItem(item.product_id, item.size)}
+                    onClick={() => removeItem(item.product_id, item.size, item.booking?.startsAt)}
                     className="w-6 h-6 rounded-lg flex items-center justify-center transition-colors hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500"
                     style={{ color: "var(--sf-muted)" }}
                     aria-label="Remove item"
@@ -253,7 +260,7 @@ export function CartDrawer({ isOpen, onClose, store }: CartDrawerProps) {
               href={`${storeBase}/checkout`}
               onClick={onClose}
               className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-bold text-sm transition-all hover:opacity-90 active:scale-[0.98] shadow-[0_4px_14px_rgba(0,0,0,0.15)]"
-              style={{ background: "var(--sf-accent)", color: "#000" }}
+              style={{ background: "var(--sf-accent)", color: "var(--sf-on-accent)" }}
             >
               Checkout <ArrowRight className="w-4 h-4" />
             </Link>
@@ -262,11 +269,11 @@ export function CartDrawer({ isOpen, onClose, store }: CartDrawerProps) {
             {store.whatsapp &&
               (() => {
                 const wa = store.whatsapp as string;
-                const storeUrl = getStoreUrl(store.slug);
+                const storeUrl = getStoreUrl(store.slug, store.custom_domain);
                 const itemLines = items
                   .map(
                     (it) =>
-                      `• ${it.name}${it.size ? ` (${it.size})` : ""} × ${it.quantity} — ${formatPrice(it.price * it.quantity)}`,
+                      `• ${it.name}${it.size ? ` (${it.size})` : ""}${it.booking ? ` — 📅 ${formatAppointment(it.booking.startsAt)}${it.booking.staffName ? ` with ${it.booking.staffName}` : ""}` : ` × ${it.quantity}`} — ${formatPrice(it.price * it.quantity)}`,
                   )
                   .join("\n");
                 const msg = [

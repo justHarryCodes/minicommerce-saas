@@ -3,12 +3,37 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, MessageCircle } from "lucide-react";
+import { whatsappLink } from "@/lib/phone";
 import type { Order, OrderStatus, PaymentStatus } from "@/types";
 
 interface Props {
   order: Order;
   storeWhatsapp?: string | null;
+  storeName?: string;
+  storeSlug?: string;
+  /** Absolute app origin for links sent to customers (from the server) */
+  appUrl?: string;
+}
+
+/** Ready-to-send WhatsApp text for the order's current state. */
+function customerMessage(order: Order, storeName: string, receipt: string | null): string {
+  const first = (order.customer_name ?? "").trim().split(/\s+/)[0] || "there";
+  const num = order.order_number ?? "";
+  const link = receipt ? `\n\nReceipt & status: ${receipt}` : "";
+  const pickup = order.delivery_method === "pickup";
+  switch (order.order_status) {
+    case "shipped":
+      return pickup
+        ? `Hi ${first}, your order ${num} from ${storeName} is ready for pickup! 🎉${link}`
+        : `Hi ${first}, your order ${num} from ${storeName} is on its way! 🚚${link}`;
+    case "delivered":
+      return `Hi ${first}, your order ${num} has been delivered. Thank you for shopping with ${storeName}! 💛${link}`;
+    case "cancelled":
+      return `Hi ${first}, your order ${num} from ${storeName} has been cancelled. Please reply if you have any questions.${link}`;
+    default:
+      return `Hi ${first}, thanks for your order ${num} from ${storeName}! We've received it and will keep you updated.${link}`;
+  }
 }
 
 const ORDER_STATUSES: { value: OrderStatus; label: string }[] = [
@@ -19,7 +44,7 @@ const ORDER_STATUSES: { value: OrderStatus; label: string }[] = [
   { value: "cancelled",  label: "Cancel order" },
 ];
 
-export default function OrderStatusManager({ order, storeWhatsapp }: Props) {
+export default function OrderStatusManager({ order, storeWhatsapp, storeName = "our store", storeSlug, appUrl }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -47,6 +72,19 @@ export default function OrderStatusManager({ order, storeWhatsapp }: Props) {
     order.payment_status === "pending_confirmation";
 
   const availableStatuses = ORDER_STATUSES.filter((s) => s.value !== order.order_status);
+
+  // Pay on delivery: money still to collect at the door.
+  const podBalanceDue =
+    order.payment_method === "pay_on_delivery" &&
+    order.payment_status !== "paid" &&
+    order.payment_status !== "refunded" &&
+    order.order_status !== "cancelled";
+
+  const receipt =
+    appUrl && storeSlug && order.access_token && order.order_number
+      ? `${appUrl}/store/${storeSlug}/receipt/${encodeURIComponent(order.order_number)}?t=${order.access_token}`
+      : null;
+  const waLink = whatsappLink(order.customer_phone, customerMessage(order, storeName, receipt));
 
   return (
     <div className="space-y-3">
@@ -82,6 +120,18 @@ export default function OrderStatusManager({ order, storeWhatsapp }: Props) {
 
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs text-surface-400 font-medium mr-1">Update:</span>
+
+        {/* Pay on delivery — cash/transfer collected at the door */}
+        {podBalanceDue && (
+          <button
+            onClick={() => update({ paymentStatus: "paid" })}
+            disabled={!!loading}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-950/40 font-medium transition-all disabled:opacity-50"
+          >
+            {loading === "paid" ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+            Balance collected
+          </button>
+        )}
 
         {/* Confirm payment */}
         {awaitingPayment && (
@@ -127,6 +177,18 @@ export default function OrderStatusManager({ order, storeWhatsapp }: Props) {
             {s.label}
           </button>
         ))}
+
+        {waLink && (
+          <a
+            href={waLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-auto flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-[#25D366]/10 text-[#128C7E] dark:text-[#25D366] border border-[#25D366]/30 hover:bg-[#25D366]/20 font-semibold transition-all"
+          >
+            <MessageCircle className="w-3 h-3" />
+            WhatsApp customer
+          </a>
+        )}
       </div>
     </div>
   );

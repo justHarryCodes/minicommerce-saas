@@ -20,6 +20,12 @@ import {
   Star,
   Gift,
   Film,
+  Palette,
+  ShoppingCart,
+  BarChart3,
+  CalendarDays,
+  Boxes,
+  Users,
 } from "lucide-react";
 import { auth } from "@/lib/firebase-client";
 import { signOut } from "firebase/auth";
@@ -27,10 +33,16 @@ import { useRouter } from "next/navigation";
 
 const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard, pro: false },
+  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3, pro: false },
   { href: "/dashboard/products", label: "Products", icon: Package, pro: false },
+  { href: "/dashboard/inventory", label: "Inventory", icon: Boxes, pro: false },
   { href: "/dashboard/categories", label: "Categories", icon: FolderTree, pro: false },
   { href: "/dashboard/orders", label: "Orders", icon: ShoppingBag, pro: false },
+  { href: "/dashboard/customers", label: "Customers", icon: Users, pro: false },
+  { href: "/dashboard/bookings", label: "Bookings", icon: CalendarDays, pro: false },
+  { href: "/dashboard/abandoned", label: "Abandoned carts", icon: ShoppingCart, pro: false },
   { href: "/dashboard/storefront", label: "Store Page", icon: Layout, pro: false },
+  { href: "/dashboard/themes", label: "Themes", icon: Palette, pro: false },
   { href: "/dashboard/reels", label: "Reels", icon: Film, pro: true },
   { href: "/dashboard/billing", label: "Billing", icon: CreditCard, pro: false },
   { href: "/dashboard/coupons", label: "Coupons", icon: Tag, pro: true },
@@ -40,7 +52,7 @@ const navItems = [
 ];
 
 interface SidebarProps {
-  store?: { name: string; slug: string; logoUrl?: string };
+  store?: { name: string; slug: string; logoUrl?: string; customDomain?: string | null };
   isPro?: boolean;
 }
 
@@ -66,11 +78,11 @@ const ROOT = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "dukanigeria.com")
   .replace(/^www\./, "");
 
 const storeUrl = store
-  ? `https://${store.slug}.${ROOT}`
+  ? store.customDomain ? `https://${store.customDomain}` : `https://${store.slug}.${ROOT}`
   : null;
 
 const storeDisplayUrl = store
-  ? `${store.slug}.${ROOT}`
+  ? store.customDomain ?? `${store.slug}.${ROOT}`
   : null;
 
   return (

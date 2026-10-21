@@ -93,7 +93,7 @@ function SearchResultRow({
               <span className="text-xs text-surface-400 line-through">{formatCurrency(comparePrice!)}</span>
               <span
                 className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                style={{ backgroundColor: "var(--sf-accent)", color: "#000" }}
+                style={{ backgroundColor: "var(--sf-accent)", color: "var(--sf-on-accent)" }}
               >
                 -{discountPct}%
               </span>
@@ -130,6 +130,11 @@ export default function SearchOverlay({ storeSlug, onClose }: Props) {
   const [searched, setSearched] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Searches are logged (for the merchant's analytics) only once the shopper
+  // stops typing, so partial keystrokes like "sho" aren't recorded.
+  const logRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastResultRef = useRef<{ q: string; count: number } | null>(null);
+  useEffect(() => () => { if (logRef.current) clearTimeout(logRef.current); }, []);
 
   useEffect(() => { inputRef.current?.focus(); }, []);
 
@@ -151,6 +156,7 @@ export default function SearchOverlay({ storeSlug, onClose }: Props) {
       const res = await fetch(`/api/storefront/${storeSlug}/search?q=${encodeURIComponent(q)}`);
       const data = await res.json();
       setResults(data.results ?? []);
+      lastResultRef.current = { q, count: (data.results ?? []).length };
       setSearched(true);
     } catch {
       setResults([]);
@@ -164,6 +170,18 @@ export default function SearchOverlay({ storeSlug, onClose }: Props) {
     setQuery(val);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => search(val.trim()), 280);
+    if (logRef.current) clearTimeout(logRef.current);
+    logRef.current = setTimeout(() => {
+      const q = val.trim();
+      const last = lastResultRef.current;
+      if (q.length < 2 || !last || last.q !== q) return;
+      fetch(`/api/storefront/${storeSlug}/search`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ q, results: last.count }),
+        keepalive: true,
+      }).catch(() => {});
+    }, 1500);
   };
 
   const showEmpty   = searched && !loading && results.length === 0 && query.length >= 2;

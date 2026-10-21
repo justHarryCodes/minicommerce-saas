@@ -34,6 +34,11 @@ export interface Store {
   storefront_font?: string
   storefrontCardStyle?: 'rounded' | 'sharp'
   storefront_card_style?: 'rounded' | 'sharp'
+  // Full storefront theme (src/lib/themes) + merchant overrides
+  storefrontThemeId?: string | null
+  storefront_theme_id?: string | null
+  storefrontCustomization?: unknown
+  storefront_customization?: unknown
   // AI shopping assistant opt-in
   aiAssistantEnabled?: boolean
   ai_assistant_enabled?: boolean
@@ -71,6 +76,37 @@ export interface Store {
   bannerImages?: string[]
   featured_product_ids?: string[]
   featuredProductIds?: string[]
+  // Delivery estimate shown to shoppers, e.g. "1–3 business days"
+  delivery_time_frame?: string | null
+  deliveryTimeFrame?: string | null
+  // Checkout: delivery zones / pickup, pay on delivery, customer messages
+  delivery_zones?: unknown
+  deliveryZones?: unknown
+  free_delivery_threshold?: number | null
+  freeDeliveryThreshold?: number | null
+  pickup_enabled?: boolean
+  pickupEnabled?: boolean
+  pickup_address?: string | null
+  pickupAddress?: string | null
+  pod_enabled?: boolean
+  podEnabled?: boolean
+  pod_deposit_percent?: number
+  podDepositPercent?: number
+  customer_notifications_enabled?: boolean
+  customerNotificationsEnabled?: boolean
+  low_stock_threshold?: number
+  lowStockThreshold?: number
+  custom_domain?: string | null
+  customDomain?: string | null
+  // Opening hours & food operations
+  opening_hours?: unknown
+  openingHours?: unknown
+  allow_preorders?: boolean
+  allowPreorders?: boolean
+  minimum_order?: number | null
+  minimumOrder?: number | null
+  prep_time_minutes?: number | null
+  prepTimeMinutes?: number | null
   // Return policy
   return_policy?: string
   returnPolicy?: string
@@ -126,6 +162,23 @@ export interface Product {
   hasSizes?: boolean
   has_sizes?: boolean
   sizes?: ProductSize[]
+  option_names?: string[]
+  optionNames?: string[]
+  low_stock_threshold?: number | null
+  lowStockThreshold?: number | null
+  // Services (bookable by time slot)
+  is_bookable?: boolean
+  isBookable?: boolean
+  duration_minutes?: number | null
+  durationMinutes?: number | null
+  // Food: unavailable through this Lagos date (YYYY-MM-DD)
+  sold_out_until?: string | null
+  /** Computed on the server for listing pages */
+  sold_out_today?: boolean
+  soldOutUntil?: string | null
+  // Clothing: size chart
+  size_guide?: unknown
+  sizeGuide?: unknown
   // Joined fields
   category_name?: string
   category_slug?: string
@@ -146,6 +199,13 @@ export interface ProductSize {
   stock_quantity?: number
   sortOrder?: number
   sort_order?: number
+  /** Variant option values, e.g. { Size: "M", Colour: "Red" } (empty for legacy size-only rows) */
+  options?: Record<string, string>
+  /** Price override; null/undefined → product price */
+  price?: number | null
+  imageUrl?: string | null
+  image_url?: string | null
+  sku?: string | null
 }
 
 export interface ReelProduct {
@@ -230,6 +290,13 @@ export interface Order {
   payment_reference?: string
   orderStatus?: string
   order_status?: string
+  delivery_method?: string
+  delivery_zone?: string | null
+  deposit_amount?: number
+  access_token?: string | null
+  scheduled_for?: string | null
+  coupon_code?: string | null
+  discount_amount?: number
   notes?: string
   items?: OrderItem[]
   createdAt?: string
@@ -248,6 +315,8 @@ export interface CartItem {
   quantity: number
   /** Selected size label, e.g. "M" or "42" — undefined/null for products without sizes. */
   size?: string | null
+  /** Bookable services: the reserved slot (quantity is always 1) */
+  booking?: { startsAt: string; staffId?: string | null; staffName?: string | null } | null
 }
 
 // API responses
@@ -283,5 +352,5 @@ export interface SessionUser {
 }
 
 export type OrderStatus = 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
-export type PaymentStatus = 'pending' | 'pending_confirmation' | 'paid' | 'failed' | 'refunded' | 'rejected'
+export type PaymentStatus = 'pending' | 'pending_confirmation' | 'deposit_paid' | 'paid' | 'failed' | 'refunded' | 'rejected'
 

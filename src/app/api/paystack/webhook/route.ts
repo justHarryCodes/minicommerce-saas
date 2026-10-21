@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { query, queryOne } from "@/lib/db";
+import { queryOne } from "@/lib/db";
 import { fulfillSubscriptionPayment } from "@/lib/billing-fulfillment";
+import { markOrderPaidOnline } from "@/lib/order-payments";
 import crypto from "crypto";
 
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
@@ -64,12 +65,7 @@ export async function POST(req: NextRequest) {
         order.payment_reference === reference &&
         order.payment_status === "pending"
       ) {
-        await query(
-          `UPDATE orders
-           SET payment_status = 'paid', order_status = 'confirmed'
-           WHERE id = $1 AND payment_status = 'pending'`,
-          [orderId]
-        );
+        await markOrderPaidOnline(orderId);
       }
 
       return NextResponse.json({ received: true });

@@ -115,12 +115,15 @@ describe("products/[productId] — tenant isolation", () => {
     expectScopedByStore(mockedQueryOne, STORE_A);
   });
 
-  it("PATCH on another store's product is a no-op 404, not an update", async () => {
+  it("PATCH on another store's product returns 404 before any UPDATE", async () => {
+    // The route first reads the product's current stock (scoped by store) for
+    // the inventory history — a foreign id stops there.
     const { PATCH } = await import("@/app/api/products/[productId]/route");
-    mockedQuery.mockResolvedValueOnce([]); // UPDATE ... RETURNING * matched no rows
+    mockedQueryOne.mockResolvedValueOnce(null);
     const res = await PATCH(fakeReq({ name: "hijacked" }), ctx({ productId: "other-store-product" }));
     expect(res.status).toBe(404);
-    expectScopedByStore(mockedQuery, STORE_A);
+    expectScopedByStore(mockedQueryOne, STORE_A);
+    expect(mockedQuery).not.toHaveBeenCalled();
   });
 
   it("DELETE issues a store-scoped DELETE even for a foreign product id", async () => {
@@ -159,16 +162,15 @@ describe("orders/[orderId] — tenant isolation", () => {
     expectScopedByStore(mockedQueryOne, STORE_A);
   });
 
-  it("PATCH on another store's order updates nothing, but is still scoped", async () => {
-    // This route doesn't check `rows[0]` before responding (pre-existing
-    // behaviour — always 200 with `data: undefined` on a no-match). That's
-    // a UX quirk, not a tenant leak: assert the scoping held regardless.
+  it("PATCH on another store's order returns 404 before any UPDATE is issued", async () => {
+    // The route reads the order's current status (scoped by store) to know
+    // which customer message a change triggers — a no-match stops there.
     const { PATCH } = await import("@/app/api/orders/[orderId]/route");
-    mockedQuery.mockResolvedValueOnce([]);
+    mockedQueryOne.mockResolvedValueOnce(null);
     const res = await PATCH(fakeReq({ orderStatus: "shipped" }), ctx({ orderId: "other-store-order" }));
-    expect(res.status).toBe(200);
-    expect((await res.json()).data).toBeUndefined();
-    expectScopedByStore(mockedQuery, STORE_A);
+    expect(res.status).toBe(404);
+    expectScopedByStore(mockedQueryOne, STORE_A);
+    expect(mockedQuery).not.toHaveBeenCalled();
   });
 });
 

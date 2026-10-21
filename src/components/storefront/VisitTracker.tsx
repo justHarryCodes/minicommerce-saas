@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { classifySource } from "@/lib/traffic-source";
 
 interface Props {
   storeSlug: string;
@@ -23,7 +24,14 @@ export default function VisitTracker({ storeSlug, storeId }: Props) {
     fetch(`/api/stores/${storeId}/visit`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ visitor_id: visitorId }),
+      body: JSON.stringify({
+        visitor_id: visitorId,
+        source: classifySource({
+          utmSource: new URLSearchParams(window.location.search).get("utm_source"),
+          referrer: document.referrer,
+          ownHost: window.location.hostname,
+        }),
+      }),
     })
       .then(() => sessionStorage.setItem(sessionKey, "1"))
       .catch(() => {});

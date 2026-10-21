@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { queryOne, query } from "@/lib/db";
 import { verifySession, getUserStore } from "@/lib/auth";
+import { eventsForChange, notifyCustomer } from "@/lib/notify/order-messages";
+import { restockCancelledOrder } from "@/lib/inventory";
 import { z } from "zod";
 
 const Schema = z.object({
   orderStatus: z
     .enum(["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"])
     .optional(),
-  paymentStatus: z.enum(["pending", "pending_confirmation", "paid", "failed", "refunded", "rejected"]).optional(),
+  paymentStatus: z
+    .enum(["pending", "pending_confirmation", "deposit_paid", "paid", "failed", "refunded", "rejected"])
+    .optional(),
 });
 
 export async function PATCH(
@@ -29,11 +33,11 @@ export async function PATCH(
     }
 
     // store.id is camelCase from toCamel — but the actual DB column is `id`
-    const order = await queryOne(
-      "SELECT id FROM orders WHERE id = $1 AND store_id = $2",
+    const before = await queryOne<{ id: string; order_status: string; payment_status: string }>(
+      "SELECT id, order_status, payment_status FROM orders WHERE id = $1 AND store_id = $2",
       [orderId, store.id]
     );
-    if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    if (!before) return NextResponse.json({ error: "Order not found" }, { status: 404 });
 
     const sets: string[] = [];
     const values: unknown[] = [];
@@ -55,10 +59,17 @@ export async function PATCH(
     sets.push(`updated_at = NOW()`);
     values.push(orderId);
 
-    const rows = await query(
+    const rows = await query<{ order_status: string; payment_status: string }>(
       `UPDATE orders SET ${sets.join(", ")} WHERE id = $${idx} RETURNING *`,
       values
     );
+
+    // Cancelling returns the items to stock (once — guarded by stock_restored_at).
+    if (rows[0]?.order_status === "cancelled" && before.order_status !== "cancelled") {
+      await restockCancelledOrder(orderId, store.id).catch((e) => console.error("[restock] failed:", e));
+    }
+
+    for (const event of eventsForChange(before, rows[0])) void notifyCustomer(orderId, event);
 
     return NextResponse.json({ data: rows[0] });
   } catch (err) {

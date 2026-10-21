@@ -16,6 +16,7 @@ import {
   Sparkles,
   Download,
   AlertTriangle,
+  Truck,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import {
@@ -29,38 +30,51 @@ import { auth } from "@/lib/firebase-client";
 import type { Store as StoreType } from "@/types";
 import { Tip } from "@/components/dashboard/Tip";
 import { clLogo } from "@/lib/cloudinary";
-import { THEME_PRESETS } from "@/lib/theme-presets";
+import Link from "next/link";
+import { deliverySettingsOf, podSettingsOf } from "@/lib/delivery";
+import { CustomerMessagesEditor, DeliveryOptionsEditor, PayOnDeliveryEditor } from "@/components/dashboard/CheckoutSettings";
+import CustomDomainSettings from "@/components/dashboard/CustomDomainSettings";
+import StoreHoursSettings from "@/components/dashboard/StoreHoursSettings";
+import { parseHours } from "@/lib/hours";
+
+const DELIVERY_PRESETS = [
+  "Same day",
+  "30–60 minutes",
+  "1–2 business days",
+  "2–5 business days",
+  "3–7 business days",
+];
 
 interface Props {
   store: StoreType;
+  /** Which automatic customer-message channels the platform has configured */
+  messaging?: { sms: boolean; email: boolean };
 }
 
-const ACCENT_PRESETS = [
-  { label: "Yellow", value: "#f59e0b" },
-  { label: "Indigo", value: "#6366f1" },
-  { label: "Rose", value: "#f43f5e" },
-  { label: "Emerald", value: "#10b981" },
-  { label: "Sky", value: "#0ea5e9" },
-  { label: "Violet", value: "#8b5cf6" },
-  { label: "Orange", value: "#f97316" },
-  { label: "Teal", value: "#14b8a6" },
-];
-
-export default function SettingsClient({ store: initial }: Props) {
+export default function SettingsClient({ store: initial, messaging = { sms: false, email: false } }: Props) {
   const router = useRouter();
-  const [store, setStore] = useState(() => ({
-    ...initial,
-    // Normalize theme fields so the selectors always have a concrete value to compare against
-    storefrontThemeMode:
-      initial.storefrontThemeMode ?? initial.themeMode ?? initial.theme_mode ?? "both",
-    storefrontAccentColor:
-      initial.storefrontAccentColor ?? initial.accentColor ?? initial.accent_color ?? "#f59e0b",
-    storefrontFont: initial.storefrontFont ?? initial.storefront_font ?? "inter",
-    storefrontCardStyle: initial.storefrontCardStyle ?? initial.storefront_card_style ?? "rounded",
-    aiAssistantEnabled: initial.aiAssistantEnabled ?? initial.ai_assistant_enabled ?? false,
-    paymentPreference:
-      initial.paymentPreference ?? initial.payment_preference ?? "paystack",
-  }));
+  const [store, setStore] = useState(() => {
+    const delivery = deliverySettingsOf(initial as unknown as Record<string, unknown>);
+    const pod = podSettingsOf(initial as unknown as Record<string, unknown>);
+    return {
+      ...initial,
+      aiAssistantEnabled: initial.aiAssistantEnabled ?? initial.ai_assistant_enabled ?? false,
+      paymentPreference:
+        initial.paymentPreference ?? initial.payment_preference ?? "paystack",
+      deliveryZones: delivery.zones,
+      freeDeliveryThreshold: delivery.freeDeliveryThreshold,
+      pickupEnabled: delivery.pickupEnabled,
+      pickupAddress: delivery.pickupAddress ?? "",
+      podEnabled: pod.enabled,
+      podDepositPercent: pod.depositPercent,
+      customerNotificationsEnabled:
+        initial.customerNotificationsEnabled ?? initial.customer_notifications_enabled ?? true,
+      openingHours: parseHours(initial.openingHours ?? initial.opening_hours),
+      allowPreorders: (initial.allowPreorders ?? initial.allow_preorders) !== false,
+      minimumOrder: (initial.minimumOrder ?? initial.minimum_order) != null ? Number(initial.minimumOrder ?? initial.minimum_order) : null,
+      prepTimeMinutes: (initial.prepTimeMinutes ?? initial.prep_time_minutes) != null ? Number(initial.prepTimeMinutes ?? initial.prep_time_minutes) : null,
+    };
+  });
   const [saving, setSaving] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
   const logoRef = useRef<HTMLInputElement>(null);
@@ -195,14 +209,6 @@ export default function SettingsClient({ store: initial }: Props) {
           logoUrl: store.logoUrl ?? store.logo_url,
           phone: store.phone,
           whatsapp: store.whatsapp,
-          storefrontThemeMode:
-            store.storefrontThemeMode ?? store.themeMode ?? store.theme_mode,
-          storefrontAccentColor:
-            store.storefrontAccentColor ??
-            store.accentColor ??
-            store.accent_color,
-          storefrontFont: store.storefrontFont ?? store.storefront_font,
-          storefrontCardStyle: store.storefrontCardStyle ?? store.storefront_card_style,
           aiAssistantEnabled: store.aiAssistantEnabled ?? store.ai_assistant_enabled ?? false,
           bankName: store.bankName ?? store.bank_name,
           bankAccountNumber:
@@ -213,6 +219,18 @@ export default function SettingsClient({ store: initial }: Props) {
           paystackPublicKey:
             store.paystackPublicKey ?? store.paystack_public_key,
           return_policy: store.return_policy ?? store.returnPolicy ?? null,
+          deliveryTimeFrame: store.deliveryTimeFrame ?? store.delivery_time_frame ?? "",
+          deliveryZones: store.deliveryZones,
+          freeDeliveryThreshold: store.freeDeliveryThreshold,
+          pickupEnabled: store.pickupEnabled,
+          pickupAddress: store.pickupAddress,
+          podEnabled: store.podEnabled,
+          podDepositPercent: store.podDepositPercent,
+          customerNotificationsEnabled: store.customerNotificationsEnabled,
+          openingHours: store.openingHours,
+          allowPreorders: store.allowPreorders,
+          minimumOrder: store.minimumOrder,
+          prepTimeMinutes: store.prepTimeMinutes,
         }),
       });
       const data = await res.json();
@@ -250,7 +268,7 @@ export default function SettingsClient({ store: initial }: Props) {
       </div>
 
       <Tip id="settings-guide" variant="tip">
-        <strong>Tips:</strong> Add a WhatsApp number to get an order button in your cart. Set your bank details so customers know how to pay. Pick an accent colour that matches your brand — it highlights buttons and links on your storefront.
+        <strong>Tips:</strong> Add a WhatsApp number to get an order button in your cart. Set your bank details so customers know how to pay. Use the Themes page to choose your storefront design and brand colours.
       </Tip>
 
       {/* Store Info */}
@@ -372,6 +390,8 @@ export default function SettingsClient({ store: initial }: Props) {
         </div>
       </section>
 
+      <CustomDomainSettings freeAddress={`${store.slug}.${(process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "dukanigeria.com").replace(/^www\./, "")}`} />
+
       {/* Storefront Theme */}
       <section className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-6 space-y-5">
         <h2 className="font-bold text-surface-900 dark:text-white flex items-center gap-2">
@@ -379,119 +399,18 @@ export default function SettingsClient({ store: initial }: Props) {
           Storefront theme
         </h2>
 
-        {/* Theme presets */}
-        <div>
-          <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-3">
-            Theme presets
-          </label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {THEME_PRESETS.map((preset) => {
-              const active =
-                store.storefrontAccentColor === preset.accentColor &&
-                store.storefrontFont === preset.font &&
-                store.storefrontCardStyle === preset.cardStyle;
-              return (
-                <button
-                  key={preset.id}
-                  onClick={() => {
-                    change("storefrontAccentColor", preset.accentColor);
-                    change("storefrontFont", preset.font);
-                    change("storefrontCardStyle", preset.cardStyle);
-                  }}
-                  className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-left transition-all ${
-                    active
-                      ? "border-surface-900 dark:border-white"
-                      : "border-surface-200 dark:border-surface-700 hover:border-surface-300 dark:hover:border-surface-600"
-                  }`}
-                >
-                  <span
-                    className="w-5 h-5 rounded-full shrink-0"
-                    style={{ backgroundColor: preset.accentColor }}
-                  />
-                  <span className="text-xs font-semibold text-surface-700 dark:text-surface-300">
-                    {preset.label}
-                  </span>
-                  {active && <Check className="w-3.5 h-3.5 ml-auto text-surface-900 dark:text-white" />}
-                </button>
-              );
-            })}
-          </div>
-          <p className="text-xs text-surface-400 mt-2">
-            Sets accent color, font, and card style together — fine-tune any of them individually below.
-          </p>
-        </div>
-
-        {/* Accent color */}
-        <div>
-          <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-3">
-            Accent color
-          </label>
-          <div className="flex flex-wrap gap-2 mb-3">
-            {ACCENT_PRESETS.map((preset) => (
-              <button
-                key={preset.value}
-                onClick={() => change("storefrontAccentColor", preset.value)}
-                title={preset.label}
-                className={`w-8 h-8 rounded-full border-2 transition-all ${
-                  store.storefrontAccentColor === preset.value
-                    ? "border-surface-900 dark:border-white scale-110"
-                    : "border-transparent hover:scale-110"
-                }`}
-                style={{ backgroundColor: preset.value }}
-              >
-                {store.storefrontAccentColor === preset.value && (
-                  <Check className="w-4 h-4 text-white mx-auto drop-shadow" />
-                )}
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center gap-3">
-            <input
-              type="color"
-              value={store.storefrontAccentColor ?? "#f59e0b"}
-              onChange={(e) => change("storefrontAccentColor", e.target.value)}
-              className="w-10 h-10 rounded-lg border border-surface-200 dark:border-surface-700 cursor-pointer"
-            />
-            <input
-              value={store.storefrontAccentColor ?? "#f59e0b"}
-              onChange={(e) => {
-                if (/^#[0-9a-fA-F]{0,6}$/.test(e.target.value)) {
-                  change("storefrontAccentColor", e.target.value);
-                }
-              }}
-              className="px-3 py-2 rounded-xl border border-surface-200 dark:border-surface-700 bg-transparent text-surface-900 dark:text-white text-sm font-mono w-28 focus:outline-none focus:ring-2 focus:ring-accent-400"
-            />
-            <div
-              className="flex-1 h-10 rounded-xl"
-              style={{ backgroundColor: store.storefrontAccentColor ?? "#f59e0b" }}
-            />
-          </div>
-        </div>
-
-        {/* Theme mode */}
-        <div>
-          <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-            Appearance
-          </label>
-          <div className="grid grid-cols-3 gap-2">
-            {(["light", "dark", "both"] as const).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => change("storefrontThemeMode", mode)}
-                className={`py-2.5 px-3 rounded-xl text-sm font-medium border-2 transition-all capitalize ${
-                  store.storefrontThemeMode === mode
-                    ? "border-accent-400 bg-accent-50 dark:bg-accent-950 text-accent-700 dark:text-accent-300"
-                    : "border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800"
-                }`}
-              >
-                {mode === "both" ? "Follow system" : mode}
-              </button>
-            ))}
-          </div>
-          <p className="text-xs text-surface-400 mt-1">
-            &ldquo;Follow system&rdquo; matches each visitor&apos;s own light/dark preference.
-          </p>
-        </div>
+        <Link
+          href="/dashboard/themes"
+          className="flex items-center justify-between gap-3 rounded-xl border border-surface-200 dark:border-surface-700 px-4 py-3 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors"
+        >
+          <span>
+            <span className="block text-sm font-semibold text-surface-900 dark:text-white">Themes &amp; design</span>
+            <span className="block text-xs text-surface-500 dark:text-surface-400">
+              Choose from 18 storefront themes and customise colours, fonts, layout and light/dark mode.
+            </span>
+          </span>
+          <ExternalLink className="w-4 h-4 text-surface-400 shrink-0" />
+        </Link>
 
         {/* AI shopping assistant */}
         {aiAvailable.groq && (
@@ -611,6 +530,78 @@ export default function SettingsClient({ store: initial }: Props) {
           </div>
         )}
       </section>
+
+      {/* Delivery */}
+      <section className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-6 space-y-5">
+        <h2 className="font-bold text-surface-900 dark:text-white flex items-center gap-2">
+          <Truck className="w-4 h-4" />
+          Delivery
+        </h2>
+        <div>
+          <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
+            Delivery time frame
+          </label>
+          <input
+            value={store.deliveryTimeFrame ?? store.delivery_time_frame ?? ""}
+            onChange={(e) => change("deliveryTimeFrame", e.target.value)}
+            maxLength={60}
+            placeholder="e.g. 1–3 business days"
+            className="w-full px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-transparent text-surface-900 dark:text-white placeholder:text-surface-300 dark:placeholder:text-surface-600 focus:outline-none focus:ring-2 focus:ring-accent-400 text-sm"
+          />
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {DELIVERY_PRESETS.map((preset) => {
+              const active = (store.deliveryTimeFrame ?? store.delivery_time_frame ?? "") === preset;
+              return (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => change("deliveryTimeFrame", preset)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                    active
+                      ? "border-accent-400 bg-accent-50 dark:bg-accent-950 text-accent-700 dark:text-accent-300"
+                      : "border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800"
+                  }`}
+                >
+                  {preset}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-xs text-surface-400 mt-2">
+            Shown on your product pages and at checkout so customers know when to expect their order. Leave empty to hide.
+          </p>
+        </div>
+
+        <div className="pt-5 border-t border-surface-100 dark:border-surface-800">
+          <DeliveryOptionsEditor
+            zones={store.deliveryZones}
+            freeDeliveryThreshold={store.freeDeliveryThreshold}
+            pickupEnabled={store.pickupEnabled}
+            pickupAddress={store.pickupAddress}
+            onChange={(key, value) => setStore((s) => ({ ...s, [key]: value }) as typeof s)}
+          />
+        </div>
+      </section>
+
+      <StoreHoursSettings
+        hours={store.openingHours}
+        allowPreorders={store.allowPreorders}
+        minimumOrder={store.minimumOrder}
+        prepTimeMinutes={store.prepTimeMinutes}
+        onChange={(key, value) => setStore((s) => ({ ...s, [key]: value }) as typeof s)}
+      />
+
+      <PayOnDeliveryEditor
+        enabled={store.podEnabled}
+        depositPercent={store.podDepositPercent}
+        onChange={(key, value) => setStore((s) => ({ ...s, [key]: value }) as typeof s)}
+      />
+
+      <CustomerMessagesEditor
+        enabled={store.customerNotificationsEnabled}
+        messaging={messaging}
+        onChange={(key, value) => setStore((s) => ({ ...s, [key]: value }) as typeof s)}
+      />
 
       {/* Return & Refund Policy */}
       <section className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-6 space-y-5">

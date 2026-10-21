@@ -44,6 +44,11 @@ const MIGRATIONS = [
   { name: "web_push_subscriptions.sql",         path: join(__dirname, "../migrations/web_push_subscriptions.sql") },
   { name: "ai_usage_log_nullable_store.sql",    path: join(__dirname, "../migrations/ai_usage_log_nullable_store.sql") },
   { name: "product_sizes.sql",                  path: join(__dirname, "../migrations/product_sizes.sql") },
+  { name: "storefront_themes.sql",              path: join(__dirname, "../migrations/storefront_themes.sql") },
+  { name: "store_delivery_time_frame.sql",      path: join(__dirname, "../migrations/store_delivery_time_frame.sql") },
+  { name: "checkout_tier1.sql",                 path: join(__dirname, "../migrations/checkout_tier1.sql") },
+  { name: "tier2_commerce.sql",                 path: join(__dirname, "../migrations/tier2_commerce.sql") },
+  { name: "tier3_verticals.sql",                path: join(__dirname, "../migrations/tier3_verticals.sql") },
 ];
 
 async function run() {

@@ -6,11 +6,13 @@ import { ensureUncategorized } from '@/lib/categories'
 import { slugify } from '@/lib/utils'
 import { getEffectivePlan } from '@/lib/plan'
 import { z } from 'zod'
+import { normalizeVariants, optionNamesSchema, variantInputSchema } from '@/lib/variants'
+import { recordMovements } from '@/lib/inventory'
+import { SERVICE_STOCK } from '@/lib/booking'
+import { parseSizeGuide } from '@/lib/size-guide'
 
-const SizeSchema = z.object({
-  label:         z.string().min(1).max(50),
-  stockQuantity: z.number().int().min(0).default(0),
-})
+// Variants (sizes, or Size × Colour combos) — see src/lib/variants.ts
+const SizeSchema = variantInputSchema
 
 const Schema = z.object({
   name:             z.string().min(1).max(200),
@@ -25,7 +27,12 @@ const Schema = z.object({
   imageUrl:         z.string().optional(),
   isActive:         z.boolean().default(true),
   isFeatured:       z.boolean().default(false),
-  sizes:            z.array(SizeSchema).optional(),
+  sizes:            z.array(SizeSchema).max(100).optional(),
+  optionNames:      optionNamesSchema.optional(),
+  lowStockThreshold: z.number().int().min(0).max(100000).nullable().optional(),
+  isBookable:       z.boolean().optional().default(false),
+  durationMinutes:  z.number().int().min(5).max(1440).nullable().optional(),
+  sizeGuide:        z.unknown().optional(),
 })
 
 export async function GET(req: NextRequest) {
@@ -95,32 +102,53 @@ export async function POST(req: NextRequest) {
   // Sizes drive stock, not the other way around, whenever they're present —
   // product.stock_quantity stays the SUM so every existing consumer of that
   // column (search, discover, reels, bookmarks…) keeps working unmodified.
-  const sizes = (d.sizes ?? []).filter((s) => s.label.trim().length > 0)
+  const optionNames = d.optionNames ?? []
+  // Bookable services have no variants and no stock to run out of
+  const normalized = normalizeVariants(optionNames, d.isBookable ? [] : d.sizes ?? [])
+  if (!normalized.ok) return NextResponse.json({ error: normalized.error }, { status: 422 })
+  const sizes = normalized.variants
   const hasSizes = sizes.length > 0
-  const stockQuantity = hasSizes
-    ? sizes.reduce((sum, s) => sum + s.stockQuantity, 0)
-    : d.stockQuantity
+  const stockQuantity = d.isBookable
+    ? SERVICE_STOCK
+    : hasSizes
+      ? sizes.reduce((sum, s) => sum + s.stockQuantity, 0)
+      : d.stockQuantity
+  const sizeGuide = parseSizeGuide(d.sizeGuide)
 
   const product = await withTransaction(async (client) => {
     const rows = await client.query(`
       INSERT INTO products (
         store_id, category_id, subcategory_id, name, slug, description, short_description,
-        price, compare_price, stock_quantity, image_url, images, is_active, is_featured, has_sizes
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *
+        price, compare_price, stock_quantity, image_url, images, is_active, is_featured, has_sizes,
+        option_names, low_stock_threshold, is_bookable, duration_minutes, size_guide
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20::jsonb) RETURNING *
     `, [
       store.id, categoryId, d.subcategoryId || null, d.name, slug,
       d.description || null, d.shortDescription || null, d.price, d.comparePrice || null,
-      stockQuantity, imageUrl, d.images, d.isActive, d.isFeatured, hasSizes
+      stockQuantity, imageUrl, d.images, d.isActive, d.isFeatured, hasSizes,
+      hasSizes ? optionNames : [], d.lowStockThreshold ?? null, d.isBookable, d.isBookable ? d.durationMinutes ?? 60 : null,
+      sizeGuide ? JSON.stringify(sizeGuide) : null,
     ])
     const row = rows.rows[0]
 
     for (let i = 0; i < sizes.length; i++) {
+      const s = sizes[i]
       await client.query(
-        `INSERT INTO product_sizes (product_id, label, stock_quantity, sort_order)
-         VALUES ($1, $2, $3, $4)`,
-        [row.id, sizes[i].label, sizes[i].stockQuantity, i]
+        `INSERT INTO product_sizes (product_id, label, stock_quantity, sort_order, options, price, image_url, sku)
+         VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8)`,
+        [row.id, s.label, s.stockQuantity, i, JSON.stringify(s.options), s.price, s.imageUrl, s.sku]
       )
     }
+
+    // Opening stock shows up as the first line of the inventory history
+    if (!d.isBookable) await recordMovements(
+      client,
+      store.id,
+      'created',
+      hasSizes
+        ? sizes.map((s) => ({ productId: row.id, productName: d.name, variantLabel: s.label, change: s.stockQuantity, stockAfter: s.stockQuantity }))
+        : [{ productId: row.id, productName: d.name, variantLabel: null, change: stockQuantity, stockAfter: stockQuantity }]
+    )
 
     return row
   })

@@ -5,8 +5,10 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { Loader2, Package } from "lucide-react";
-import { SizeEditor } from "@/components/dashboard/SizeEditor";
-import type { Product, ProductSize } from "@/types";
+import { VariantEditor, initialVariantState, variantPayload, type VariantState } from "@/components/dashboard/VariantEditor";
+import { BookableFields, SizeGuideEditor } from "@/components/dashboard/ProductExtras";
+import { parseSizeGuide, type SizeGuide } from "@/lib/size-guide";
+import type { Product } from "@/types";
 
 interface Props {
   product: Product;
@@ -29,11 +31,17 @@ export default function EditProductForm({ product }: Props) {
     stockQuantity: String(product.stock_quantity ?? product.stockQuantity ?? 0),
     isActive: product.is_active ?? product.isActive ?? true,
   });
-  const [sizes, setSizes] = useState<ProductSize[]>(
-    (product.sizes ?? []).map((s) => ({
-      label: s.label,
-      stockQuantity: s.stockQuantity ?? s.stock_quantity ?? 0,
-    }))
+  const [variants, setVariants] = useState<VariantState>(() =>
+    initialVariantState(product.option_names ?? product.optionNames, product.sizes)
+  );
+  const sizes = variants.variants;
+  const [service, setService] = useState<{ isBookable: boolean; durationMinutes: number | null }>({
+    isBookable: Boolean(product.is_bookable ?? product.isBookable),
+    durationMinutes: product.duration_minutes ?? product.durationMinutes ?? null,
+  });
+  const [sizeGuide, setSizeGuide] = useState<SizeGuide | null>(() => parseSizeGuide(product.size_guide ?? product.sizeGuide));
+  const [lowStockThreshold, setLowStockThreshold] = useState<string>(
+    String(product.low_stock_threshold ?? product.lowStockThreshold ?? "")
   );
 
   const set = (k: keyof typeof form, v: string | boolean) =>
@@ -75,7 +83,11 @@ export default function EditProductForm({ product }: Props) {
         price,
         stockQuantity: stock,
         isActive: form.isActive,
-        sizes: sizes.map((s) => ({ label: s.label, stockQuantity: s.stockQuantity ?? 0 })),
+        ...variantPayload(variants),
+        lowStockThreshold: lowStockThreshold.trim() === "" ? null : Math.max(0, parseInt(lowStockThreshold, 10) || 0),
+        isBookable: service.isBookable,
+        durationMinutes: service.durationMinutes,
+        sizeGuide,
       };
       const cp = parseFloat(form.comparePrice);
       body.comparePrice = !isNaN(cp) && cp > 0 ? cp : null;
@@ -188,7 +200,13 @@ export default function EditProductForm({ product }: Props) {
         </p>
       </div>
 
+      {/* Service (bookable) */}
+      <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-5">
+        <BookableFields isBookable={service.isBookable} durationMinutes={service.durationMinutes} onChange={setService} />
+      </div>
+
       {/* Stock */}
+      {!service.isBookable && (<>
       <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-5 space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold text-surface-900 dark:text-white">Stock</h2>
@@ -217,15 +235,36 @@ export default function EditProductForm({ product }: Props) {
             placeholder="0"
           />
           {sizes.length > 0 && (
-            <p className="text-xs text-surface-400 mt-1">Auto-calculated from the sizes below</p>
+            <p className="text-xs text-surface-400 mt-1">Auto-calculated from the variants below</p>
           )}
+        </div>
+        <div>
+          <label className={labelClass}>Low-stock alert at</label>
+          <input
+            className={inputClass + " max-w-[160px]"}
+            type="number"
+            min="0"
+            step="1"
+            value={lowStockThreshold}
+            onChange={(e) => setLowStockThreshold(e.target.value)}
+            placeholder="Store default"
+          />
+          <p className="text-xs text-surface-400 mt-1">
+            We&apos;ll notify you when {sizes.length > 0 ? "any variant" : "stock"} drops to this number. Leave empty to use your store default.
+          </p>
         </div>
       </div>
 
-      {/* Sizes */}
+      {/* Variants */}
       <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-5">
-        <SizeEditor sizes={sizes} onChange={setSizes} />
+        <VariantEditor value={variants} onChange={setVariants} basePrice={parseFloat(form.price) || undefined} />
       </div>
+
+      {/* Size guide */}
+      <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-5">
+        <SizeGuideEditor value={sizeGuide} onChange={setSizeGuide} />
+      </div>
+      </>)}
 
       {/* Visibility */}
       <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-5">

@@ -68,7 +68,7 @@ export default function AssistantWidget({ storeSlug, storeName }: Props) {
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "Close assistant" : "Ask a question"}
         className="fixed bottom-5 right-5 z-40 w-14 h-14 rounded-full flex items-center justify-center shadow-[0_8px_24px_rgba(0,0,0,0.2)] transition-transform hover:scale-105 active:scale-95"
-        style={{ background: "var(--sf-accent)", color: "#000" }}
+        style={{ background: "var(--sf-accent)", color: "var(--sf-on-accent)" }}
       >
         {open ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
       </button>
@@ -99,7 +99,7 @@ export default function AssistantWidget({ storeSlug, storeName }: Props) {
                 className="max-w-[85%] rounded-2xl px-3.5 py-2 text-[13px] leading-snug"
                 style={
                   m.role === "user"
-                    ? { background: "var(--sf-accent)", color: "#000" }
+                    ? { background: "var(--sf-accent)", color: "var(--sf-on-accent)" }
                     : { background: "var(--sf-surface)", color: "var(--sf-text)" }
                 }
               >
@@ -150,7 +150,7 @@ export default function AssistantWidget({ storeSlug, storeName }: Props) {
             disabled={sending || !input.trim()}
             aria-label="Send"
             className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 disabled:opacity-40"
-            style={{ background: "var(--sf-accent)", color: "#000" }}
+            style={{ background: "var(--sf-accent)", color: "var(--sf-on-accent)" }}
           >
             <Send className="w-4 h-4" />
           </button>

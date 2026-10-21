@@ -85,7 +85,9 @@ export const deriveThemeColors = (hex: string) => {
 }
 
 // Store / product URL helpers — uses subdomain when NEXT_PUBLIC_ROOT_DOMAIN is set
-export function getStoreUrl(slug: string): string {
+/** Public store URL — the merchant's own domain once it's live, else the free subdomain. */
+export function getStoreUrl(slug: string, customDomain?: string | null): string {
+  if (customDomain) return `https://${customDomain}`
   const domain = process.env.NEXT_PUBLIC_ROOT_DOMAIN
   return domain ? `https://${slug}.${domain}` : `/store/${slug}`
 }

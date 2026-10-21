@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { queryOne, query } from '@/lib/db'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 export async function GET(
   req: NextRequest,
@@ -44,4 +45,23 @@ export async function GET(
   )
 
   return NextResponse.json({ results })
+}
+
+/** Record a settled search (sent ~1.5s after typing stops) for store analytics. */
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  const limited = await checkRateLimit(req, { key: 'rl:search-log', max: 60, window: 600 })
+  if (limited) return limited
+  const { slug } = await params
+  const body = await req.json().catch(() => ({}))
+  const q = typeof body.q === 'string' ? body.q.trim().toLowerCase().slice(0, 100) : ''
+  const results = Number.isFinite(Number(body.results)) ? Math.max(0, Math.min(1000, Math.round(Number(body.results)))) : 0
+  if (q.length < 2) return NextResponse.json({ ok: true })
+
+  const store = await queryOne<{ id: string }>('SELECT id FROM stores WHERE slug = $1 AND is_active = true', [slug])
+  if (!store) return NextResponse.json({ ok: true })
+  await query('INSERT INTO search_queries (store_id, query, results) VALUES ($1, $2, $3)', [store.id, q, results]).catch(() => {})
+  return NextResponse.json({ ok: true })
 }

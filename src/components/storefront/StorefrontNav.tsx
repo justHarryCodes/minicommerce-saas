@@ -63,7 +63,7 @@ export function StorefrontNav({ store, categories }: StorefrontNavProps) {
             {totalItems > 0 && (
               <span
                 className="absolute -top-0.5 -right-0.5 h-5 w-5 rounded-full text-xs font-bold flex items-center justify-center"
-                style={{ background: 'var(--sf-accent)', color: '#000' }}
+                style={{ background: 'var(--sf-accent)', color: "var(--sf-on-accent)" }}
               >
                 {totalItems > 9 ? '9+' : totalItems}
               </span>

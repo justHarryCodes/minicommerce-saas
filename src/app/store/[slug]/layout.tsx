@@ -2,15 +2,12 @@ import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { query, queryOne } from "@/lib/db";
 import { getOrSet, cacheKey, TTL } from "@/lib/redis";
-import { deriveThemeColors } from "@/lib/utils";
-import { FONT_STACKS, isFontKey } from "@/lib/theme-presets";
+import { getRequestTheme } from "@/lib/themes/server";
 import { getEffectivePlan } from "@/lib/plan";
 import { isAiEnabled } from "@/lib/ai";
-import StorefrontNav from "@/components/storefront/Nav";
-import CartProvider from "@/components/storefront/CartProvider";
+import StorefrontShell from "@/components/storefront/StorefrontShell";
 import VisitTracker from "@/components/storefront/VisitTracker";
 import AssistantWidget from "@/components/storefront/AssistantWidget";
-import { StoreProvider } from "@/lib/store-context";
 import type { Store, Category } from "@/types";
 import type { Metadata } from "next";
 
@@ -70,19 +67,7 @@ export default async function StorefrontLayout({ params, children }: Props) {
     subcategories: categories.filter((c) => c.parent_id === cat.id),
   }));
 
-  const accentColor = store.storefront_accent_color ?? store.storefrontAccentColor ?? "#f59e0b";
-  const { accentLight, accentDark } = deriveThemeColors(accentColor);
-  const fontKey = isFontKey(store.storefront_font) ? store.storefront_font : "inter";
-  const cardStyle: "rounded" | "sharp" = store.storefront_card_style === "sharp" ? "sharp" : "rounded";
-
-  const themeStyle = `
-    .storefront {
-      --sf-accent: ${accentColor};
-      --sf-accent-light: ${accentLight};
-      --sf-accent-dark: ${accentDark};
-      --sf-font: ${FONT_STACKS[fontKey]};
-    }
-  `;
+  const theme = await getRequestTheme(store);
 
   // AI assistant only ever renders when the merchant opted in AND the store's
   // effective plan is Pro AND a provider key is actually configured —
@@ -91,16 +76,21 @@ export default async function StorefrontLayout({ params, children }: Props) {
     !!store.ai_assistant_enabled && isAiEnabled().groq && (await getEffectivePlan(store.id)).isPro;
 
   return (
-    <StoreProvider storeSlug={slug} storeBase={storeBase} cardStyle={cardStyle} aiAssistantEnabled={showAssistant}>
-    <CartProvider storeId={store.id}>
-      <div className="storefront min-h-screen bg-white dark:bg-surface-950" style={{ fontFamily: "var(--sf-font)" }}>
-        <style dangerouslySetInnerHTML={{ __html: themeStyle }} />
-        <StorefrontNav store={store} categories={withSubs} />
-        <VisitTracker storeSlug={slug} storeId={store.id} />
-        <div className="pt-16">{children}</div>
-        {showAssistant && <AssistantWidget storeSlug={slug} storeName={store.name} />}
-      </div>
-    </CartProvider>
-    </StoreProvider>
+    <StorefrontShell
+      store={store}
+      theme={theme}
+      categories={withSubs}
+      storeSlug={slug}
+      storeBase={storeBase}
+      aiAssistantEnabled={showAssistant}
+      extras={
+        <>
+          <VisitTracker storeSlug={slug} storeId={store.id} />
+          {showAssistant && <AssistantWidget storeSlug={slug} storeName={store.name} />}
+        </>
+      }
+    >
+      {children}
+    </StorefrontShell>
   );
 }

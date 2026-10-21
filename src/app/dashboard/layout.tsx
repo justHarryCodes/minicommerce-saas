@@ -47,6 +47,7 @@ export default async function DashboardLayout({
           name: store.name,
           slug: store.slug,
           logoUrl: store.logoUrl ?? store.logo_url,
+          customDomain: store.customDomain ?? store.custom_domain ?? null,
         }}
         isPro={effectivePlan.isPro}
       />

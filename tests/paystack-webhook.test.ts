@@ -83,10 +83,13 @@ describe("POST /api/paystack/webhook", () => {
     });
     const res = await POST(makeRequest(body, sign(body)));
     expect(res.status).toBe(200);
+    // Pay-on-delivery orders become 'deposit_paid', everything else 'paid' —
+    // one guarded UPDATE either way.
     const paidCalls = mockedQuery.mock.calls.filter(([sql]) =>
-      (sql as string).includes("payment_status = 'paid'")
+      (sql as string).includes("SET payment_status = CASE WHEN payment_method = 'pay_on_delivery' THEN 'deposit_paid' ELSE 'paid' END")
     );
     expect(paidCalls).toHaveLength(1);
+    expect(paidCalls[0][0]).toContain("AND payment_status = 'pending'");
   });
 
   it("does not re-mark an order already paid", async () => {

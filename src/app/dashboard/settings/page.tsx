@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { verifySession, getUserStore } from "@/lib/auth";
+import { emailConfigured, smsConfigured } from "@/lib/notify/providers";
 import SettingsClient from "@/components/dashboard/SettingsClient";
 
 export default async function SettingsPage() {
@@ -9,5 +10,5 @@ export default async function SettingsPage() {
   const store = await getUserStore(user.firebaseUid);
   if (!store) redirect("/onboarding");
 
-  return <SettingsClient store={store} />;
+  return <SettingsClient store={store} messaging={{ sms: smsConfigured(), email: emailConfigured() }} />;
 }

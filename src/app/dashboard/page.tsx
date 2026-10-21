@@ -167,7 +167,7 @@ export default async function DashboardPage() {
       </Tip>
 
       {/* Getting-started checklist — one first-run nudge, derived from real data, auto-hides at 100% */}
-      <OnboardingChecklist items={checklistItems} storeUrl={getStoreUrl(store!.slug)} />
+      <OnboardingChecklist items={checklistItems} storeUrl={getStoreUrl(store!.slug, store!.customDomain ?? store!.custom_domain)} />
 
       {/* Stat cards */}
       <div className={`grid grid-cols-2 gap-4 ${effectivePlan.isPro ? "lg:grid-cols-5" : "lg:grid-cols-3"}`}>

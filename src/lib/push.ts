@@ -92,3 +92,39 @@ export async function notifyStoreNewOrder(
     }))
   );
 }
+
+/**
+ * Generic store alert (e.g. low stock): saved to vendor_notifications and
+ * pushed to the vendor's mobile app + installed PWA. Never throws.
+ */
+export async function notifyStoreEvent(
+  storeId: string,
+  event: { type: string; title: string; body: string; data?: Record<string, unknown>; url?: string }
+): Promise<void> {
+  try { await ensureNotificationsTable(); } catch {}
+  query(
+    `INSERT INTO vendor_notifications (store_id, type, title, body, data)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [storeId, event.type, event.title, event.body, JSON.stringify(event.data ?? {})]
+  ).catch(() => {});
+
+  const { sendWebPushToSubject } = await import("./webpush");
+  sendWebPushToSubject("vendor", storeId, { title: event.title, body: event.body, url: event.url ?? "/dashboard" }).catch(() => {});
+
+  const tokens = await query<{ token: string }>(
+    "SELECT token FROM vendor_push_tokens WHERE store_id = $1",
+    [storeId]
+  ).catch(() => [] as { token: string }[]);
+  if (!tokens.length) return;
+  await sendExpoPush(
+    tokens.map(({ token }) => ({
+      to: token,
+      title: event.title,
+      body: event.body,
+      data: { type: event.type, ...Object.fromEntries(Object.entries(event.data ?? {}).map(([k, v]) => [k, String(v)])) },
+      sound: "default",
+      channelId: "orders",
+      priority: "high" as const,
+    }))
+  );
+}

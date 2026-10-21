@@ -27,9 +27,16 @@ export default async function ProductDetailPage({ params }: Props) {
   );
   if (!product) notFound();
 
+  // pg returns DATE columns as a local-midnight Date — hand the client a plain YYYY-MM-DD
+  const soldOut = (product as { sold_out_until?: unknown }).sold_out_until;
+  if (soldOut instanceof Date) {
+    (product as { sold_out_until?: unknown }).sold_out_until =
+      `${soldOut.getFullYear()}-${String(soldOut.getMonth() + 1).padStart(2, "0")}-${String(soldOut.getDate()).padStart(2, "0")}`;
+  }
+
   if (product.has_sizes ?? product.hasSizes) {
     product.sizes = await queryMany<ProductSize>(
-      "SELECT id, label, stock_quantity, sort_order FROM product_sizes WHERE product_id = $1 ORDER BY sort_order, created_at",
+      "SELECT id, label, stock_quantity, sort_order, options, price, image_url FROM product_sizes WHERE product_id = $1 ORDER BY sort_order, created_at",
       [product.id]
     );
   }

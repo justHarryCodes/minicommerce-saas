@@ -2,6 +2,8 @@ import Image from "next/image";
 import { verifySession, getUserStore } from "@/lib/auth";
 import { queryMany } from "@/lib/db";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { getAppUrl } from "@/lib/paystack";
+import { formatAppointment } from "@/lib/booking";
 import OrderStatusManager from "@/components/dashboard/OrderStatusManager";
 import { ShoppingBag } from "lucide-react";
 import type { Order, OrderItem } from "@/types";
@@ -15,17 +17,26 @@ const STATUS_STYLES: Record<string, string> = {
   cancelled: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-800",
 };
 
+const PAYMENT_LABEL: Record<string, string> = {
+  paystack: "Paid online",
+  bank_transfer: "Bank transfer",
+  transfer: "Bank transfer",
+  pay_on_delivery: "Pay on delivery",
+};
+
 const PAY_STATUS_STYLES: Record<string, string> = {
   pending:              "text-yellow-600",
   pending_confirmation: "text-orange-600",
   paid:                 "text-green-600",
   failed:               "text-red-500",
   rejected:             "text-red-600 font-semibold",
+  deposit_paid:         "text-green-600",
 };
 
 export default async function OrdersPage() {
   const user = await verifySession();
   const store = await getUserStore(user!.firebaseUid);
+  const appUrl = getAppUrl();
 
   const orders = await queryMany<Order>(
     `SELECT o.*, 
@@ -39,7 +50,10 @@ export default async function OrdersPage() {
            'quantity', oi.quantity,
            'subtotal', oi.subtotal
          )
-       ) AS items
+       ) AS items,
+       (SELECT json_agg(json_build_object('starts_at', b.starts_at, 'status', b.status, 'staff', sm.name) ORDER BY b.starts_at)
+          FROM bookings b LEFT JOIN staff_members sm ON sm.id = b.staff_id
+         WHERE b.order_id = o.id) AS bookings
      FROM orders o
      LEFT JOIN order_items oi ON oi.order_id = o.id
      WHERE o.store_id = $1
@@ -97,16 +111,18 @@ export default async function OrdersPage() {
                         ? "⏳ Awaiting confirmation"
                         : order.payment_status === "rejected"
                         ? "❌ Payment not received"
+                        : order.payment_status === "deposit_paid"
+                        ? "Deposit paid"
                         : order.payment_status}
                     </span>
                   </div>
                   <div className="text-xs text-surface-400 mt-1">
-                    {formatDate(order.created_at ?? "")} · via {order.payment_method ?? "".replace("_", " ")}
+                    {formatDate(order.created_at ?? "")} · {PAYMENT_LABEL[order.payment_method ?? ""] ?? order.payment_method}
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="font-black text-lg text-surface-900 dark:text-white">
-                    {formatCurrency(order.total ?? order.total_amount ?? 0)}
+                    {formatCurrency(order.total_amount ?? order.total ?? 0)}
                   </div>
                 </div>
               </div>
@@ -131,11 +147,23 @@ export default async function OrdersPage() {
                 </div>
                 <div>
                   <div className="text-xs text-surface-400 font-medium uppercase tracking-wider mb-1">
-                    Delivery address
+                    {order.delivery_method === "appointment" ? "Appointment" : order.delivery_method === "pickup" ? "Customer pickup" : "Delivery"}
+                    {order.delivery_zone && ` · ${order.delivery_zone}`}
                   </div>
                   <div className="text-surface-700 dark:text-surface-300">
-                    {order.delivery_address}, {order.delivery_city}, {order.delivery_state}
+                    {[order.delivery_address, order.delivery_city, order.delivery_state].filter(Boolean).join(", ")}
                   </div>
+                  {(order as { bookings?: { starts_at: string; status: string; staff: string | null }[] | null }).bookings?.map((b, i) => (
+                    <div key={i} className={`text-sm font-medium text-surface-900 dark:text-white ${b.status === "cancelled" ? "line-through opacity-50" : ""}`}>
+                      📅 {formatAppointment(b.starts_at)}{b.staff ? ` · ${b.staff}` : ""}
+                    </div>
+                  ))}
+                  {order.scheduled_for && (
+                    <div className="text-xs font-medium text-amber-600 dark:text-amber-400 mt-1">Placed while closed — prepare from {formatAppointment(order.scheduled_for)}</div>
+                  )}
+                  {order.delivery_note && (
+                    <div className="text-xs italic text-surface-500 mt-1">“{order.delivery_note}”</div>
+                  )}
                 </div>
               </div>
 
@@ -160,7 +188,7 @@ export default async function OrdersPage() {
                         <span className="flex-1 text-surface-900 dark:text-white">
                           {item.product_name}
                           {item.size && (
-                            <span className="text-surface-400 font-normal"> · Size {item.size}</span>
+                            <span className="text-surface-400 font-normal"> · {item.size}</span>
                           )}
                         </span>
                         <span className="text-surface-500 dark:text-surface-400">
@@ -172,16 +200,54 @@ export default async function OrdersPage() {
                       </div>
                     ))}
                   </div>
+                  <OrderMoney order={order} />
                 </div>
               )}
 
               {/* Status management */}
               <div className="px-5 py-4">
-                <OrderStatusManager order={order} storeWhatsapp={store!.whatsapp} />
+                <OrderStatusManager
+                  order={order}
+                  storeWhatsapp={store!.whatsapp}
+                  storeName={store!.name}
+                  storeSlug={store!.slug}
+                  appUrl={appUrl}
+                />
               </div>
             </div>
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+/** Subtotal → discount → delivery → total, plus what's still to collect. */
+function OrderMoney({ order }: { order: Order }) {
+  const total = Number(order.total_amount ?? order.total ?? 0);
+  const fee = Number(order.delivery_fee ?? 0);
+  const discount = Number(order.discount_amount ?? 0);
+  const deposit = Number(order.deposit_amount ?? 0);
+  const pod = order.payment_method === "pay_on_delivery";
+  const collected = order.payment_status === "paid" ? total : order.payment_status === "deposit_paid" ? deposit : 0;
+  const due = pod && order.order_status !== "cancelled" ? Math.max(0, total - collected) : 0;
+  const row = "flex justify-between gap-4";
+  return (
+    <div className="mt-3 pt-3 border-t border-surface-50 dark:border-surface-800 ml-auto max-w-xs space-y-1 text-sm text-surface-500 dark:text-surface-400">
+      <div className={row}><span>Subtotal</span><span>{formatCurrency(Number(order.subtotal ?? 0))}</span></div>
+      {discount > 0 && (
+        <div className={row}><span>Discount{order.coupon_code ? ` (${order.coupon_code})` : ""}</span><span>−{formatCurrency(discount)}</span></div>
+      )}
+      <div className={row}>
+        <span>{order.delivery_method === "pickup" ? "Pickup" : "Delivery"}</span>
+        <span>{fee > 0 ? formatCurrency(fee) : order.delivery_method === "pickup" || order.delivery_zone ? "Free" : "To be arranged"}</span>
+      </div>
+      <div className={`${row} font-bold text-surface-900 dark:text-white`}><span>Total</span><span>{formatCurrency(total)}</span></div>
+      {pod && deposit > 0 && (
+        <div className={row}><span>Deposit (online)</span><span>{formatCurrency(deposit)}{order.payment_status === "deposit_paid" || order.payment_status === "paid" ? " ✓" : ""}</span></div>
+      )}
+      {due > 0 && (
+        <div className={`${row} font-semibold text-amber-600 dark:text-amber-400`}><span>Collect on delivery</span><span>{formatCurrency(due)}</span></div>
       )}
     </div>
   );

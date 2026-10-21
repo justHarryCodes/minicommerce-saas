@@ -9,7 +9,7 @@ interface CartStore {
   items: CartItem[];
   storeId: string | null;
   addItem: (item: Omit<CartItem, "quantity"> & { quantity?: number }) => void;
-  removeItem: (productId: string, size?: string | null) => void;
+  removeItem: (productId: string, size?: string | null, startsAt?: string | null) => void;
   updateQuantity: (productId: string, qty: number, size?: string | null) => void;
   clearCart: () => void;
   totalItems: number;
@@ -20,6 +20,9 @@ interface CartStore {
 // differs (e.g. one shirt in size M, another in size L) — undefined/null
 // both mean "no size", so normalize them to the same key.
 const sizeKey = (size?: string | null) => size ?? "";
+// A cart line is product + size + (for services) the booked time, so two
+// appointments for the same service stay separate lines.
+const lineKey = (size?: string | null, startsAt?: string | null) => `${sizeKey(size)}|${startsAt ?? ""}`;
 
 type StoreApi = ReturnType<typeof createCartStore>;
 
@@ -39,12 +42,14 @@ function createCartStore(storeId: string) {
           };
           set((state) => {
             const existing = state.items.find(
-              (i) => i.product_id === item.product_id && sizeKey(i.size) === sizeKey(item.size)
+              (i) => i.product_id === item.product_id && lineKey(i.size, i.booking?.startsAt) === lineKey(item.size, item.booking?.startsAt)
             );
+            // A booked slot can only be in the cart once
+            if (existing && item.booking) return state;
             if (existing) {
               return {
                 items: state.items.map((i) =>
-                  i.product_id === item.product_id && sizeKey(i.size) === sizeKey(item.size)
+                  i.product_id === item.product_id && lineKey(i.size, i.booking?.startsAt) === lineKey(item.size, item.booking?.startsAt)
                     ? { ...i, quantity: Math.min(i.quantity + 1, item.stock_quantity) }
                     : i
                 ),
@@ -54,10 +59,10 @@ function createCartStore(storeId: string) {
           });
         },
 
-        removeItem: (productId, size) => {
+        removeItem: (productId, size, startsAt) => {
           set((state) => ({
             items: state.items.filter(
-              (i) => !(i.product_id === productId && sizeKey(i.size) === sizeKey(size))
+              (i) => !(i.product_id === productId && lineKey(i.size, i.booking?.startsAt) === lineKey(size, startsAt))
             ),
           }));
         },
