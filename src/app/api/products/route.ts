@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { foreignCategory } from '@/lib/tenant'
 import { verifySession } from '@/lib/auth'
 import { getStoreFor } from "@/lib/access";
 import { query, queryOne, withTransaction, rowsToCamel, toCamel } from '@/lib/db'
 import { cacheDelPattern } from '@/lib/redis'
 import { ensureUncategorized } from '@/lib/categories'
 import { slugify } from '@/lib/utils'
-import { getEffectivePlan } from '@/lib/plan'
+import { getEffectivePlan, requireFeature } from '@/lib/plan'
 import { z } from 'zod'
 import { normalizeVariants, optionNamesSchema, variantInputSchema } from '@/lib/variants'
 import { recordMovements } from '@/lib/inventory'
@@ -96,6 +97,15 @@ export async function POST(req: NextRequest) {
   if (exists) slug = `${slug}-${Date.now()}`
 
   const imageUrl = d.imageUrl || d.images[0] || null
+
+  if (d.isBookable) {
+    const denied = await requireFeature(store.id, 'bookings')
+    if (denied) return denied
+  }
+
+  // A product may only sit in this store's own categories
+  const badCategory = await foreignCategory(store.id, d.categoryId, d.subcategoryId)
+  if (badCategory) return NextResponse.json({ error: badCategory }, { status: 400 })
 
   // Fall back to Uncategorized when no category is provided
   const categoryId = d.categoryId || await ensureUncategorized(store.id)

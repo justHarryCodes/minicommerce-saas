@@ -1,4 +1,5 @@
 import { redirect, notFound } from "next/navigation";
+import { hasFeature } from "@/lib/plan";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { verifySession } from "@/lib/auth";
@@ -54,7 +55,7 @@ export default async function EditProductPage({ params }: Props) {
         </div>
       </div>
 
-      <EditProductForm product={product} />
+      <EditProductForm product={product} bookingsEnabled={await hasFeature(store.id, "bookings")} />
     </div>
   );
 }

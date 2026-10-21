@@ -4,6 +4,7 @@ import { randomInt } from 'crypto'
 import type { PoolClient } from 'pg'
 import { queryOne, withTransaction } from './db'
 import { formatGiftCode, normaliseGiftCode } from './gift-cards-shared'
+import { hasFeature } from './plan'
 
 export { formatGiftCode, normaliseGiftCode, giftCardCovers } from './gift-cards-shared'
 
@@ -55,6 +56,7 @@ export function giftCardUsable(card: Pick<GiftCardRow, 'is_active' | 'balance' |
 export async function checkGiftCard(storeId: string, rawCode: string): Promise<GiftCardCheck> {
   const code = normaliseGiftCode(rawCode)
   if (code.length < 6) return { ok: false, error: 'Enter the full gift card code' }
+  if (!(await hasFeature(storeId, 'gift_cards'))) return { ok: false, error: "Gift cards can't be used at this store right now" }
   const card = await queryOne<GiftCardRow>(
     'SELECT * FROM gift_cards WHERE store_id = $1 AND code = $2',
     [storeId, formatGiftCode(code)]

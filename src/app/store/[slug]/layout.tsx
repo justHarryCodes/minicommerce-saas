@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { query, queryOne } from "@/lib/db";
 import { getOrSet, cacheKey, TTL } from "@/lib/redis";
 import { getRequestTheme } from "@/lib/themes/server";
-import { getEffectivePlan } from "@/lib/plan";
+import { hasFeature } from "@/lib/plan";
 import { isAiEnabled } from "@/lib/ai";
 import StorefrontShell from "@/components/storefront/StorefrontShell";
 import VisitTracker from "@/components/storefront/VisitTracker";
@@ -73,7 +73,7 @@ export default async function StorefrontLayout({ params, children }: Props) {
   // effective plan is Pro AND a provider key is actually configured —
   // resolved once here so the widget itself doesn't need to re-check any of it.
   const showAssistant =
-    !!store.ai_assistant_enabled && isAiEnabled().groq && (await getEffectivePlan(store.id)).isPro;
+    !!store.ai_assistant_enabled && isAiEnabled().groq && (await hasFeature(store.id, "ai_tools"));
 
   return (
     <StorefrontShell

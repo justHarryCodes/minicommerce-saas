@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ownProductIds } from "@/lib/tenant";
+import { requireFeature } from "@/lib/plan";
 import { z } from "zod";
 import { verifySession } from "@/lib/auth";
 import { query, queryOne } from "@/lib/db";
@@ -55,6 +57,8 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
     [reelId, user.firebaseUid]
   );
   if (!reel) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const denied = await requireFeature(reel.store_id, "reels");
+  if (denied) return denied;
 
   const parsed = PatchSchema.safeParse(await req.json());
   if (!parsed.success) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
@@ -71,11 +75,13 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   );
 
   if (d.productIds !== undefined) {
+    // Only this store's own products can be tagged in its reels
+    const productIds = await ownProductIds(reel.store_id, d.productIds);
     await queryOne("DELETE FROM reel_products WHERE reel_id = $1", [reelId]);
-    for (let i = 0; i < d.productIds.length; i++) {
+    for (let i = 0; i < productIds.length; i++) {
       await queryOne(
         "INSERT INTO reel_products (reel_id, product_id, sort_order) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING",
-        [reelId, d.productIds[i], i]
+        [reelId, productIds[i], i]
       );
     }
   }

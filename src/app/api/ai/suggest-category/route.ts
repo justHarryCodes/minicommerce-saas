@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { verifySession } from "@/lib/auth";
 import { getStoreFor } from "@/lib/access";
-import { requirePro } from "@/lib/plan";
+import { requireFeature } from "@/lib/plan";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { isAiEnabled, analyzeImage, logAiUsage } from "@/lib/ai";
 import { query } from "@/lib/db";
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   const store = await getStoreFor(user, "products");
   if (!store) return NextResponse.json({ error: "Store not found" }, { status: 404 });
 
-  const proErr = await requirePro(store.id);
+  const proErr = await requireFeature(store.id, "ai_tools");
   if (proErr) return proErr;
 
   if (!isAiEnabled().gemini) {

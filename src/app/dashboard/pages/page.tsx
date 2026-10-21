@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { hasFeature } from "@/lib/plan";
 import { redirect } from "next/navigation";
 import { format } from "date-fns";
 import { FileText, Newspaper } from "lucide-react";
@@ -33,6 +34,7 @@ export default async function PagesPage() {
   const pages = rows.filter((r) => r.kind === "page");
   const posts = rows.filter((r) => r.kind === "post");
   const existing = pages.map((p) => p.slug);
+  const blogOn = await hasFeature(store.id, "blog");
   const base = getStoreUrl(store.slug, store.customDomain ?? store.custom_domain ?? null);
 
   return (
@@ -44,10 +46,20 @@ export default async function PagesPage() {
         </p>
       </div>
 
-      <NewPageButtons existingSlugs={existing} />
+      <NewPageButtons existingSlugs={existing} blogEnabled={blogOn} />
 
       <Section title="Pages" icon={<FileText className="h-4 w-4" />} rows={pages} base={base} path="pages" empty="No pages yet — start from a template above." />
-      <Section title="Blog posts" icon={<Newspaper className="h-4 w-4" />} rows={posts} base={base} path="blog" empty="No posts yet. Share news, new arrivals, recipes or styling tips." />
+      {blogOn ? (
+        <Section title="Blog posts" icon={<Newspaper className="h-4 w-4" />} rows={posts} base={base} path="blog" empty="No posts yet. Share news, new arrivals, recipes or styling tips." />
+      ) : (
+        <section className="rounded-2xl border border-dashed border-surface-200 px-4 py-6 text-center dark:border-surface-700">
+          <p className="text-sm font-semibold text-surface-900 dark:text-white">Blog is a Pro feature</p>
+          <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">
+            {posts.length ? `Your ${posts.length} post${posts.length === 1 ? " is" : "s are"} saved but hidden from your store. ` : ""}
+            <a href="/dashboard/billing" className="font-semibold underline">Upgrade</a> to publish posts.
+          </p>
+        </section>
+      )}
     </div>
   );
 }

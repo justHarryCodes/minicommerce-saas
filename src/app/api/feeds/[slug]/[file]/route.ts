@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { hasFeature } from "@/lib/plan";
 import { query, queryOne } from "@/lib/db";
 import { csvFeed, rssFeed, toFeedItem, type FeedProduct } from "@/lib/feeds";
 import { lagosParts } from "@/lib/hours";
@@ -21,6 +22,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
     [slug]
   );
   if (!store || !store.feeds_enabled) return new NextResponse("Not found", { status: 404 });
+  if (!(await hasFeature(store.id, "sales_channels"))) return new NextResponse("Not found", { status: 404 });
 
   const products = await query<FeedProduct>(
     `SELECT p.id, p.slug, p.name, p.description, p.short_description, p.price, p.compare_price, p.stock_quantity,

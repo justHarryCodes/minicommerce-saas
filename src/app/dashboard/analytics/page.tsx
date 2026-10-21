@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { featureGate } from "@/components/dashboard/FeatureGate";
 import { redirect } from "next/navigation";
 import { Search, SearchX } from "lucide-react";
 import { verifySession } from "@/lib/auth";
@@ -27,6 +28,8 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
   if (!user) redirect("/auth/login");
   const store = await getPageStore(user, "analytics");
   if (!store) redirect("/onboarding");
+  const gate = await featureGate(store.id, "analytics");
+  if (gate) return gate;
 
   const { range } = await searchParams;
   const days = (RANGES as readonly number[]).includes(Number(range)) ? (Number(range) as RangeDays) : 30;

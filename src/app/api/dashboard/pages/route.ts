@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireFeature } from "@/lib/plan";
 import { z } from "zod";
 import { verifySession } from "@/lib/auth";
 import { getStoreFor } from "@/lib/access";
@@ -38,6 +39,10 @@ export async function POST(req: NextRequest) {
   const parsed = CreateSchema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: "Invalid request" }, { status: 422 });
   const { kind, template } = parsed.data;
+  if (kind === "post") {
+    const denied = await requireFeature(store.id, "blog");
+    if (denied) return denied;
+  }
 
   const count = await queryOne<{ n: number }>("SELECT COUNT(*)::int AS n FROM store_pages WHERE store_id = $1", [store.id]);
   if ((count?.n ?? 0) >= MAX_PAGES) return NextResponse.json({ error: `Up to ${MAX_PAGES} pages and posts per store` }, { status: 400 });

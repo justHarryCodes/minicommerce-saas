@@ -112,14 +112,16 @@ export function useCart() {
 }
 
 export default function CartProvider({ storeId, children }: { storeId: string; children: ReactNode }) {
-  // Create the store exactly once per storeId, never recreated on re-render
-  const storeRef = useRef<StoreApi | null>(null);
-  if (!storeRef.current) {
-    storeRef.current = createCartStore(storeId);
+  // One cart per store, created once per storeId. If this provider is ever
+  // reused for a different store, it switches to that store's own cart
+  // rather than carrying the previous shop's items over.
+  const storeRef = useRef<{ id: string; api: StoreApi } | null>(null);
+  if (!storeRef.current || storeRef.current.id !== storeId) {
+    storeRef.current = { id: storeId, api: createCartStore(storeId) };
   }
 
   return (
-    <CartContext.Provider value={{ storeApi: storeRef.current, storeId }}>
+    <CartContext.Provider value={{ storeApi: storeRef.current.api, storeId }}>
       {children}
     </CartContext.Provider>
   );

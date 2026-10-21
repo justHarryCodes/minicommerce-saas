@@ -3,6 +3,7 @@
 // only while it's live, for cheap lookups (store links, Worker resolution).
 
 import { query, queryOne } from "@/lib/db";
+import { hasFeature } from "@/lib/plan";
 import { cacheDel, cacheKey } from "@/lib/redis";
 import {
   createCustomHostname,
@@ -95,10 +96,39 @@ export async function removeStoreDomain(storeId: string, storeSlug: string): Pro
 
 /** For the Worker: which store does this live hostname belong to? */
 export async function slugForHostname(hostname: string): Promise<string | null> {
-  const row = await queryOne<{ slug: string }>(
-    `SELECT s.slug FROM store_domains d JOIN stores s ON s.id = d.store_id
+  const row = await queryOne<{ slug: string; id: string }>(
+    `SELECT s.slug, s.id FROM store_domains d JOIN stores s ON s.id = d.store_id
      WHERE d.hostname = $1 AND d.status = 'active' AND s.is_active = true`,
     [hostname.toLowerCase().replace(/^www\./, "")]
   );
-  return row?.slug ?? null;
+  if (!row) return null;
+  return (await hasFeature(row.id, "custom_domain")) ? row.slug : null;
+}
+
+/**
+ * Keep stores.custom_domain (used to build every store link) in step with
+ * the plan: a lapsed plan falls back to the free subdomain, and a renewed
+ * plan gets its still-live domain back without the merchant doing anything.
+ */
+export async function syncCustomDomainsWithPlans(): Promise<{ detached: number; restored: number }> {
+  let detached = 0;
+  let restored = 0;
+  const linked = await query<{ id: string }>("SELECT id FROM stores WHERE custom_domain IS NOT NULL");
+  for (const s of linked) {
+    if (!(await hasFeature(s.id, "custom_domain"))) {
+      await query("UPDATE stores SET custom_domain = NULL WHERE id = $1", [s.id]);
+      detached++;
+    }
+  }
+  const waiting = await query<{ id: string; hostname: string }>(
+    `SELECT s.id, d.hostname FROM stores s JOIN store_domains d ON d.store_id = s.id
+     WHERE s.custom_domain IS NULL AND d.status = 'active' AND s.is_active = true`
+  );
+  for (const s of waiting) {
+    if (await hasFeature(s.id, "custom_domain")) {
+      await query("UPDATE stores SET custom_domain = $2 WHERE id = $1 AND custom_domain IS NULL", [s.id, s.hostname]);
+      restored++;
+    }
+  }
+  return { detached, restored };
 }

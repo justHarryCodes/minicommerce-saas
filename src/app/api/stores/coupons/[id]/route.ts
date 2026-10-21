@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireFeature } from "@/lib/plan";
 import { verifySession } from '@/lib/auth'
 import { queryOne, query } from '@/lib/db'
 
@@ -13,6 +14,8 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const store = await getStore(user.firebaseUid)
   if (!store) return NextResponse.json({ error: 'Store not found' }, { status: 404 })
+  const denied = await requireFeature(store.id, "coupons");
+  if (denied) return denied;
   const { id } = await params
   const body = await req.json()
   if (typeof body.is_active === 'boolean') {

@@ -50,6 +50,9 @@ interface CheckoutProps {
   hours?: WeeklyHours | null;
   allowPreorders?: boolean;
   minimumOrder?: number | null;
+  /** Plan-gated: hide what the store's plan doesn't include */
+  couponsEnabled?: boolean;
+  giftCardsEnabled?: boolean;
 }
 
 interface AppliedCoupon {
@@ -72,6 +75,8 @@ export default function CheckoutClient({
   hours = null,
   allowPreorders = true,
   minimumOrder = null,
+  couponsEnabled = true,
+  giftCardsEnabled = true,
 }: CheckoutProps) {
   const { items, totalAmount, clearCart, addItem } = useCart();
   const { storeBase } = useStore();
@@ -983,6 +988,7 @@ export default function CheckoutClient({
               </div>
 
               {/* Coupon */}
+              {couponsEnabled && (
               <div className="mb-4">
                 {appliedCoupon ? (
                   <div className="flex items-center justify-between p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
@@ -1034,8 +1040,10 @@ export default function CheckoutClient({
                   </div>
                 )}
               </div>
+              )}
 
               {/* Gift card / store credit */}
+              {giftCardsEnabled && (
               <div className="mb-4">
                 {appliedGift ? (
                   <div className="flex items-center justify-between p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
@@ -1085,6 +1093,7 @@ export default function CheckoutClient({
                   </button>
                 )}
               </div>
+              )}
 
               {loyalty && (
                 <div

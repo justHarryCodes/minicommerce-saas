@@ -1,5 +1,12 @@
 import { NextResponse } from 'next/server'
+import * as React from 'react'
 import { queryOne } from './db'
+import { FEATURES, featuresForPlan, type Feature } from './features-shared'
+
+// Per-request memo in server components; a plain call elsewhere (route
+// handlers, scripts, tests) where React's cache isn't available.
+const cache: <F extends (...args: never[]) => unknown>(fn: F) => F =
+  (React as unknown as { cache?: <F>(fn: F) => F }).cache ?? ((fn) => fn)
 
 export interface EffectivePlan {
   id: string
@@ -9,13 +16,15 @@ export interface EffectivePlan {
   max_reels: number
   isPro: boolean       // price_monthly > 0
   isFallback: boolean  // true when we fell back to Free (no plan, or a paid plan that expired)
+  /** Admin-chosen feature list; null = defaults (paid → all, Free → none) */
+  features?: string[] | null
 }
 
+type PlanRow = { id: string; name: string; price_monthly: number; max_products: number; max_reels: number; features?: string[] | null }
+
 async function getFreePlan(): Promise<EffectivePlan> {
-  const free = await queryOne<{
-    id: string; name: string; price_monthly: number; max_products: number; max_reels: number
-  }>(
-    `SELECT id, name, price_monthly, max_products, max_reels FROM plans
+  const free = await queryOne<PlanRow>(
+    `SELECT id, name, price_monthly, max_products, max_reels, features FROM plans
      WHERE price_monthly = 0 AND is_active = true ORDER BY sort_order LIMIT 1`,
     []
   )
@@ -26,7 +35,8 @@ async function getFreePlan(): Promise<EffectivePlan> {
 // Resolves the plan that actually applies to a store right now. A store always
 // resolves to at least the Free plan — an expired or missing paid plan falls
 // back to Free limits rather than blocking the store entirely.
-export async function getEffectivePlan(storeId: string): Promise<EffectivePlan> {
+// Memoised per request so a page and its components share one lookup.
+export const getEffectivePlan = cache(async (storeId: string): Promise<EffectivePlan> => {
   const store = await queryOne<{ current_plan_id: string | null; plan_expires_at: string | null }>(
     'SELECT current_plan_id, plan_expires_at FROM stores WHERE id = $1',
     [storeId]
@@ -39,25 +49,48 @@ export async function getEffectivePlan(storeId: string): Promise<EffectivePlan> 
   )
 
   if (active) {
-    const plan = await queryOne<{
-      id: string; name: string; price_monthly: number; max_products: number; max_reels: number
-    }>(
-      'SELECT id, name, price_monthly, max_products, max_reels FROM plans WHERE id = $1 AND is_active = true',
+    const plan = await queryOne<PlanRow>(
+      'SELECT id, name, price_monthly, max_products, max_reels, features FROM plans WHERE id = $1 AND is_active = true',
       [store!.current_plan_id]
     )
     if (plan) return { ...plan, isPro: plan.price_monthly > 0, isFallback: false }
   }
 
   return getFreePlan()
+})
+
+/** The paid features this store can use right now. */
+export async function getStoreFeatures(storeId: string): Promise<Set<Feature>> {
+  return new Set(featuresForPlan(await getEffectivePlan(storeId)))
+}
+
+export async function hasFeature(storeId: string, feature: Feature): Promise<boolean> {
+  return (await getStoreFeatures(storeId)).has(feature)
+}
+
+export function planRequiredResponse(feature: Feature): NextResponse {
+  return NextResponse.json(
+    {
+      error: `${FEATURES[feature].label} isn't included in your plan. Upgrade from Billing to unlock it.`,
+      code: 'plan_required',
+      feature,
+    },
+    { status: 403 }
+  )
+}
+
+// Returns a 403 NextResponse if the store's plan doesn't include `feature`, else null.
+export async function requireFeature(storeId: string, feature: Feature): Promise<NextResponse | null> {
+  return (await hasFeature(storeId, feature)) ? null : planRequiredResponse(feature)
 }
 
 // Returns a 403 NextResponse if the store's effective plan isn't Pro, else null.
-// Use in mutation routes for Pro-only features (Reels, Coupons).
+// Prefer requireFeature() — this remains for callers that gate on "any paid plan".
 export async function requirePro(storeId: string): Promise<NextResponse | null> {
   const effective = await getEffectivePlan(storeId)
   if (!effective.isPro) {
     return NextResponse.json(
-      { error: 'This feature requires a Pro plan. Upgrade from Billing to unlock it.' },
+      { error: 'This feature requires a Pro plan. Upgrade from Billing to unlock it.', code: 'plan_required' },
       { status: 403 }
     )
   }

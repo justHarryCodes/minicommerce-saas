@@ -4,6 +4,7 @@
 import { query, queryOne } from "@/lib/db";
 import { getAppUrl } from "@/lib/paystack";
 import { getStoreUrl } from "@/lib/utils";
+import { hasFeature } from "@/lib/plan";
 import { emailConfigured, sendEmail, sendSms, smsConfigured } from "@/lib/notify/providers";
 
 export function backInStockMessage(d: { storeName: string; productName: string; label: string | null; url: string }): string {
@@ -24,6 +25,7 @@ export function productUrl(storeSlug: string, customDomain: string | null, produ
 export async function notifyBackInStock(storeId: string, productId: string, variantLabel: string | null): Promise<number> {
   try {
     if (!smsConfigured() && !emailConfigured()) return 0; // keep them queued until messaging is on
+    if (!(await hasFeature(storeId, "stock_alerts"))) return 0;
     const info = await queryOne<{ store_name: string; store_slug: string; custom_domain: string | null; product_name: string; product_slug: string; notifications: boolean }>(
       `SELECT s.name AS store_name, s.slug AS store_slug, s.custom_domain, p.name AS product_name, p.slug AS product_slug,
               s.customer_notifications_enabled AS notifications

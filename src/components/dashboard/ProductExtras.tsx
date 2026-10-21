@@ -16,10 +16,13 @@ export function BookableFields({
   isBookable,
   durationMinutes,
   onChange,
+  locked = false,
 }: {
   isBookable: boolean;
   durationMinutes: number | null;
   onChange: (next: { isBookable: boolean; durationMinutes: number | null }) => void;
+  /** Plan doesn't include bookings: can switch off, not on */
+  locked?: boolean;
 }) {
   return (
     <div className="space-y-3">
@@ -27,12 +30,14 @@ export function BookableFields({
         <input
           type="checkbox"
           checked={isBookable}
+          disabled={locked && !isBookable}
           onChange={(e) => onChange({ isBookable: e.target.checked, durationMinutes: e.target.checked ? durationMinutes ?? 60 : null })}
           className="mt-0.5 w-4 h-4 rounded accent-amber-400"
         />
         <span>
           <span className="flex items-center gap-1.5 text-sm font-medium text-surface-700 dark:text-surface-300">
             <CalendarClock className="w-3.5 h-3.5 text-surface-400" /> This is a bookable service
+            {locked && <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">Pro</span>}
           </span>
           <span className="block text-xs text-surface-400 mt-0.5">
             Customers pick a date and time instead of a quantity — haircuts, sessions, consultations. Manage appointments under Bookings.

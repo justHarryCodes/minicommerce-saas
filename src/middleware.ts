@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { trustedStoreForward } from "@/lib/store-forward";
 
 // Use ROOT_DOMAIN (no NEXT_PUBLIC_) for server/edge runtime — available at
 // runtime, not baked in at build time like NEXT_PUBLIC_ vars.
@@ -46,9 +47,26 @@ function devLog(message: string): void {
 // forwarded as a request header; any client-sent copy is dropped first.
 // The store layout validates it (src/lib/themes/resolve.ts) — it only ever
 // changes presentation, never persists.
-function withThemePreview(req: NextRequest): Headers {
+// Headers the app trusts to say which store / path a request is for. A
+// client can't set them: the store headers survive only when they come
+// from our Cloudflare Worker (shared secret, if configured) AND name the
+// same store as the /store/<slug> path — so a request can never pass
+// itself off as a different store. The rest are always set here.
+const STORE_HEADERS = ["x-store-slug", "x-is-subdomain", "x-custom-domain"];
+const ALWAYS_OURS = ["x-pathname", "x-theme-preview"];
+
+function cleanHeaders(req: NextRequest): Headers {
   const headers = new Headers(req.headers);
-  headers.delete("x-theme-preview");
+  for (const h of ALWAYS_OURS) headers.delete(h);
+  if (!trustedStoreForward(req.nextUrl.pathname, (n) => req.headers.get(n))) {
+    for (const h of STORE_HEADERS) headers.delete(h);
+  }
+  headers.delete("x-worker-secret");
+  return headers;
+}
+
+function withThemePreview(req: NextRequest): Headers {
+  const headers = cleanHeaders(req);
   const preview = req.nextUrl.searchParams.get("theme_preview");
   if (preview && preview.length <= 6000 && /^[A-Za-z0-9_-]+$/.test(preview)) {
     headers.set("x-theme-preview", preview);
@@ -139,7 +157,7 @@ export function middleware(req: NextRequest) {
   // in server components, and the dashboard layout gates pages by path.
   const forwarded = pathname.startsWith("/store/") || pathname.startsWith("/theme-demo/")
     ? withThemePreview(req)
-    : new Headers(req.headers);
+    : cleanHeaders(req);
   forwarded.set("x-pathname", pathname);
   const response = NextResponse.next({ request: { headers: forwarded } });
   response.headers.set("x-pathname", pathname);

@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 import { Check, Loader2, Plus } from "lucide-react";
 import { PAGE_TEMPLATES, type PageTemplateId } from "@/lib/store-pages-shared";
 
-export default function NewPageButtons({ existingSlugs }: { existingSlugs: string[] }) {
+export default function NewPageButtons({ existingSlugs, blogEnabled = true }: { existingSlugs: string[]; blogEnabled?: boolean }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -52,14 +52,14 @@ export default function NewPageButtons({ existingSlugs }: { existingSlugs: strin
         >
           {busy === "blank" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} Blank page
         </button>
-        <button
+        {blogEnabled && <button
           type="button"
           disabled={!!busy}
           onClick={() => create({ kind: "post" }, "post")}
           className="flex items-center gap-1.5 rounded-full bg-accent-400 px-3.5 py-2 text-sm font-bold text-black hover:bg-accent-500 disabled:opacity-50"
         >
           {busy === "post" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} New blog post
-        </button>
+        </button>}
       </div>
     </div>
   );

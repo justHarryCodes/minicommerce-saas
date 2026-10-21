@@ -12,6 +12,7 @@ import type { Product } from "@/types";
 
 interface Props {
   product: Product;
+  bookingsEnabled?: boolean;
 }
 
 const inputClass =
@@ -20,7 +21,7 @@ const inputClass =
 const labelClass =
   "block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-1.5";
 
-export default function EditProductForm({ product }: Props) {
+export default function EditProductForm({ product, bookingsEnabled = true }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -209,7 +210,7 @@ export default function EditProductForm({ product }: Props) {
 
       {/* Service (bookable) */}
       <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-5">
-        <BookableFields isBookable={service.isBookable} durationMinutes={service.durationMinutes} onChange={setService} />
+        <BookableFields isBookable={service.isBookable} durationMinutes={service.durationMinutes} onChange={setService} locked={!bookingsEnabled} />
       </div>
 
       {/* Stock */}

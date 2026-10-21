@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { verifySession } from "@/lib/auth";
-import { getStoreAccess } from "@/lib/access";
+import { getStoreAccess, pausedMembershipStore } from "@/lib/access";
 import { allowedPath, ROLE_LABEL } from "@/lib/access-shared";
 import { getPlatformSettings } from "@/lib/admin-auth";
-import { getEffectivePlan } from "@/lib/plan";
+import { getEffectivePlan, getStoreFeatures } from "@/lib/plan";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
 import DashboardBottomNav from "@/components/dashboard/DashboardBottomNav";
@@ -28,7 +28,7 @@ export default async function DashboardLayout({
     getPlatformSettings(),
     headers(),
   ]);
-  if (!access) redirect("/onboarding");
+  if (!access) redirect((await pausedMembershipStore(user)) ? "/team/paused" : "/onboarding");
   const { store, role } = access;
 
   const pathname = headersList.get("x-pathname") ?? "";
@@ -46,7 +46,7 @@ export default async function DashboardLayout({
     store.subscriptionStatus === "subscribed";
   if (!onBillingPage && !paid && role === "owner") redirect("/dashboard/billing");
 
-  const effectivePlan = await getEffectivePlan(store.id);
+  const [effectivePlan, features] = await Promise.all([getEffectivePlan(store.id), getStoreFeatures(store.id)]);
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
@@ -59,6 +59,7 @@ export default async function DashboardLayout({
         }}
         isPro={effectivePlan.isPro}
         role={role}
+        features={[...features]}
       />
 
       {/* Main — offset by sidebar width on desktop, full width on mobile */}

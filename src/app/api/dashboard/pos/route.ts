@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireFeature } from "@/lib/plan";
+import { newOrderNumber } from "@/lib/order-number";
 import { z } from "zod";
 import { verifySession } from "@/lib/auth";
 import { getAccessFor, can } from "@/lib/access";
@@ -43,6 +45,8 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const access = await getAccessFor(user, "pos");
   if (!access) return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  const denied = await requireFeature(access.store.id, "pos");
+  if (denied) return denied;
   const { store, role } = access;
 
   const parsed = SaleSchema.safeParse(await req.json().catch(() => ({})));
@@ -116,7 +120,7 @@ export async function POST(req: NextRequest) {
   });
   const paymentMethod =
     totals.total === 0 && totals.giftCard > 0 ? "gift_card" : d.paymentMethod === "transfer" ? "bank_transfer" : d.paymentMethod;
-  const orderNumber = `POS-${Date.now().toString(36).toUpperCase()}`;
+  const orderNumber = newOrderNumber("POS");
   const lowStock: { productId: string; name: string; label: string | null; stock: number }[] = [];
 
   try {
@@ -156,8 +160,8 @@ export async function POST(req: NextRequest) {
         }
         const p = await client.query<{ stock_quantity: number }>(
           `UPDATE products SET stock_quantity = stock_quantity - $1
-           WHERE id = $2 AND ($3::boolean OR stock_quantity >= $1) RETURNING stock_quantity`,
-          [line.quantity, line.productId, !!line.size]
+           WHERE id = $2 AND store_id = $4 AND ($3::boolean OR stock_quantity >= $1) RETURNING stock_quantity`,
+          [line.quantity, line.productId, !!line.size, store.id]
         );
         if (!p.rows.length) throw new PosStockError(`${line.name} just sold out`);
         const governing = line.size ? variantAfter : p.rows[0].stock_quantity;

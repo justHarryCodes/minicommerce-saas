@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { INVITE_COOKIE } from "@/lib/team";
 import { verifySession } from "@/lib/auth";
-import { getStoreAccess } from "@/lib/access";
+import { getStoreAccess, pausedMembershipStore } from "@/lib/access";
 import { verifyAdminSession, getPlatformSettings } from "@/lib/admin-auth";
 
 export async function GET() {
@@ -17,7 +17,7 @@ export async function GET() {
   if (invite) return NextResponse.json({ url: `/team/join?token=${encodeURIComponent(invite)}` });
 
   const access = await getStoreAccess(user);
-  if (!access) return NextResponse.json({ url: "/onboarding" });
+  if (!access) return NextResponse.json({ url: (await pausedMembershipStore(user)) ? "/team/paused" : "/onboarding" });
   const { store } = access;
   // Team members land on the work they do; the owner handles billing.
   if (access.role === "staff") return NextResponse.json({ url: "/dashboard/orders" });

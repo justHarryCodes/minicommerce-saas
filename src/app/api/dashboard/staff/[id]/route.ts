@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireFeature } from "@/lib/plan";
 import { z } from "zod";
 import { verifySession, getUserStore } from "@/lib/auth";
 import { query } from "@/lib/db";
@@ -21,6 +22,8 @@ async function ctx(params: Promise<{ id: string }>) {
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const c = await ctx(params);
   if (!c) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const denied = await requireFeature(c.store.id, "bookings");
+  if (denied) return denied;
   const parsed = PatchSchema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: "Invalid data" }, { status: 422 });
   const d = parsed.data;

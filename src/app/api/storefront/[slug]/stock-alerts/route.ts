@@ -1,6 +1,7 @@
 // Shopper signs up to hear when a sold-out product / variant is back.
 
 import { NextRequest, NextResponse } from "next/server";
+import { hasFeature } from "@/lib/plan";
 import { z } from "zod";
 import { query, queryOne } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -31,6 +32,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
     [slug, d.productId]
   );
   if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
+  if (!(await hasFeature(product.store_id, "stock_alerts"))) {
+    return NextResponse.json({ error: "Back-in-stock alerts aren't available for this store" }, { status: 403 });
+  }
 
   try {
     await query(

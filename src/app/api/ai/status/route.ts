@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifySession } from "@/lib/auth";
 import { getStoreFor } from "@/lib/access";
-import { getEffectivePlan } from "@/lib/plan";
+import { hasFeature } from "@/lib/plan";
 import { isAiEnabled } from "@/lib/ai";
 
 // Dashboard components call this once to decide whether to render AI-assist
@@ -26,7 +26,7 @@ export async function GET() {
   // No store yet (mid-onboarding) — nothing here is Pro-gated at that point
   // (suggest-store-structure is free for everyone), so isPro is moot; false
   // is the safe default rather than pretending Pro access exists.
-  const isPro = store ? (await getEffectivePlan(store.id)).isPro : false;
+  const isPro = store ? await hasFeature(store.id, "ai_tools") : false;
 
   return NextResponse.json({ ...isAiEnabled(), isPro });
 }

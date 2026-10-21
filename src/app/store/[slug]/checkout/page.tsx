@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { getStoreFeatures } from "@/lib/plan";
 import { queryOne } from "@/lib/db";
 import { getOrSet, cacheKey, TTL } from "@/lib/redis";
 import CheckoutClient from "./CheckoutClient";
@@ -31,6 +32,8 @@ export default async function CheckoutPage({ params }: Props) {
   const pod = podSettingsOf(store as unknown as Record<string, unknown>);
   if (pod.enabled) paymentMethods.push("pay_on_delivery");
 
+  const features = await getStoreFeatures(store.id);
+
   return (
     <CheckoutClient
       storeSlug={slug}
@@ -47,6 +50,8 @@ export default async function CheckoutPage({ params }: Props) {
       hours={parseHours(store.opening_hours)}
       allowPreorders={store.allow_preorders !== false}
       minimumOrder={store.minimum_order != null ? Number(store.minimum_order) : null}
+      couponsEnabled={features.has("coupons")}
+      giftCardsEnabled={features.has("gift_cards")}
     />
   );
 }

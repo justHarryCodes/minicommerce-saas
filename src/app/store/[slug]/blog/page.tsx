@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import { format } from "date-fns";
 import StorefrontFooter from "@/components/storefront/StorefrontFooter";
 import { loadStoreChrome } from "@/lib/storefront-page";
-import { publishedPosts } from "@/lib/store-pages";
+import { blogEnabled, publishedPosts } from "@/lib/store-pages";
 import { plainText } from "@/lib/rich-text";
 
 interface Props {
@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function BlogIndex({ params }: Props) {
   const { slug } = await params;
   const ctx = await loadStoreChrome(slug);
-  if (!ctx) notFound();
+  if (!ctx || !(await blogEnabled(ctx.store.id))) notFound();
   const posts = await publishedPosts(ctx.store.id);
 
   return (

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { featureGate } from "@/components/dashboard/FeatureGate";
 import { verifySession } from "@/lib/auth";
 import { getPageAccess, can } from "@/lib/access";
 import { query } from "@/lib/db";
@@ -12,6 +13,8 @@ export default async function InventoryPage() {
   const user = await verifySession();
   if (!user) redirect("/auth/login");
   const { store, role } = await getPageAccess(user, "inventory");
+  const gate = await featureGate(store.id, "inventory_tools", role === "owner");
+  if (gate) return gate;
 
   const threshold = Number(store.lowStockThreshold ?? store.low_stock_threshold ?? 3);
   const [low, movements, waiting] = await Promise.all([

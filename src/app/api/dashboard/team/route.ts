@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireFeature } from "@/lib/plan";
 import { z } from "zod";
 import { verifySession, getUserStore } from "@/lib/auth";
 import { queryOne } from "@/lib/db";
@@ -14,6 +15,8 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const store = await getUserStore(user.firebaseUid);
   if (!store) return NextResponse.json({ error: "Only the store owner can manage the team" }, { status: 403 });
+  const denied = await requireFeature(store.id, "team");
+  if (denied) return denied;
   return NextResponse.json({ members: await listTeam(store.id) });
 }
 
@@ -28,6 +31,8 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const store = await getUserStore(user.firebaseUid);
   if (!store) return NextResponse.json({ error: "Only the store owner can manage the team" }, { status: 403 });
+  const denied = await requireFeature(store.id, "team");
+  if (denied) return denied;
 
   const parsed = InviteSchema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: "Enter a valid email and role" }, { status: 422 });

@@ -37,6 +37,8 @@ interface Props {
   storeId?: string; // optional — API resolves from session
   categories: (Category & { subcategories?: Category[] })[];
   product?: Product;
+  /** Plan includes bookable services */
+  bookingsEnabled?: boolean;
 }
 
 const inputClass =
@@ -59,7 +61,7 @@ function SectionTitle({ title, hint }: { title: string; hint?: string }) {
   );
 }
 
-export default function ProductForm({ categories, product }: Props) {
+export default function ProductForm({ categories, product, bookingsEnabled = true }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(
@@ -430,7 +432,7 @@ export default function ProductForm({ categories, product }: Props) {
           <section className={cardClass}>
             <SectionTitle title="Inventory" />
             <div className="mb-5 pb-5 border-b border-surface-100 dark:border-surface-800">
-              <BookableFields isBookable={service.isBookable} durationMinutes={service.durationMinutes} onChange={setService} />
+              <BookableFields isBookable={service.isBookable} durationMinutes={service.durationMinutes} onChange={setService} locked={!bookingsEnabled} />
             </div>
             {!service.isBookable && (<>
             <div>

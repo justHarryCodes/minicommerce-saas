@@ -33,6 +33,7 @@ import {
   UserCog,
 } from "lucide-react";
 import { allowedPath, type Role } from "@/lib/access-shared";
+import { featureForPath, type Feature } from "@/lib/features-shared";
 import { auth } from "@/lib/firebase-client";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
@@ -66,17 +67,21 @@ interface SidebarProps {
   store?: { name: string; slug: string; logoUrl?: string; customDomain?: string | null };
   isPro?: boolean;
   role?: Role;
+  /** Paid features the store's plan includes (drives the lock badges) */
+  features?: Feature[];
 }
 
 function SidebarContent({
   store,
   isPro,
   role = "owner",
+  features,
   onClose,
 }: {
   store?: SidebarProps["store"];
   isPro?: boolean;
   role?: Role;
+  features?: Feature[];
   onClose?: () => void;
 }) {
   const pathname = usePathname();
@@ -152,7 +157,8 @@ const storeDisplayUrl = store
           const active =
             pathname === href ||
             (href !== "/dashboard" && pathname.startsWith(href));
-          const locked = pro && !isPro;
+          const needs = featureForPath(href);
+          const locked = features ? !!needs && !features.includes(needs) : pro && !isPro;
           return (
             <Link
               key={href}
@@ -200,7 +206,7 @@ const storeDisplayUrl = store
   );
 }
 
-export function Sidebar({ store, isPro, role }: SidebarProps) {
+export function Sidebar({ store, isPro, role, features }: SidebarProps) {
   const { open, setOpen } = useDashboardDrawer();
 
   return (
@@ -220,12 +226,12 @@ export function Sidebar({ store, isPro, role }: SidebarProps) {
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <SidebarContent store={store} isPro={isPro} role={role} onClose={() => setOpen(false)} />
+        <SidebarContent store={store} isPro={isPro} role={role} features={features} onClose={() => setOpen(false)} />
       </aside>
 
       {/* Desktop fixed sidebar */}
       <aside className="hidden lg:flex flex-col fixed inset-y-0 left-0 z-30 w-64 bg-white dark:bg-zinc-950 border-r border-zinc-100 dark:border-zinc-800">
-        <SidebarContent store={store} isPro={isPro} role={role} />
+        <SidebarContent store={store} isPro={isPro} role={role} features={features} />
       </aside>
     </>
   );

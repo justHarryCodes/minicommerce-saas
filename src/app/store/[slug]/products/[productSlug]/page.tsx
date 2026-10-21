@@ -3,6 +3,7 @@ import { query, queryOne, queryMany } from "@/lib/db";
 import ProductDetailClient from "./ProductDetailClient";
 import type { Metadata } from "next";
 import { getStoreUrl } from "@/lib/utils";
+import { getStoreFeatures } from "@/lib/plan";
 import type { Product, ProductSize, Store } from "@/types";
 
 interface Props {
@@ -100,6 +101,8 @@ export default async function ProductDetailPage({ params }: Props) {
       )
     : [];
 
+  const features = await getStoreFeatures(store.id);
+
   // Product structured data — eligible for Google's rich results & free listings
   const price = Number(product.price);
   const jsonLd = {
@@ -127,6 +130,8 @@ export default async function ProductDetailPage({ params }: Props) {
       related={related as Product[]}
       store={store}
       storeSlug={storeSlug}
+      bookingsEnabled={features.has("bookings")}
+      stockAlertsEnabled={features.has("stock_alerts")}
     />
     </>
   );

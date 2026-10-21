@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { featureGate } from "@/components/dashboard/FeatureGate";
 import { verifySession, getUserStore } from "@/lib/auth";
 import { query, queryOne } from "@/lib/db";
 import { getAppUrl } from "@/lib/paystack";
@@ -12,6 +13,8 @@ export default async function ChannelsPage() {
   if (!user) redirect("/auth/login");
   const store = await getUserStore(user.firebaseUid);
   if (!store) redirect("/dashboard/orders");
+  const gate = await featureGate(store.id, "sales_channels");
+  if (gate) return gate;
 
   const [settings, readiness, sample] = await Promise.all([
     queryOne<{ feeds_enabled: boolean }>("SELECT feeds_enabled FROM stores WHERE id = $1", [store.id]),

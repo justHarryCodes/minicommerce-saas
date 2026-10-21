@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { featureGate } from "@/components/dashboard/FeatureGate";
 import { verifySession } from "@/lib/auth";
 import { getPageStore } from "@/lib/access";
 import { query, queryOne } from "@/lib/db";
@@ -13,6 +14,8 @@ export default async function AbandonedCartsPage() {
   if (!user) redirect("/auth/login");
   const store = await getPageStore(user, "abandoned");
   if (!store) redirect("/onboarding");
+  const gate = await featureGate(store.id, "abandoned_carts");
+  if (gate) return gate;
 
   const rows = await query<{
     id: string; token: string; customer_name: string | null; customer_phone: string; customer_email: string | null;

@@ -48,7 +48,7 @@ const DELIVERY_PRESETS = [
 interface Props {
   store: StoreType;
   /** Which automatic customer-message channels the platform has configured */
-  messaging?: { sms: boolean; email: boolean };
+  messaging?: { sms: boolean; email: boolean; included?: boolean };
 }
 
 export default function SettingsClient({ store: initial, messaging = { sms: false, email: false } }: Props) {

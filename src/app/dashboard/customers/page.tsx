@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { featureGate } from "@/components/dashboard/FeatureGate";
 import { verifySession } from "@/lib/auth";
 import { getPageStore } from "@/lib/access";
 import { listCustomers } from "@/lib/customers";
@@ -11,6 +12,8 @@ export default async function CustomersPage() {
   if (!user) redirect("/auth/login");
   const store = await getPageStore(user, "customers");
   if (!store) redirect("/onboarding");
+  const gate = await featureGate(store.id, "customers");
+  if (gate) return gate;
 
   const customers = await listCustomers(store.id);
 

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ownProductIds } from "@/lib/tenant";
 import { z } from "zod";
 import { verifySession } from "@/lib/auth";
 import { query, queryOne } from "@/lib/db";
 import { redis, reelKey, cacheDel } from "@/lib/redis";
-import { requirePro, getEffectivePlan } from "@/lib/plan";
+import { requireFeature, getEffectivePlan } from "@/lib/plan";
 import type { Reel } from "@/types";
 
 const MAX_PER_PAGE = 20;
@@ -122,7 +123,7 @@ export async function POST(req: NextRequest) {
   const store = await getStore(user.firebaseUid);
   if (!store) return NextResponse.json({ error: "Store not found" }, { status: 404 });
 
-  const proErr = await requirePro(store.id);
+  const proErr = await requireFeature(store.id, "reels");
   if (proErr) return proErr;
 
   const effectivePlan = await getEffectivePlan(store.id);
@@ -146,13 +147,13 @@ export async function POST(req: NextRequest) {
   if (!reel) return NextResponse.json({ error: "Failed to create reel" }, { status: 500 });
 
   // Link products
-  if (d.productIds?.length) {
-    for (let i = 0; i < d.productIds.length; i++) {
-      await queryOne(
-        "INSERT INTO reel_products (reel_id, product_id, sort_order) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING",
-        [reel.id, d.productIds[i], i]
-      );
-    }
+  // Only this store's own products can be tagged in its reels
+  const productIds = await ownProductIds(store.id, d.productIds ?? []);
+  for (let i = 0; i < productIds.length; i++) {
+    await queryOne(
+      "INSERT INTO reel_products (reel_id, product_id, sort_order) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING",
+      [reel.id, productIds[i], i]
+    );
   }
 
   // Bust store feed cache

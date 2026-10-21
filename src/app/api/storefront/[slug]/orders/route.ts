@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { hasFeature } from "@/lib/plan";
 import { queryOne, withTransaction } from "@/lib/db";
 import { notifyStoreNewOrder } from "@/lib/push";
 import { sendWebPushToSubject } from "@/lib/webpush";
@@ -12,6 +13,7 @@ import { BookingConflictError, reserveSlot } from "@/lib/bookings-server";
 import { alertLowStock, crossedLowStock, effectiveThreshold, recordMovements, type StockChange } from "@/lib/inventory";
 import { checkGiftCard, GiftCardBalanceError, redeemGiftCard } from "@/lib/gift-cards";
 import { loyaltyDiscount, loyaltyFor } from "@/lib/loyalty";
+import { newOrderNumber } from "@/lib/order-number";
 import { z } from "zod";
 
 // Thrown from inside the order transaction when a size's stock was raced
@@ -155,6 +157,9 @@ export async function POST(
 
       // Bookable services: one appointment per line, no stock to check.
       if (product.is_bookable) {
+        if (!(await hasFeature(store.id, "bookings"))) {
+          return NextResponse.json({ error: `${product.name} can't be booked online right now` }, { status: 400 });
+        }
         if (!item.booking) {
           return NextResponse.json({ error: `Please choose a time for ${product.name}` }, { status: 400 });
         }
@@ -279,7 +284,7 @@ export async function POST(
     // A gift card that covers everything leaves nothing to pay
     const fullyCovered = totals.total === 0 && totals.giftCard > 0;
 
-    const orderNumber = `ORD-${Date.now().toString(36).toUpperCase()}`;
+    const orderNumber = newOrderNumber("ORD");
     // Map "transfer" → "bank_transfer" for the CHECK constraint
     const dbPaymentMethod = fullyCovered
       ? "gift_card"
@@ -373,8 +378,8 @@ export async function POST(
         // stock_quantity stays the sum for sized products too, so every
         // other consumer of that column keeps working unmodified.
         const productRow = await client.query(
-          "UPDATE products SET stock_quantity = stock_quantity - $1 WHERE id = $2 RETURNING stock_quantity",
-          [line.quantity, line.productId]
+          "UPDATE products SET stock_quantity = stock_quantity - $1 WHERE id = $2 AND store_id = $3 RETURNING stock_quantity",
+          [line.quantity, line.productId, store.id]
         );
         const productStockAfter: number | null = productRow?.rows?.[0]?.stock_quantity ?? null;
 

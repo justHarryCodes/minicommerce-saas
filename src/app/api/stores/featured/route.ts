@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ownProductIds } from "@/lib/tenant";
 import { verifySession, getUserStore } from "@/lib/auth";
 import { query } from "@/lib/db";
 import { z } from "zod";
@@ -20,7 +21,7 @@ export async function PUT(req: NextRequest) {
 
   await query(
     "UPDATE stores SET featured_product_ids = $1 WHERE id = $2",
-    [parsed.data.product_ids, store.id]
+    [await ownProductIds(store.id, parsed.data.product_ids), store.id]
   );
 
   return NextResponse.json({ ok: true });

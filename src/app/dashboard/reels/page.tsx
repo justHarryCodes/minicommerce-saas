@@ -1,7 +1,7 @@
 import { verifySession } from "@/lib/auth";
 import { query, queryOne } from "@/lib/db";
 import { getPlatformSettings } from "@/lib/admin-auth";
-import { getEffectivePlan } from "@/lib/plan";
+import { getEffectivePlan, hasFeature } from "@/lib/plan";
 import { redirect } from "next/navigation";
 import ReelsClient from "./ReelsClient";
 import { UpgradePrompt } from "@/components/dashboard/UpgradePrompt";
@@ -20,7 +20,7 @@ export default async function ReelsDashboardPage() {
   if (!store) redirect("/onboarding");
 
   const effectivePlan = await getEffectivePlan(store.id);
-  if (!effectivePlan.isPro) {
+  if (!(await hasFeature(store.id, "reels"))) {
     return <UpgradePrompt feature="Reels" />;
   }
 

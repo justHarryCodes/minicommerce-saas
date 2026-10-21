@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { FREE_THEME_IDS } from "@/lib/features-shared";
+import { requireFeature } from "@/lib/plan";
 import { z } from "zod";
 import { verifySession, getUserStore } from "@/lib/auth";
 import { query } from "@/lib/db";
@@ -22,6 +24,10 @@ export async function PUT(req: NextRequest) {
 
   const theme = getTheme(parsed.data.themeId);
   if (!theme) return NextResponse.json({ error: "Unknown theme" }, { status: 400 });
+  if (!FREE_THEME_IDS.has(theme.id)) {
+    const denied = await requireFeature(store.id, "premium_themes");
+    if (denied) return denied;
+  }
 
   const customization = parseCustomization(parsed.data.customization);
   const resolved = mergeTheme(theme, customization);

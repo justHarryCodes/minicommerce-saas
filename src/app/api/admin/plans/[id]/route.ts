@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyAdminSession, logAdminAction } from '@/lib/admin-auth'
 import { query, queryOne } from '@/lib/db'
 import { z } from 'zod'
+import { ALL_FEATURES, type Feature } from '@/lib/features-shared'
 
 const UpdateSchema = z.object({
   name:          z.string().min(1).max(80).optional(),
@@ -11,6 +12,8 @@ const UpdateSchema = z.object({
   max_reels:     z.number().int().min(0).optional(),
   is_active:     z.boolean().optional(),
   sort_order:    z.number().int().min(0).optional(),
+  // null = default (paid → all paid features, Free → none)
+  features:      z.array(z.enum(ALL_FEATURES as [Feature, ...Feature[]])).max(50).nullable().optional(),
 })
 
 interface RouteParams {
@@ -44,6 +47,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   if (d.max_reels !== undefined)     { sets.push(`max_reels = $${i++}`);     vals.push(d.max_reels) }
   if (d.is_active !== undefined)     { sets.push(`is_active = $${i++}`);     vals.push(d.is_active) }
   if (d.sort_order !== undefined)    { sets.push(`sort_order = $${i++}`);    vals.push(d.sort_order) }
+  if (d.features !== undefined)      { sets.push(`features = $${i++}`);      vals.push(d.features === null ? null : [...new Set(d.features)]) }
 
   if (sets.length === 0) return NextResponse.json({ success: true })
 

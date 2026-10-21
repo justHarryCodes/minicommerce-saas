@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireFeature } from "@/lib/plan";
 import { z } from "zod";
 import { verifySession } from "@/lib/auth";
 import { getStoreFor } from "@/lib/access";
@@ -32,6 +33,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const d = parsed.data;
   const current = await queryOne<{ kind: "page" | "post" }>("SELECT kind FROM store_pages WHERE id = $1 AND store_id = $2", [id, store.id]);
   if (!current) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  // Drafts can still be edited; publishing a post needs the blog feature
+  if (current.kind === "post" && d.isPublished) {
+    const denied = await requireFeature(store.id, "blog");
+    if (denied) return denied;
+  }
 
   const cover = d.coverUrl && /^https:\/\//i.test(d.coverUrl) && safeHref(d.coverUrl) ? d.coverUrl : null;
   const slug = await uniqueSlug(store.id, current.kind, d.slug || d.title, id);

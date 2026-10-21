@@ -38,6 +38,9 @@ interface Props {
   related: Product[];
   store: Store;
   storeSlug: string;
+  /** Plan-gated storefront features */
+  bookingsEnabled?: boolean;
+  stockAlertsEnabled?: boolean;
 }
 
 interface Review {
@@ -124,6 +127,8 @@ export default function ProductDetailClient({
   related,
   store,
   storeSlug,
+  bookingsEnabled = true,
+  stockAlertsEnabled = true,
 }: Props) {
   const { addItem } = useCart();
   const { storeBase } = useStore();
@@ -601,7 +606,12 @@ export default function ProductDetailClient({
           </div>
 
           {/* Services: pick a date + time instead of a quantity */}
-          {isBookable && (
+          {isBookable && !bookingsEnabled && (
+            <p className="rounded-2xl bg-surface-100 px-4 py-3 text-sm text-surface-600 dark:bg-surface-800 dark:text-surface-300">
+              Online booking isn&apos;t available for this service right now — please contact the store to book.
+            </p>
+          )}
+          {isBookable && bookingsEnabled && (
             <BookingPicker
               storeSlug={storeSlug}
               productId={product.id}
@@ -691,7 +701,7 @@ export default function ProductDetailClient({
           )}
 
           {/* Back-in-stock sign-up: whole product sold out, or some variants are */}
-          {!isBookable && !soldOutToday && (!inStock || (hasSizes && sizes.some((s) => s.stockQuantity <= 0))) && (
+          {stockAlertsEnabled && !isBookable && !soldOutToday && (!inStock || (hasSizes && sizes.some((s) => s.stockQuantity <= 0))) && (
             <BackInStockForm
               storeSlug={storeSlug}
               productId={product.id}

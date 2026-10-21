@@ -7,6 +7,7 @@ import { getAppUrl } from "@/lib/paystack";
 import { emailConfigured, sendEmail, sendSms, smsConfigured, type SendResult } from "./providers";
 import { formatAppointment } from "@/lib/booking";
 import { describeInstant } from "@/lib/hours";
+import { hasFeature } from "@/lib/plan";
 
 export type OrderEvent = "placed" | "deposit_paid" | "payment_confirmed" | "confirmed" | "shipped" | "delivered" | "cancelled";
 
@@ -161,18 +162,19 @@ export async function notifyCustomer(orderId: string, event: OrderEvent): Promis
       customer_email: string | null; total_amount: number | null; total: number; deposit_amount: number;
       payment_method: string; payment_status: string; delivery_method: string;
       store_name: string; store_slug: string; store_email: string | null; pickup_address: string | null;
-      delivery_time_frame: string | null; notifications: boolean;
+      delivery_time_frame: string | null; notifications: boolean; store_id: string;
       scheduled_for: string | null; first_booking: string | null;
     }>(
       `SELECT o.order_number, o.access_token, o.customer_name, o.customer_phone, o.customer_email,
               o.total_amount, o.total, o.deposit_amount, o.payment_method, o.payment_status, o.delivery_method,
               o.scheduled_for, (SELECT MIN(b.starts_at) FROM bookings b WHERE b.order_id = o.id AND b.status <> 'cancelled') AS first_booking,
               s.name AS store_name, s.slug AS store_slug, s.email AS store_email, s.pickup_address,
-              s.delivery_time_frame, s.customer_notifications_enabled AS notifications
+              s.delivery_time_frame, s.customer_notifications_enabled AS notifications, o.store_id
        FROM orders o JOIN stores s ON s.id = o.store_id WHERE o.id = $1`,
       [orderId]
     );
     if (!o || !o.notifications || !o.access_token) return;
+    if (!(await hasFeature(o.store_id, "customer_messages"))) return;
 
     const data: OrderMessageData = {
       storeName: o.store_name,

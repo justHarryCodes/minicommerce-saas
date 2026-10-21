@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireFeature } from "@/lib/plan";
 import { verifySession } from "@/lib/auth";
 import { getStoreFor } from "@/lib/access";
 import { query } from "@/lib/db";
@@ -9,6 +10,8 @@ export async function PATCH(_req: NextRequest, { params }: { params: Promise<{ i
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const store = await getStoreFor(user, "abandoned");
   if (!store) return NextResponse.json({ error: "No store" }, { status: 404 });
+  const denied = await requireFeature(store.id, "abandoned_carts");
+  if (denied) return denied;
 
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ error: "Not found" }, { status: 404 });

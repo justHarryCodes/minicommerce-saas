@@ -258,7 +258,7 @@ export function CustomerMessagesEditor({
   onChange,
 }: {
   enabled: boolean;
-  messaging: { sms: boolean; email: boolean };
+  messaging: { sms: boolean; email: boolean; included?: boolean };
   onChange: (key: "customerNotificationsEnabled", value: unknown) => void;
 }) {
   const channels = [messaging.sms && "SMS", messaging.email && "email"].filter(Boolean).join(" and ");
@@ -268,6 +268,12 @@ export function CustomerMessagesEditor({
         <MessageSquare className="w-4 h-4" />
         Customer messages
       </h2>
+      {messaging.included === false && (
+        <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+          Automatic customer SMS & email are a Pro feature — nothing is sent on your current plan.{" "}
+          <a href="/dashboard/billing" className="font-semibold underline">Upgrade</a>
+        </p>
+      )}
       <Toggle
         checked={enabled}
         onChange={(v) => onChange("customerNotificationsEnabled", v)}

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { featureGate } from "@/components/dashboard/FeatureGate";
 import { verifySession, getUserStore } from "@/lib/auth";
 import { listTeam } from "@/lib/team";
 import TeamClient from "./TeamClient";
@@ -11,6 +12,8 @@ export default async function TeamPage() {
   // Owner-only: a team member never gets a store back from getUserStore
   const store = await getUserStore(user.firebaseUid);
   if (!store) redirect("/dashboard/orders");
+  const gate = await featureGate(store.id, "team");
+  if (gate) return gate;
 
   const members = await listTeam(store.id);
 

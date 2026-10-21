@@ -1,6 +1,7 @@
 // Store pages (About, FAQ, policies…) and blog posts. Published pages are
 // cached per store for the footer; every write clears that cache.
 import { query, queryOne } from './db'
+import { hasFeature } from './plan'
 import { cacheDel, getOrSet } from './redis'
 import { slugify } from './utils'
 import { PAGE_TEMPLATES, type PageTemplateId, type StorePage, type FooterPageLink } from './store-pages-shared'
@@ -27,7 +28,14 @@ export async function footerPages(storeId: string): Promise<{ pages: FooterPageL
     },
     300
   )
-  return v ?? { pages: [], hasBlog: false }
+  const result = v ?? { pages: [], hasBlog: false }
+  // The plan check is live (not cached) so a lapsed plan hides the blog at once
+  return { ...result, hasBlog: result.hasBlog && (await hasFeature(storeId, 'blog')) }
+}
+
+/** Blog pages render only while the plan includes the blog. */
+export async function blogEnabled(storeId: string): Promise<boolean> {
+  return hasFeature(storeId, 'blog')
 }
 
 export async function clearPagesCache(storeId: string): Promise<void> {

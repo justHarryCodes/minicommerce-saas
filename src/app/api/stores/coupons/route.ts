@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifySession } from '@/lib/auth'
 import { queryOne, query } from '@/lib/db'
-import { requirePro } from '@/lib/plan'
+import { requireFeature } from '@/lib/plan'
 import { z } from 'zod'
 
 const CreateSchema = z.object({
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
   const store = await getStore(user.firebaseUid)
   if (!store) return NextResponse.json({ error: 'Store not found' }, { status: 404 })
 
-  const proErr = await requirePro(store.id)
+  const proErr = await requireFeature(store.id, "coupons")
   if (proErr) return proErr
 
   const body = await req.json()

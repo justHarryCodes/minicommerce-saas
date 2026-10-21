@@ -1,4 +1,5 @@
 import { verifySession } from "@/lib/auth";
+import { hasFeature } from "@/lib/plan";
 import { getPageStore } from "@/lib/access";
 import { queryMany } from "@/lib/db";
 import ProductForm from "@/components/dashboard/ProductForm";
@@ -34,7 +35,7 @@ export default async function NewProductPage() {
         </div>
       </div>
 
-      <ProductForm storeId={store!.id} categories={categories} />
+      <ProductForm storeId={store!.id} categories={categories} bookingsEnabled={await hasFeature(store!.id, "bookings")} />
     </div>
   );
 }

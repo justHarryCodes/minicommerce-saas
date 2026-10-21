@@ -21,8 +21,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const body = await req.json()
   const rows = await query(
-    'UPDATE categories SET name=$1, sort_order=COALESCE($2,sort_order) WHERE id=$3 RETURNING *',
-    [body.name ?? (cat as Record<string, unknown>).name, body.sortOrder ?? null, categoryId]
+    'UPDATE categories SET name=$1, sort_order=COALESCE($2,sort_order) WHERE id=$3 AND store_id=$4 RETURNING *',
+    [body.name ?? (cat as Record<string, unknown>).name, body.sortOrder ?? null, categoryId, store.id]
   )
   await cacheDel(CacheKey.categories(store.id))
   return NextResponse.json({ data: toCamel(rows[0] as Record<string, unknown>) })

@@ -15,6 +15,7 @@ import type { NextRequest } from "next/server";
 const STORE_ID = "11111111-1111-1111-1111-111111111111";
 const PRODUCT_ID = "22222222-2222-2222-2222-222222222222";
 
+vi.mock("@/lib/plan", async () => (await import("./helpers/plan-mock")).planMock.module());
 vi.mock("@/lib/db", () => ({
   query: vi.fn(),
   queryOne: vi.fn(),
@@ -167,7 +168,7 @@ describe("POST /api/storefront/[slug]/orders — sized products", () => {
     // product-level stock_quantity is still decremented too (kept as the
     // sum, for every consumer that doesn't know about sizes)
     const productUpdate = calls.find(([sql]) => String(sql).includes("UPDATE products SET stock_quantity"));
-    expect(productUpdate?.[1]).toEqual([2, PRODUCT_ID]);
+    expect(productUpdate?.[1]).toEqual([2, PRODUCT_ID, STORE_ID]); // pinned to the store too
   });
 
   it("returns 409 (not 500) when the atomic size decrement is raced out from under it", async () => {

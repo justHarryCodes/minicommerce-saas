@@ -2,6 +2,7 @@
 // GET ?productId=…&date=YYYY-MM-DD[&staffId=…]
 
 import { NextRequest, NextResponse } from "next/server";
+import { hasFeature } from "@/lib/plan";
 import { queryOne } from "@/lib/db";
 import { addDays, lagosParts, parseHours } from "@/lib/hours";
 import { bookingWindowDays, computeSlots, slotRulesOf, staffFor } from "@/lib/booking";
@@ -25,6 +26,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
     [slug]
   );
   if (!store) return NextResponse.json({ error: "Store not found" }, { status: 404 });
+  if (!(await hasFeature(store.id, "bookings"))) {
+    return NextResponse.json({ error: "Online booking isn't available for this store right now" }, { status: 403 });
+  }
   const product = await queryOne<{ id: string; duration_minutes: number | null }>(
     "SELECT id, duration_minutes FROM products WHERE id = $1 AND store_id = $2 AND is_active = true AND is_bookable = true",
     [productId, store.id]

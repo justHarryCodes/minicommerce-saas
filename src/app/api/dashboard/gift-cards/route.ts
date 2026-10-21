@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireFeature } from "@/lib/plan";
 import { z } from "zod";
 import { verifySession } from "@/lib/auth";
 import { getStoreFor } from "@/lib/access";
@@ -15,6 +16,8 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const store = await getStoreFor(user, "giftcards");
   if (!store) return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  const denied = await requireFeature(store.id, "gift_cards");
+  if (denied) return denied;
   const cards = await query<GiftCardRow>(
     "SELECT * FROM gift_cards WHERE store_id = $1 ORDER BY created_at DESC LIMIT 500",
     [store.id]
@@ -38,6 +41,8 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const store = await getStoreFor(user, "giftcards");
   if (!store) return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  const denied = await requireFeature(store.id, "gift_cards");
+  if (denied) return denied;
 
   const parsed = IssueSchema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) {

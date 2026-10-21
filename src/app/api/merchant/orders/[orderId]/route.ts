@@ -59,10 +59,10 @@ export async function PATCH(
     }
 
     sets.push(`updated_at = NOW()`);
-    values.push(orderId);
+    values.push(orderId, store.id);
 
     const rows = await query<{ order_status: string; payment_status: string }>(
-      `UPDATE orders SET ${sets.join(", ")} WHERE id = $${idx} RETURNING *`,
+      `UPDATE orders SET ${sets.join(", ")} WHERE id = $${idx} AND store_id = $${idx + 1} RETURNING *`,
       values
     );
 

@@ -1,6 +1,7 @@
 import { query } from "@/lib/db";
 import { getAppUrl } from "@/lib/paystack";
 import { sendSms, smsConfigured } from "./providers";
+import { hasFeature } from "@/lib/plan";
 
 export const REMINDER_AFTER_MINUTES = 60;
 export const REMINDER_WINDOW_HOURS = 48;
@@ -34,9 +35,9 @@ export async function sendDueCartReminders(limit = 50): Promise<{ checked: numbe
 
   const due = await query<{
     id: string; token: string; customer_name: string | null; customer_phone: string; subtotal: number;
-    store_name: string; store_slug: string;
+    store_name: string; store_slug: string; store_id: string;
   }>(
-    `SELECT cs.id, cs.token, cs.customer_name, cs.customer_phone, cs.subtotal, s.name AS store_name, s.slug AS store_slug
+    `SELECT cs.id, cs.token, cs.customer_name, cs.customer_phone, cs.subtotal, s.name AS store_name, s.slug AS store_slug, cs.store_id
      FROM checkout_sessions cs JOIN stores s ON s.id = cs.store_id
      WHERE cs.status = 'open' AND cs.reminder_sent_at IS NULL
        AND cs.updated_at < NOW() - make_interval(mins => $1)
@@ -50,6 +51,8 @@ export async function sendDueCartReminders(limit = 50): Promise<{ checked: numbe
   let sent = 0;
   let skipped = 0;
   for (const s of due) {
+    // Not claimed, so it goes out if the store upgrades within the window
+    if (!(await hasFeature(s.store_id, "abandoned_carts"))) { skipped++; continue; }
     const claimed = await query(
       "UPDATE checkout_sessions SET reminder_sent_at = NOW() WHERE id = $1 AND reminder_sent_at IS NULL RETURNING id",
       [s.id]

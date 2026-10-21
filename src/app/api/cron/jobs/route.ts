@@ -1,4 +1,4 @@
-// All scheduled jobs (abandoned-cart + appointment reminders). Called every 30 min by
+// All scheduled jobs (abandoned-cart + appointment reminders, custom domains vs plan). Called every 30 min by
 // .github/workflows/cron.yml (or any scheduler) with
 //   Authorization: Bearer $CRON_SECRET
 
@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { sendDueCartReminders } from "@/lib/notify/cart-reminders";
 import { sendDueBookingReminders } from "@/lib/notify/booking-reminders";
+import { syncCustomDomainsWithPlans } from "@/lib/domains";
 
 export const dynamic = "force-dynamic";
 
@@ -20,8 +21,8 @@ function authorized(req: NextRequest): boolean {
 async function run(req: NextRequest) {
   if (!process.env.CRON_SECRET) return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 503 });
   if (!authorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const [carts, bookings] = await Promise.all([sendDueCartReminders(), sendDueBookingReminders()]);
-  return NextResponse.json({ ok: true, carts, bookings });
+  const [carts, bookings, domains] = await Promise.all([sendDueCartReminders(), sendDueBookingReminders(), syncCustomDomainsWithPlans()]);
+  return NextResponse.json({ ok: true, carts, bookings, domains });
 }
 
 export const GET = run;

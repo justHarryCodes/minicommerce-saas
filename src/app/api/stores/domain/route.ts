@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifySession, getUserStore } from "@/lib/auth";
-import { getEffectivePlan } from "@/lib/plan";
+import { hasFeature } from "@/lib/plan";
 import { cnameTarget, customDomainsConfigured, isApex, normalizeHostname } from "@/lib/cloudflare";
 import { addStoreDomain, DomainError, getStoreDomain, refreshStoreDomain, removeStoreDomain, type StoreDomain } from "@/lib/domains";
 
@@ -24,10 +24,9 @@ function view(d: (StoreDomain & { cf_hostname_id?: string | null }) | null) {
 export async function GET() {
   const c = await context();
   if (c.error) return c.error;
-  const plan = await getEffectivePlan(c.store.id);
   return NextResponse.json({
     available: customDomainsConfigured(),
-    isPro: plan.isPro,
+    isPro: await hasFeature(c.store.id, "custom_domain"),
     target: cnameTarget(),
     domain: view(await getStoreDomain(c.store.id)),
   });
@@ -40,7 +39,7 @@ export async function POST(req: NextRequest) {
   if (!customDomainsConfigured()) {
     return NextResponse.json({ error: "Custom domains aren't switched on for the platform yet." }, { status: 503 });
   }
-  if (!(await getEffectivePlan(c.store.id)).isPro) {
+  if (!(await hasFeature(c.store.id, "custom_domain"))) {
     return NextResponse.json({ error: "Custom domains are a Pro feature. Upgrade from Billing to connect your own domain." }, { status: 403 });
   }
   const body = await req.json().catch(() => ({}));
@@ -59,6 +58,9 @@ export async function POST(req: NextRequest) {
 export async function PATCH() {
   const c = await context();
   if (c.error) return c.error;
+  if (!(await hasFeature(c.store.id, "custom_domain"))) {
+    return NextResponse.json({ error: "Custom domains are a Pro feature. Upgrade from Billing to reconnect your domain." }, { status: 403 });
+  }
   const d = await refreshStoreDomain(c.store.id, c.store.slug);
   return NextResponse.json({ domain: view(d) });
 }

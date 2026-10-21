@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireFeature } from "@/lib/plan";
 import { z } from "zod";
 import { verifySession } from "@/lib/auth";
 import { getStoreFor } from "@/lib/access";
@@ -12,6 +13,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const store = await getStoreFor(user, "giftcards");
   if (!store) return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  const denied = await requireFeature(store.id, "gift_cards");
+  if (denied) return denied;
   const { id } = await params;
   const card = await queryOne("SELECT id FROM gift_cards WHERE id = $1 AND store_id = $2", [id, store.id]);
   if (!card) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -35,6 +38,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const store = await getStoreFor(user, "giftcards");
   if (!store) return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  const denied = await requireFeature(store.id, "gift_cards");
+  if (denied) return denied;
   const { id } = await params;
   const parsed = PatchSchema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: "Invalid request" }, { status: 422 });

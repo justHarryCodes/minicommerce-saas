@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireFeature } from "@/lib/plan";
 import { verifySession } from "@/lib/auth";
 import { getStoreFor } from "@/lib/access";
 import { checkGiftCard } from "@/lib/gift-cards";
@@ -14,6 +15,8 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const store = await getStoreFor(user, "pos");
   if (!store) return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  const denied = await requireFeature(store.id, "gift_cards");
+  if (denied) return denied;
   const { code } = (await req.json().catch(() => ({}))) as { code?: string };
   const g = await checkGiftCard(store.id, String(code ?? ""));
   if (!g.ok) return NextResponse.json({ error: g.error }, { status: 400 });

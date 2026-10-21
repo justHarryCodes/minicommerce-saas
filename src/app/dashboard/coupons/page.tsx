@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { verifySession, getUserStore } from '@/lib/auth'
 import { queryMany } from '@/lib/db'
-import { getEffectivePlan } from '@/lib/plan'
+import { getEffectivePlan, hasFeature } from '@/lib/plan'
 import { UpgradePrompt } from '@/components/dashboard/UpgradePrompt'
 import CouponsClient from './CouponsClient'
 
@@ -14,7 +14,7 @@ export default async function CouponsPage() {
   if (!store) redirect('/onboarding')
 
   const effectivePlan = await getEffectivePlan(store.id)
-  if (!effectivePlan.isPro) {
+  if (!(await hasFeature(store.id, "coupons"))) {
     return <UpgradePrompt feature="Coupons" />
   }
 

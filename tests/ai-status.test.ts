@@ -18,9 +18,11 @@ vi.mock("@/lib/db", () => ({
   queryOne: vi.fn().mockResolvedValue(null),
   toCamel: (r: unknown) => r,
 }));
-vi.mock("@/lib/plan", () => ({
-  getEffectivePlan: vi.fn(),
-}));
+vi.mock("@/lib/plan", () => {
+  const getEffectivePlan = vi.fn();
+  // AI tools follow the plan: any paid plan includes them by default
+  return { getEffectivePlan, hasFeature: vi.fn(async (id: string) => (await getEffectivePlan(id)).isPro) };
+});
 vi.mock("@/lib/ai", () => ({
   isAiEnabled: vi.fn(),
 }));

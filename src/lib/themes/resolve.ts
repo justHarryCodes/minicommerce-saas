@@ -2,7 +2,8 @@ import chroma from "chroma-js";
 import { z } from "zod";
 import { FONT_KEYS, FONT_STACKS, isFontKey } from "@/lib/theme-presets";
 import { deriveThemeColors } from "@/lib/utils";
-import { DEFAULT_THEME_ID, getTheme } from "./catalog";
+import { DEFAULT_THEME_ID, getTheme, THEMES } from "./catalog";
+import { FREE_THEME_IDS } from "@/lib/features-shared";
 import { HIGHLIGHT_ICONS, SECTION_IDS } from "./types";
 import type { Density, HeadingStyle, ResolvedTheme, StorefrontTheme, ThemeCustomization, Radius } from "./types";
 
@@ -153,9 +154,17 @@ export function storeThemeState(store: ThemeSource): ThemePreview {
   };
 }
 
-export function resolveStoreTheme(store: ThemeSource, preview?: ThemePreview | null): ResolvedTheme {
+export function resolveStoreTheme(store: ThemeSource, preview?: ThemePreview | null, opts: { premiumOk?: boolean } = {}): ResolvedTheme {
   const state = preview && getTheme(preview.themeId) ? preview : storeThemeState(store);
-  return mergeTheme(getTheme(state.themeId)!, state.customization);
+  let theme = getTheme(state.themeId)!;
+  if (opts.premiumOk === false && !FREE_THEME_IDS.has(theme.id)) theme = freeThemeFor(theme);
+  return mergeTheme(theme, state.customization);
+}
+
+/** The free design in the same category (food store → free food theme). */
+export function freeThemeFor(theme: StorefrontTheme): StorefrontTheme {
+  const free = THEMES.find((t) => FREE_THEME_IDS.has(t.id) && t.category === theme.category);
+  return free ?? getTheme(DEFAULT_THEME_ID)!;
 }
 
 // ── Live preview (dashboard iframe) ─────────────────────────────────────────

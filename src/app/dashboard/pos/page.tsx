@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { featureGate } from "@/components/dashboard/FeatureGate";
 import { verifySession } from "@/lib/auth";
 import { getPageAccess, can } from "@/lib/access";
 import { query } from "@/lib/db";
@@ -10,6 +11,8 @@ export default async function PosPage() {
   const user = await verifySession();
   if (!user) redirect("/auth/login");
   const { store, role } = await getPageAccess(user, "pos");
+  const gate = await featureGate(store.id, "pos", role === "owner");
+  if (gate) return gate;
 
   const [products, sizes, categories] = await Promise.all([
     query<{ id: string; name: string; price: string; stock_quantity: number; has_sizes: boolean; image_url: string | null; images: string[] | null; category_id: string | null; sku: string | null; is_active: boolean }>(

@@ -35,6 +35,7 @@ import type { NextRequest } from "next/server";
 const STORE_A = "store-a-11111111-1111-1111-1111-111111111111";
 const USER_A = { firebaseUid: "uid-a", email: "vendor-a@example.com" };
 
+vi.mock("@/lib/plan", async () => (await import("./helpers/plan-mock")).planMock.module());
 vi.mock("@/lib/auth", () => ({
   verifySession: vi.fn(),
   getUserStore: vi.fn(),

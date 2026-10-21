@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireFeature } from "@/lib/plan";
 import { z } from "zod";
 import { verifySession, getUserStore } from "@/lib/auth";
 import { queryOne } from "@/lib/db";
@@ -16,6 +17,8 @@ export async function PATCH(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const store = await getUserStore(user.firebaseUid);
   if (!store) return NextResponse.json({ error: "Only the store owner can change loyalty rewards" }, { status: 403 });
+  const denied = await requireFeature(store.id, "loyalty");
+  if (denied) return denied;
 
   const parsed = Schema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: "Every 2–50 orders, 1–90% off" }, { status: 422 });

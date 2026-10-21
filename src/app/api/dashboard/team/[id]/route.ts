@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireFeature } from "@/lib/plan";
 import { z } from "zod";
 import { verifySession, getUserStore } from "@/lib/auth";
 import { queryOne } from "@/lib/db";
@@ -16,6 +17,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const store = await getUserStore(user.firebaseUid);
   if (!store) return NextResponse.json({ error: "Only the store owner can manage the team" }, { status: 403 });
+  const denied = await requireFeature(store.id, "team");
+  if (denied) return denied;
   const { id } = await params;
 
   const parsed = PatchSchema.safeParse(await req.json().catch(() => ({})));

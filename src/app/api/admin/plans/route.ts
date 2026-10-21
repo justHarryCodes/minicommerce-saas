@@ -17,7 +17,7 @@ export async function GET() {
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const plans = await query(
-    `SELECT id, name, description, price_monthly, max_products, max_reels, is_active, sort_order, created_at
+    `SELECT id, name, description, price_monthly, max_products, max_reels, is_active, sort_order, created_at, features
      FROM plans ORDER BY sort_order, created_at`,
     []
   )

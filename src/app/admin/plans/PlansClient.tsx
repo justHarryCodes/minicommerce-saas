@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import toast from "react-hot-toast";
+import PlanFeaturesMatrix from "./PlanFeaturesMatrix";
 import { Plus, Pencil, Check, X, Trash2 } from "lucide-react";
 
 interface Plan {
@@ -14,6 +15,7 @@ interface Plan {
   is_active: boolean;
   sort_order: number;
   created_at: string;
+  features?: string[] | null;
 }
 
 function fmt(n: number) {
@@ -341,6 +343,10 @@ export default function PlansClient({ initialPlans }: { initialPlans: Plan[] }) 
             </tbody>
           </table>
         )}
+      </div>
+
+      <div className="mt-6">
+        <PlanFeaturesMatrix plans={plans} />
       </div>
     </div>
   );

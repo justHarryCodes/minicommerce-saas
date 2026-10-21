@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { featureGate } from "@/components/dashboard/FeatureGate";
 import { verifySession } from "@/lib/auth";
 import { getPageAccess } from "@/lib/access";
 import { query, queryOne } from "@/lib/db";
@@ -11,6 +12,8 @@ export default async function GiftCardsPage() {
   const user = await verifySession();
   if (!user) redirect("/auth/login");
   const { store, role } = await getPageAccess(user, "giftcards");
+  const gate = await featureGate(store.id, "gift_cards", role === "owner");
+  if (gate) return gate;
 
   const [cards, settings, rewarded] = await Promise.all([
     query<GiftCardRow>("SELECT * FROM gift_cards WHERE store_id = $1 ORDER BY created_at DESC LIMIT 500", [store.id]),

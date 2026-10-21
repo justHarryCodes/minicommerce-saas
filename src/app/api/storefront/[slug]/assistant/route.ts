@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { queryOne, query } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { getEffectivePlan } from "@/lib/plan";
+import { hasFeature } from "@/lib/plan";
 import { isAiEnabled, generateText, logAiUsage } from "@/lib/ai";
 
 const Schema = z.object({
@@ -49,8 +49,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     return NextResponse.json({ error: "Assistant not enabled for this store" }, { status: 404 });
   }
 
-  const effectivePlan = await getEffectivePlan(store.id);
-  if (!effectivePlan.isPro) {
+  if (!(await hasFeature(store.id, "ai_tools"))) {
     return NextResponse.json({ error: "Assistant not available" }, { status: 404 });
   }
 

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireFeature } from '@/lib/plan'
+import { foreignCategory } from '@/lib/tenant'
 import { verifySession } from '@/lib/auth'
 import { getStoreFor } from "@/lib/access";
 import { query, queryOne, queryMany, withTransaction, toCamel, rowsToCamel } from '@/lib/db'
@@ -55,10 +57,17 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if (!names.success) return NextResponse.json({ error: 'Invalid option names' }, { status: 422 })
     body.optionNames = names.data
   }
+  // A product may only sit in this store's own categories
+  if ('categoryId' in body || 'subcategoryId' in body) {
+    const badCategory = await foreignCategory(store.id, body.categoryId, body.subcategoryId)
+    if (badCategory) return NextResponse.json({ error: badCategory }, { status: 400 })
+  }
   // Services: no variants, and stock pinned so they never "sell out"
   if ('isBookable' in body) {
     body.isBookable = body.isBookable === true
     if (body.isBookable) {
+      const denied = await requireFeature(store.id, 'bookings')
+      if (denied) return denied
       body.sizes = []
       body.optionNames = []
       body.stockQuantity = SERVICE_STOCK

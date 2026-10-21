@@ -6,6 +6,7 @@ import type { NextRequest } from "next/server";
 // segments, traffic sources, analytics deltas and custom-domain validation.
 // ─────────────────────────────────────────────────────────────────────────
 
+vi.mock("@/lib/plan", async () => (await import("./helpers/plan-mock")).planMock.module());
 vi.mock("@/lib/db", () => ({ query: vi.fn(), queryOne: vi.fn(), queryMany: vi.fn(), withTransaction: vi.fn() }));
 vi.mock("@/lib/push", () => ({ notifyStoreNewOrder: vi.fn().mockResolvedValue(undefined), notifyStoreEvent: vi.fn().mockResolvedValue(undefined) }));
 vi.mock("@/lib/webpush", () => ({ sendWebPushToSubject: vi.fn().mockResolvedValue(undefined) }));

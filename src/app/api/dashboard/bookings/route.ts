@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireFeature } from "@/lib/plan";
 import { verifySession } from "@/lib/auth";
 import { getStoreFor } from "@/lib/access";
 import { query } from "@/lib/db";
@@ -10,6 +11,8 @@ export async function GET(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const store = await getStoreFor(user, "bookings");
   if (!store) return NextResponse.json({ error: "No store" }, { status: 404 });
+  const denied = await requireFeature(store.id, "bookings");
+  if (denied) return denied;
 
   const from = req.nextUrl.searchParams.get("from") ?? "";
   const days = Math.min(31, Math.max(1, Number(req.nextUrl.searchParams.get("days")) || 7));

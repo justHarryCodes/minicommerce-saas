@@ -7,7 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import RichText from "@/components/storefront/RichText";
 import StorefrontFooter from "@/components/storefront/StorefrontFooter";
 import { loadStoreChrome } from "@/lib/storefront-page";
-import { publishedPage } from "@/lib/store-pages";
+import { blogEnabled, publishedPage } from "@/lib/store-pages";
 import { plainText } from "@/lib/rich-text";
 
 interface Props {
@@ -17,7 +17,7 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, postSlug } = await params;
   const ctx = await loadStoreChrome(slug);
-  if (!ctx) return {};
+  if (!ctx || !(await blogEnabled(ctx.store.id))) return {};
   const post = await publishedPage(ctx.store.id, "post", postSlug);
   if (!post) return {};
   const description = post.excerpt || plainText(post.body);
@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function BlogPost({ params }: Props) {
   const { slug, postSlug } = await params;
   const ctx = await loadStoreChrome(slug);
-  if (!ctx) notFound();
+  if (!ctx || !(await blogEnabled(ctx.store.id))) notFound();
   const post = await publishedPage(ctx.store.id, "post", postSlug);
   if (!post) notFound();
 

@@ -2,6 +2,7 @@
 import { queryOne } from './db'
 import { PHONE_KEY_SQL } from './customers'
 import { toNgInternational } from './phone'
+import { hasFeature } from './plan'
 import { loyaltyStatus, loyaltySettingsOf, type LoyaltySettings, type LoyaltyStatus } from './loyalty-shared'
 
 export * from './loyalty-shared'
@@ -26,6 +27,7 @@ export async function loyaltyFor(
 ): Promise<(LoyaltyStatus & LoyaltySettings) | null> {
   const settings = loyaltySettingsOf(store)
   if (!settings) return null
+  if (!(await hasFeature(store.id, 'loyalty'))) return null
   const count = await qualifyingOrderCount(store.id, phone)
   return { ...settings, ...loyaltyStatus(count, settings.everyN) }
 }

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { featureGate } from "@/components/dashboard/FeatureGate";
 import { verifySession } from "@/lib/auth";
 import { getPageStore } from "@/lib/access";
 import { query } from "@/lib/db";
@@ -12,6 +13,8 @@ export default async function BookingsPage() {
   if (!user) redirect("/auth/login");
   const store = await getPageStore(user, "bookings");
   if (!store) redirect("/onboarding");
+  const gate = await featureGate(store.id, "bookings");
+  if (gate) return gate;
 
   const [services, staff] = await Promise.all([
     query<{ id: string; name: string; duration_minutes: number | null }>(

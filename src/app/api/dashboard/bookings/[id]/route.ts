@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireFeature } from "@/lib/plan";
 import { z } from "zod";
 import { verifySession } from "@/lib/auth";
 import { getStoreFor } from "@/lib/access";
@@ -12,6 +13,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const store = await getStoreFor(user, "bookings");
   if (!store) return NextResponse.json({ error: "No store" }, { status: 404 });
+  const denied = await requireFeature(store.id, "bookings");
+  if (denied) return denied;
 
   const parsed = Schema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: "Invalid status" }, { status: 422 });

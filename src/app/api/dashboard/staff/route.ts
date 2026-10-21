@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireFeature } from "@/lib/plan";
 import { z } from "zod";
 import { verifySession, getUserStore } from "@/lib/auth";
 import { query } from "@/lib/db";
@@ -29,6 +30,8 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const store = await ctx();
   if (!store) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const denied = await requireFeature(store.id, "bookings");
+  if (denied) return denied;
   const parsed = StaffSchema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: "Enter a name" }, { status: 422 });
   const count = await query<{ n: number }>("SELECT COUNT(*)::int AS n FROM staff_members WHERE store_id = $1 AND is_active = true", [store.id]);

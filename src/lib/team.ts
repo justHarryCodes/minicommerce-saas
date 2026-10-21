@@ -3,6 +3,7 @@
 import { randomBytes } from 'crypto'
 import { query, queryOne } from './db'
 import { getAppUrl } from './paystack'
+import { hasFeature } from './plan'
 import { sendEmail } from './notify/providers'
 import { ROLE_LABEL, type Role } from './access-shared'
 
@@ -99,6 +100,9 @@ export async function acceptInvite(token: string, user: { firebaseUid: string; e
       status: 403,
       error: `This invitation is for ${invite.email}. Sign in with that email to accept it.`,
     }
+  }
+  if (!(await hasFeature(invite.store_id, 'team'))) {
+    return { ok: false, status: 403, error: "This store's plan doesn't include team accounts right now. Ask the owner to upgrade." }
   }
   const owns = await queryOne('SELECT 1 FROM stores WHERE owner_id = $1 AND is_active = true', [user.firebaseUid])
   if (owns) {

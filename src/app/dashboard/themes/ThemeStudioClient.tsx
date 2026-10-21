@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { FREE_THEME_IDS } from "@/lib/features-shared";
 import toast from "react-hot-toast";
 import {
   ArrowDown,
@@ -16,8 +17,7 @@ import {
   RotateCcw,
   Trash2,
   Smartphone,
-  Sparkles,
-} from "lucide-react";
+  Sparkles, Lock } from "lucide-react";
 import { FONT_KEYS, FONT_LABELS, googleFontsHref } from "@/lib/theme-presets";
 import { THEMES, THEME_CATEGORIES, getTheme } from "@/lib/themes/catalog";
 import { encodeThemePreview, mergeTheme } from "@/lib/themes/resolve";
@@ -39,6 +39,8 @@ interface Props {
   storeUrl: string;
   savedThemeId: string;
   savedCustomization: ThemeCustomization;
+  /** Plan includes premium themes; free themes are always available */
+  premiumUnlocked?: boolean;
 }
 
 const ACCENT_SWATCHES = ["#f59e0b", "#ef4444", "#f97316", "#ec4899", "#e11d48", "#8b5cf6", "#2563eb", "#0ea5e9", "#10b981", "#0d9488", "#a3e635", "#18181b"];
@@ -272,7 +274,8 @@ const selectCls =
 
 /* ───────────────────────────── Studio ───────────────────────────── */
 
-export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, savedThemeId, savedCustomization }: Props) {
+export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, savedThemeId, savedCustomization, premiumUnlocked = true }: Props) {
+  const isLocked = (id: string) => !premiumUnlocked && !FREE_THEME_IDS.has(id);
   const [saved, setSaved] = useState({ themeId: savedThemeId, customization: savedCustomization });
   const [themeId, setThemeId] = useState(savedThemeId);
   const [custom, setCustom] = useState<ThemeCustomization>(savedCustomization);
@@ -496,7 +499,16 @@ export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, save
                       >
                         Demo <ExternalLink className="h-3 w-3" />
                       </a>
-                      {!isLive && (
+                      {!isLive && isLocked(t.id) && (
+                        <a
+                          href="/dashboard/billing"
+                          className="flex items-center gap-1 rounded-xl bg-surface-900 px-3 py-2 text-xs font-bold text-white hover:bg-surface-800 dark:bg-white dark:text-black"
+                          title="Premium theme — upgrade to apply it"
+                        >
+                          <Lock className="h-3 w-3" /> Pro
+                        </a>
+                      )}
+                      {!isLive && !isLocked(t.id) && (
                         <button
                           onClick={() => applyFromGallery(t.id)}
                           disabled={saving}
@@ -689,6 +701,14 @@ export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, save
                   Discard
                 </button>
               )}
+              {isLocked(themeId) ? (
+              <a
+                href="/dashboard/billing"
+                className="ml-auto flex items-center gap-2 rounded-xl bg-surface-900 px-5 py-2.5 text-sm font-bold text-white dark:bg-white dark:text-black"
+              >
+                <Lock className="h-4 w-4" /> Upgrade to apply {theme.name}
+              </a>
+              ) : (
               <button
                 type="button"
                 onClick={() => save()}
@@ -698,6 +718,7 @@ export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, save
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 {saving ? "Publishing…" : themeId === saved.themeId ? "Save & publish" : `Apply ${theme.name}`}
               </button>
+              )}
             </div>
           </div>
 

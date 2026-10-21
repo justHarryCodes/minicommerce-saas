@@ -6,6 +6,7 @@
 import { redirect } from 'next/navigation'
 import { queryOne, query, toCamel } from './db'
 import { getUserStore, type SessionUser } from './auth'
+import { hasFeature } from './plan'
 import { ROLE_PERMISSIONS, type Permission, type Role } from './access-shared'
 import type { Store } from '@/types'
 
@@ -37,6 +38,8 @@ export async function getStoreAccess(user: Pick<SessionUser, 'firebaseUid'>): Pr
     [user.firebaseUid]
   )
   if (!row) return null
+  // Team logins only work while the owner's plan includes team accounts
+  if (!(await hasFeature(String(row.id), 'team'))) return null
   const { __member_id, __member_role, ...storeRow } = row
   // Best-effort "last seen" for the owner's team list
   void query('UPDATE store_members SET last_seen_at = NOW() WHERE id = $1', [__member_id]).catch(() => {})
@@ -45,6 +48,17 @@ export async function getStoreAccess(user: Pick<SessionUser, 'firebaseUid'>): Pr
     role: __member_role as Role,
     memberId: __member_id as string,
   }
+}
+
+/** A team member whose store's plan no longer includes team accounts. */
+export async function pausedMembershipStore(user: Pick<SessionUser, 'firebaseUid'>): Promise<string | null> {
+  const row = await queryOne<{ name: string }>(
+    `SELECT s.name FROM store_members m JOIN stores s ON s.id = m.store_id
+     WHERE m.firebase_uid = $1 AND m.status = 'active' AND s.is_active = true
+     ORDER BY m.accepted_at DESC NULLS LAST LIMIT 1`,
+    [user.firebaseUid]
+  )
+  return row?.name ?? null
 }
 
 /** The user's store if their role grants `perm`, else null (callers 401/404 as before). */
@@ -64,7 +78,7 @@ export async function getAccessFor(user: Pick<SessionUser, 'firebaseUid'>, perm:
 /** Dashboard pages: never render without access — send people somewhere they can be. */
 export async function getPageAccess(user: Pick<SessionUser, 'firebaseUid'>, perm: Permission): Promise<StoreAccess> {
   const access = await getStoreAccess(user)
-  if (!access) redirect('/onboarding')
+  if (!access) redirect((await pausedMembershipStore(user)) ? '/team/paused' : '/onboarding')
   if (!ROLE_PERMISSIONS[access.role].includes(perm)) redirect('/dashboard/orders')
   return access
 }

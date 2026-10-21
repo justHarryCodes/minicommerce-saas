@@ -7,6 +7,7 @@ import type { NextRequest } from "next/server";
 // ─────────────────────────────────────────────────────────────────────────
 
 process.env.NEXT_PUBLIC_APP_URL = "https://dukanigeria.com";
+vi.mock("@/lib/plan", async () => (await import("./helpers/plan-mock")).planMock.module());
 vi.mock("@/lib/db", () => ({
   query: vi.fn().mockResolvedValue([]),
   queryOne: vi.fn(),
@@ -445,6 +446,6 @@ describe("POS till", () => {
     expect(p[8]).toBe("cash");
     expect(p[12]).toBe("uid-staff"); // created_by
     const stock = client.query.mock.calls.find(([s]) => String(s).includes("UPDATE products SET stock_quantity"))!;
-    expect(stock[1]).toEqual([2, PRODUCT_ID, false]);
+    expect(stock[1]).toEqual([2, PRODUCT_ID, false, STORE_ID]);
   });
 });
