@@ -1,10 +1,60 @@
 import { notFound } from "next/navigation";
 import { query, queryOne, queryMany } from "@/lib/db";
 import ProductDetailClient from "./ProductDetailClient";
+import type { Metadata } from "next";
+import { getStoreUrl } from "@/lib/utils";
 import type { Product, ProductSize, Store } from "@/types";
 
 interface Props {
   params: Promise<{ slug: string; productSlug: string }>;
+}
+
+async function loadForMeta(storeSlug: string, productSlug: string) {
+  const store = await queryOne<Store>("SELECT * FROM stores WHERE slug = $1 AND is_active = true", [storeSlug]);
+  if (!store) return null;
+  const product = await queryOne<Product>(
+    "SELECT * FROM products WHERE store_id = $1 AND (slug = $2 OR id::text = $2) AND is_active = true",
+    [store.id, productSlug]
+  );
+  return product ? { store, product } : null;
+}
+
+function productImages(p: Product): string[] {
+  return [...new Set([p.image_url, ...(p.images ?? [])].filter((u): u is string => !!u))];
+}
+
+// Rich link previews: WhatsApp, Instagram, Facebook, X and iMessage all read
+// Open Graph tags, so a pasted product link shows its photo, name and price.
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug, productSlug } = await params;
+  const found = await loadForMeta(slug, productSlug);
+  if (!found) return {};
+  const { store, product } = found;
+  const price = `₦${Number(product.price).toLocaleString("en-NG")}`;
+  const description = (product.short_description || product.description || `${product.name} — ${price} at ${store.name}`)
+    .replace(/s+/g, " ")
+    .slice(0, 200);
+  const images = productImages(product).slice(0, 4);
+  const url = `${getStoreUrl(store.slug, store.custom_domain ?? null)}/products/${product.slug || product.id}`;
+  return {
+    title: product.name,
+    description,
+    alternates: url.startsWith("http") ? { canonical: url } : undefined,
+    openGraph: {
+      type: "website",
+      title: `${product.name} · ${price}`,
+      description,
+      siteName: store.name,
+      ...(url.startsWith("http") ? { url } : {}),
+      images: images.map((u) => ({ url: u, alt: product.name })),
+    },
+    twitter: { card: images.length ? "summary_large_image" : "summary", title: `${product.name} · ${price}`, description, images },
+    other: {
+      "product:price:amount": String(Number(product.price)),
+      "product:price:currency": "NGN",
+      "product:availability": (product.stock_quantity ?? 0) > 0 || product.is_bookable ? "in stock" : "out of stock",
+    },
+  };
 }
 
 export default async function ProductDetailPage({ params }: Props) {
@@ -50,12 +100,34 @@ export default async function ProductDetailPage({ params }: Props) {
       )
     : [];
 
+  // Product structured data — eligible for Google's rich results & free listings
+  const price = Number(product.price);
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    image: productImages(product),
+    description: product.short_description || product.description || undefined,
+    sku: product.id,
+    brand: { "@type": "Brand", name: (product as { brand?: string | null }).brand || store.name },
+    offers: {
+      "@type": "Offer",
+      price: price.toFixed(2),
+      priceCurrency: "NGN",
+      availability: (product.stock_quantity ?? 0) > 0 || product.is_bookable ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      seller: { "@type": "Organization", name: store.name },
+    },
+  };
+
   return (
+    <>
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
     <ProductDetailClient
       product={product as any}
       related={related as Product[]}
       store={store}
       storeSlug={storeSlug}
     />
+    </>
   );
 }

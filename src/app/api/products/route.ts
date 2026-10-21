@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifySession, getUserStore } from '@/lib/auth'
+import { verifySession } from '@/lib/auth'
+import { getStoreFor } from "@/lib/access";
 import { query, queryOne, withTransaction, rowsToCamel, toCamel } from '@/lib/db'
 import { cacheDelPattern } from '@/lib/redis'
 import { ensureUncategorized } from '@/lib/categories'
@@ -38,7 +39,7 @@ const Schema = z.object({
 export async function GET(req: NextRequest) {
   const user = await verifySession()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const store = await getUserStore(user.firebaseUid)
+  const store = await getStoreFor(user, "products")
   if (!store) return NextResponse.json({ error: 'No store' }, { status: 404 })
 
   const { searchParams } = req.nextUrl
@@ -73,7 +74,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const user = await verifySession()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const store = await getUserStore(user.firebaseUid)
+  const store = await getStoreFor(user, "products")
   if (!store) return NextResponse.json({ error: 'No store' }, { status: 404 })
 
   const effectivePlan = await getEffectivePlan(store.id)

@@ -124,11 +124,24 @@ export function middleware(req: NextRequest) {
     return redirectToLogin(req, pathname);
   }
 
+  // Someone who signed up from a team invite joins that team rather than
+  // being walked through creating a store of their own.
+  const invite = req.cookies.get("duka_team_invite")?.value;
+  if (pathname === "/onboarding" && invite && /^[A-Za-z0-9_-]{10,100}$/.test(invite)) {
+    const url = new URL("/team/join", req.url);
+    url.searchParams.set("token", invite);
+    return NextResponse.redirect(url);
+  }
+
   // Expose pathname to server components via headers() — dashboard/layout.tsx
   // and others read this.
-  const response = pathname.startsWith("/store/") || pathname.startsWith("/theme-demo/")
-    ? NextResponse.next({ request: { headers: withThemePreview(req) } })
-    : NextResponse.next();
+  // Set on the *request* too: a response header never reaches headers()
+  // in server components, and the dashboard layout gates pages by path.
+  const forwarded = pathname.startsWith("/store/") || pathname.startsWith("/theme-demo/")
+    ? withThemePreview(req)
+    : new Headers(req.headers);
+  forwarded.set("x-pathname", pathname);
+  const response = NextResponse.next({ request: { headers: forwarded } });
   response.headers.set("x-pathname", pathname);
   return response;
 }

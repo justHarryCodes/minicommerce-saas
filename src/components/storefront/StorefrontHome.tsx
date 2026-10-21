@@ -45,6 +45,8 @@ export interface StorefrontHomeProps {
   hideBookmarks?: boolean;
   /** Demo stores: show WhatsApp buttons (inert) so the design is visible without a real number */
   demoContact?: boolean;
+  /** Footer links to the store's published pages and blog */
+  footerLinks?: { href: string; label: string }[];
 }
 
 export default function StorefrontHome(props: StorefrontHomeProps) {
@@ -372,7 +374,7 @@ export default function StorefrontHome(props: StorefrontHomeProps) {
         )}
       </div>
 
-      <StorefrontFooter store={store} theme={theme} storeBase={storeBase} categories={topCategories} />
+      <StorefrontFooter store={store} theme={theme} storeBase={storeBase} categories={topCategories} pageLinks={props.footerLinks} />
     </>
   );
 }

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { verifySession, getUserStore } from "@/lib/auth";
+import { verifySession } from "@/lib/auth";
+import { getPageStore } from "@/lib/access";
 import { query, queryOne } from "@/lib/db";
 import { recoveryUrl } from "@/lib/notify/cart-reminders";
 import { smsConfigured } from "@/lib/notify/providers";
@@ -10,7 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function AbandonedCartsPage() {
   const user = await verifySession();
   if (!user) redirect("/auth/login");
-  const store = await getUserStore(user.firebaseUid);
+  const store = await getPageStore(user, "abandoned");
   if (!store) redirect("/onboarding");
 
   const rows = await query<{

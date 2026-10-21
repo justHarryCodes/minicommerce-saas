@@ -1,4 +1,5 @@
-import { verifySession, getUserStore } from "@/lib/auth";
+import { verifySession } from "@/lib/auth";
+import { getPageStore } from "@/lib/access";
 import { queryMany } from "@/lib/db";
 import { getEffectivePlan } from "@/lib/plan";
 import Image from "next/image";
@@ -13,7 +14,7 @@ import { Tip } from "@/components/dashboard/Tip";
 
 export default async function ProductsPage() {
   const user = await verifySession();
-  const store = await getUserStore(user!.firebaseUid);
+  const store = await getPageStore(user!, "products");
 
   const [products, plan] = await Promise.all([
     queryMany<Product & { category_name: string | null }>(

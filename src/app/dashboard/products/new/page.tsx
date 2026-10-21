@@ -1,4 +1,5 @@
-import { verifySession, getUserStore } from "@/lib/auth";
+import { verifySession } from "@/lib/auth";
+import { getPageStore } from "@/lib/access";
 import { queryMany } from "@/lib/db";
 import ProductForm from "@/components/dashboard/ProductForm";
 import type { Category } from "@/types";
@@ -7,7 +8,7 @@ import { ChevronLeft } from "lucide-react";
 
 export default async function NewProductPage() {
   const user = await verifySession();
-  const store = await getUserStore(user!.firebaseUid);
+  const store = await getPageStore(user!, "products");
 
   const categories = await queryMany<Category>(
     `SELECT * FROM categories WHERE store_id = $1 ORDER BY name ASC`,

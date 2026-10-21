@@ -10,6 +10,8 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { describeInstant, isOpenAt, lagosParts, nextOpening, parseHours } from "@/lib/hours";
 import { BookingConflictError, reserveSlot } from "@/lib/bookings-server";
 import { alertLowStock, crossedLowStock, effectiveThreshold, recordMovements, type StockChange } from "@/lib/inventory";
+import { checkGiftCard, GiftCardBalanceError, redeemGiftCard } from "@/lib/gift-cards";
+import { loyaltyDiscount, loyaltyFor } from "@/lib/loyalty";
 import { z } from "zod";
 
 // Thrown from inside the order transaction when a size's stock was raced
@@ -33,6 +35,7 @@ const OrderSchema = z.object({
   deliveryZoneId: z.string().max(40).optional().nullable(),
   paymentMethod: z.enum(["paystack", "transfer", "pay_on_delivery"]),
   couponCode: z.string().max(40).optional().nullable(),
+  giftCardCode: z.string().max(40).optional().nullable(),
   checkoutToken: z.string().max(64).optional().nullable(),
   items: z
     .array(
@@ -65,6 +68,8 @@ type StoreRow = {
   opening_hours?: unknown;
   allow_preorders?: boolean;
   minimum_order?: number | null;
+  loyalty_every_n?: number | null;
+  loyalty_percent?: number | null;
   [key: string]: unknown;
 };
 
@@ -82,7 +87,7 @@ export async function POST(
       `SELECT id, is_active, payment_preference, delivery_zones, free_delivery_threshold,
               pickup_enabled, pickup_address, pod_enabled, pod_deposit_percent, low_stock_threshold,
               opening_hours, allow_preorders, minimum_order, booking_slot_minutes, booking_buffer_minutes,
-              booking_window_days, booking_min_notice_minutes
+              booking_window_days, booking_min_notice_minutes, loyalty_every_n, loyalty_percent
        FROM stores WHERE slug = $1`,
       [slug]
     );
@@ -247,19 +252,38 @@ export async function POST(
           );
     if (!quote.ok) return NextResponse.json({ error: quote.error }, { status: 400 });
 
+    // ── Loyalty: every Nth order from this phone number gets X% off ──────
+    // Measured on goods after the coupon; doesn't affect the minimum order
+    // or free-delivery threshold (a reward should never cost the customer).
+    let loyalty = 0;
+    const reward = await loyaltyFor(store, d.customerPhone);
+    if (reward?.eligible) loyalty = loyaltyDiscount(subtotal - discount, reward.percent);
+
+    // ── Gift card / store credit (balance re-checked in the transaction) ───
+    let giftCard: { id: string; code: string; balance: number } | null = null;
+    if (d.giftCardCode?.trim()) {
+      const g = await checkGiftCard(store.id, d.giftCardCode);
+      if (!g.ok) return NextResponse.json({ error: g.error }, { status: 400 });
+      giftCard = g;
+    }
+
     const isPod = d.paymentMethod === "pay_on_delivery";
     const totals = computeTotals({
       subtotal,
-      discount,
+      discount: discount + loyalty,
       deliveryFee: quote.fee,
       payOnDelivery: isPod,
       depositPercent: pod.depositPercent,
+      giftCardBalance: giftCard?.balance ?? 0,
     });
+    // A gift card that covers everything leaves nothing to pay
+    const fullyCovered = totals.total === 0 && totals.giftCard > 0;
 
     const orderNumber = `ORD-${Date.now().toString(36).toUpperCase()}`;
     // Map "transfer" → "bank_transfer" for the CHECK constraint
-    const dbPaymentMethod =
-      d.paymentMethod === "transfer" ? "bank_transfer" : d.paymentMethod === "pay_on_delivery" ? "pay_on_delivery" : "paystack";
+    const dbPaymentMethod = fullyCovered
+      ? "gift_card"
+      : d.paymentMethod === "transfer" ? "bank_transfer" : d.paymentMethod === "pay_on_delivery" ? "pay_on_delivery" : "paystack";
     const pickup = quote.method === "pickup";
     const appointment = quote.method === "appointment";
 
@@ -273,8 +297,9 @@ export async function POST(
           delivery_address, delivery_city, delivery_state, delivery_note,
           delivery_method, delivery_zone, delivery_fee,
           subtotal, total, total_amount, deposit_amount,
-          payment_method, coupon_code, discount_amount, scheduled_for
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14,$15,$16,$17,$18,$19)
+          payment_method, coupon_code, discount_amount, scheduled_for,
+          gift_card_code, gift_card_amount, loyalty_discount, payment_status
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)
         RETURNING id, order_number, access_token`,
         [
           store.id, orderNumber,
@@ -295,10 +320,18 @@ export async function POST(
           couponCode,
           totals.discount,
           scheduledFor ? scheduledFor.toISOString() : null,
+          giftCard && totals.giftCard > 0 ? giftCard.code : null,
+          totals.giftCard,
+          loyalty,
+          fullyCovered ? "paid" : "pending",
         ]
       );
 
       const order = orderRows.rows[0];
+
+      if (giftCard && totals.giftCard > 0) {
+        await redeemGiftCard(client, giftCard.id, totals.giftCard, order.id);
+      }
 
       for (const line of lines) {
         await client.query(
@@ -403,7 +436,7 @@ export async function POST(
 
     // Orders paid online now get their first message once Paystack confirms
     // payment (see paystack callback/webhook); the rest are confirmed now.
-    const paysOnlineNow = dbPaymentMethod === "paystack" || totals.deposit > 0;
+    const paysOnlineNow = !fullyCovered && (dbPaymentMethod === "paystack" || totals.deposit > 0);
     if (!paysOnlineNow) void notifyCustomer(result.id, "placed");
 
     return NextResponse.json(
@@ -415,11 +448,12 @@ export async function POST(
         paysOnlineNow,
         scheduledFor: scheduledFor ? scheduledFor.toISOString() : null,
         bookings: reserved,
+        loyaltyApplied: loyalty > 0 ? { amount: loyalty, percent: reward?.percent } : null,
       },
       { status: 201 }
     );
   } catch (err) {
-    if (err instanceof InsufficientStockError || err instanceof BookingConflictError) {
+    if (err instanceof InsufficientStockError || err instanceof BookingConflictError || err instanceof GiftCardBalanceError) {
       return NextResponse.json({ error: err.message }, { status: 409 });
     }
     console.error("[storefront/orders] error:", err);

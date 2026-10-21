@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { queryOne, query } from "@/lib/db";
-import { verifySession, getUserStore } from "@/lib/auth";
+import { verifySession } from "@/lib/auth";
+import { getStoreFor } from "@/lib/access";
 import { eventsForChange, notifyCustomer } from "@/lib/notify/order-messages";
 import { restockCancelledOrder } from "@/lib/inventory";
+import { refundGiftCardForOrder } from "@/lib/gift-cards";
 import { z } from "zod";
 
 const Schema = z.object({
@@ -22,7 +24,7 @@ export async function PATCH(
     const user = await verifySession();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const store = await getUserStore(user.firebaseUid);
+    const store = await getStoreFor(user, "orders");
     if (!store) return NextResponse.json({ error: "No store" }, { status: 404 });
 
     const { orderId } = await params;
@@ -67,6 +69,7 @@ export async function PATCH(
     // Cancelling returns the items to stock (once — guarded by stock_restored_at).
     if (rows[0]?.order_status === "cancelled" && before.order_status !== "cancelled") {
       await restockCancelledOrder(orderId, store.id).catch((e) => console.error("[restock] failed:", e));
+      await refundGiftCardForOrder(orderId, store.id).catch((e) => console.error("[gift card refund] failed:", e));
     }
 
     for (const event of eventsForChange(before, rows[0])) void notifyCustomer(orderId, event);

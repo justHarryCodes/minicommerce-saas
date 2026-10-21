@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifySession, getUserStore } from '@/lib/auth'
+import { verifySession } from '@/lib/auth'
+import { getStoreFor } from "@/lib/access";
 import { query, queryOne, queryMany, withTransaction, toCamel, rowsToCamel } from '@/lib/db'
 import { cacheDelPattern } from '@/lib/redis'
 import { z } from 'zod'
@@ -17,7 +18,7 @@ const SizeSchema = variantInputSchema
 export async function GET(_: NextRequest, { params }: Params) {
   const user = await verifySession()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const store = await getUserStore(user.firebaseUid)
+  const store = await getStoreFor(user, "products")
   if (!store) return NextResponse.json({ error: 'No store' }, { status: 404 })
 
   const { productId } = await params
@@ -39,7 +40,7 @@ export async function GET(_: NextRequest, { params }: Params) {
 export async function PATCH(req: NextRequest, { params }: Params) {
   const user = await verifySession()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const store = await getUserStore(user.firebaseUid)
+  const store = await getStoreFor(user, "products")
   if (!store) return NextResponse.json({ error: 'No store' }, { status: 404 })
 
   const { productId } = await params
@@ -104,7 +105,16 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const allowed = ['name', 'description', 'short_description', 'price', 'compare_price',
     'stock_quantity', 'category_id', 'subcategory_id', 'image_url', 'images', 'is_active',
     'is_featured', 'sort_order', 'has_sizes', 'option_names', 'low_stock_threshold',
-    'is_bookable', 'duration_minutes', 'sold_out_until', 'size_guide']
+    'is_bookable', 'duration_minutes', 'sold_out_until', 'size_guide', 'brand', 'gtin', 'google_category']
+
+  // Catalog fields (Sales channels): short plain strings, GTIN digits only
+  for (const [key, max] of [['brand', 70], ['googleCategory', 200]] as const) {
+    if (key in body) body[key] = typeof body[key] === 'string' && body[key].trim() ? String(body[key]).trim().slice(0, max) : null
+  }
+  if ('gtin' in body) {
+    const g = typeof body.gtin === 'string' ? body.gtin.replace(/D/g, '') : ''
+    body.gtin = /^d{8,14}$/.test(g) ? g : null
+  }
 
   // Stock before the edit, to log what changed in the inventory history
   const beforeProduct = await queryOne<{ name: string; stock_quantity: number; has_sizes: boolean; is_bookable?: boolean }>(
@@ -188,7 +198,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 export async function DELETE(_: NextRequest, { params }: Params) {
   const user = await verifySession()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const store = await getUserStore(user.firebaseUid)
+  const store = await getStoreFor(user, "products")
   if (!store) return NextResponse.json({ error: 'No store' }, { status: 404 })
 
   const { productId } = await params

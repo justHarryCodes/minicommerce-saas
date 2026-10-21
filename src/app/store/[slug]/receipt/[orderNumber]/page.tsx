@@ -34,6 +34,9 @@ interface ReceiptOrder {
   subtotal: number;
   discount_amount: number;
   coupon_code: string | null;
+  loyalty_discount?: number | null;
+  gift_card_code?: string | null;
+  gift_card_amount?: number | null;
   delivery_fee: number;
   total: number;
   total_amount: number | null;
@@ -53,6 +56,9 @@ const PAYMENT_LABEL: Record<string, string> = {
   bank_transfer: "Bank transfer",
   transfer: "Bank transfer",
   pay_on_delivery: "Pay on delivery",
+  cash: "Cash (in store)",
+  card_terminal: "Card (in store)",
+  gift_card: "Gift card",
 };
 
 const PAYMENT_STATUS: Record<string, { label: string; tone: string }> = {
@@ -204,13 +210,19 @@ export default async function ReceiptPage({ params, searchParams }: Props) {
 
           <dl className="ml-auto mt-4 max-w-xs space-y-1.5 text-sm">
             <Row label="Subtotal" value={formatCurrency(Number(order.subtotal))} />
-            {Number(order.discount_amount) > 0 && (
-              <Row label={`Discount${order.coupon_code ? ` (${order.coupon_code})` : ""}`} value={`−${formatCurrency(Number(order.discount_amount))}`} />
+            {Number(order.discount_amount) - Number(order.loyalty_discount ?? 0) > 0 && (
+              <Row label={`Discount${order.coupon_code ? ` (${order.coupon_code})` : ""}`} value={`−${formatCurrency(Number(order.discount_amount) - Number(order.loyalty_discount ?? 0))}`} />
+            )}
+            {Number(order.loyalty_discount ?? 0) > 0 && (
+              <Row label="Loyalty reward" value={`−${formatCurrency(Number(order.loyalty_discount))}`} />
             )}
             {!appointmentOnly && <Row
               label={pickup ? "Pickup" : `Delivery${order.delivery_zone ? ` · ${order.delivery_zone}` : ""}`}
               value={pickup || Number(order.delivery_fee) === 0 ? (pickup ? "Free" : order.delivery_zone ? "Free" : "To be arranged") : formatCurrency(Number(order.delivery_fee))}
             />}
+            {Number(order.gift_card_amount ?? 0) > 0 && (
+              <Row label={`Gift card${order.gift_card_code ? ` (…${order.gift_card_code.slice(-4)})` : ""}`} value={`−${formatCurrency(Number(order.gift_card_amount))}`} />
+            )}
             <div className="flex justify-between border-t border-surface-200 pt-2 text-base font-black dark:border-surface-700">
               <dt>Total</dt>
               <dd>{formatCurrency(total)}</dd>

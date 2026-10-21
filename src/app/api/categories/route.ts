@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifySession, getUserStore } from "@/lib/auth";
+import { verifySession } from "@/lib/auth";
+import { getStoreFor } from "@/lib/access";
 import { query, queryOne, rowsToCamel, toCamel } from "@/lib/db";
 import { cacheDel, CacheKey } from "@/lib/redis";
 import { slugify } from "@/lib/utils";
@@ -15,7 +16,7 @@ export async function GET() {
   const user = await verifySession();
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const store = await getUserStore(user.firebaseUid);
+  const store = await getStoreFor(user, "products");
   if (!store) return NextResponse.json({ error: "No store" }, { status: 404 });
 
   const cats = await query(
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
   const user = await verifySession();
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const store = await getUserStore(user.firebaseUid);
+  const store = await getStoreFor(user, "products");
   if (!store) return NextResponse.json({ error: "No store" }, { status: 404 });
 
   const body = await req.json();

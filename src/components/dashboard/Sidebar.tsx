@@ -26,7 +26,13 @@ import {
   CalendarDays,
   Boxes,
   Users,
+  ScanBarcode,
+  Ticket,
+  FileText,
+  Share2,
+  UserCog,
 } from "lucide-react";
+import { allowedPath, type Role } from "@/lib/access-shared";
 import { auth } from "@/lib/firebase-client";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
@@ -38,9 +44,13 @@ const navItems = [
   { href: "/dashboard/inventory", label: "Inventory", icon: Boxes, pro: false },
   { href: "/dashboard/categories", label: "Categories", icon: FolderTree, pro: false },
   { href: "/dashboard/orders", label: "Orders", icon: ShoppingBag, pro: false },
+  { href: "/dashboard/pos", label: "Point of sale", icon: ScanBarcode, pro: false },
   { href: "/dashboard/customers", label: "Customers", icon: Users, pro: false },
   { href: "/dashboard/bookings", label: "Bookings", icon: CalendarDays, pro: false },
   { href: "/dashboard/abandoned", label: "Abandoned carts", icon: ShoppingCart, pro: false },
+  { href: "/dashboard/gift-cards", label: "Gift cards & loyalty", icon: Ticket, pro: false },
+  { href: "/dashboard/pages", label: "Pages & blog", icon: FileText, pro: false },
+  { href: "/dashboard/channels", label: "Sales channels", icon: Share2, pro: false },
   { href: "/dashboard/storefront", label: "Store Page", icon: Layout, pro: false },
   { href: "/dashboard/themes", label: "Themes", icon: Palette, pro: false },
   { href: "/dashboard/reels", label: "Reels", icon: Film, pro: true },
@@ -48,21 +58,25 @@ const navItems = [
   { href: "/dashboard/coupons", label: "Coupons", icon: Tag, pro: true },
   { href: "/dashboard/reviews", label: "Reviews", icon: Star, pro: false },
   { href: "/dashboard/referral", label: "Refer & Earn", icon: Gift, pro: false },
+  { href: "/dashboard/team", label: "Team", icon: UserCog, pro: false },
   { href: "/dashboard/settings", label: "Settings", icon: Settings, pro: false },
 ];
 
 interface SidebarProps {
   store?: { name: string; slug: string; logoUrl?: string; customDomain?: string | null };
   isPro?: boolean;
+  role?: Role;
 }
 
 function SidebarContent({
   store,
   isPro,
+  role = "owner",
   onClose,
 }: {
   store?: SidebarProps["store"];
   isPro?: boolean;
+  role?: Role;
   onClose?: () => void;
 }) {
   const pathname = usePathname();
@@ -134,7 +148,7 @@ const storeDisplayUrl = store
 
       {/* Nav links */}
       <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
-        {navItems.map(({ href, label, icon: Icon, pro }) => {
+        {navItems.filter(({ href }) => allowedPath(role, href)).map(({ href, label, icon: Icon, pro }) => {
           const active =
             pathname === href ||
             (href !== "/dashboard" && pathname.startsWith(href));
@@ -186,7 +200,7 @@ const storeDisplayUrl = store
   );
 }
 
-export function Sidebar({ store, isPro }: SidebarProps) {
+export function Sidebar({ store, isPro, role }: SidebarProps) {
   const { open, setOpen } = useDashboardDrawer();
 
   return (
@@ -206,12 +220,12 @@ export function Sidebar({ store, isPro }: SidebarProps) {
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <SidebarContent store={store} isPro={isPro} onClose={() => setOpen(false)} />
+        <SidebarContent store={store} isPro={isPro} role={role} onClose={() => setOpen(false)} />
       </aside>
 
       {/* Desktop fixed sidebar */}
       <aside className="hidden lg:flex flex-col fixed inset-y-0 left-0 z-30 w-64 bg-white dark:bg-zinc-950 border-r border-zinc-100 dark:border-zinc-800">
-        <SidebarContent store={store} isPro={isPro} />
+        <SidebarContent store={store} isPro={isPro} role={role} />
       </aside>
     </>
   );

@@ -173,3 +173,36 @@ export function SizeGuideEditor({ value, onChange }: { value: SizeGuide | null; 
     </div>
   );
 }
+
+export interface ListingInfo {
+  brand: string;
+  gtin: string;
+  googleCategory: string;
+}
+
+/** Optional catalog details for Google Shopping / Meta (Sales channels). */
+export function ListingFields({ value, onChange }: { value: ListingInfo; onChange: (v: ListingInfo) => void }) {
+  const set = (k: keyof ListingInfo) => (e: React.ChangeEvent<HTMLInputElement>) => onChange({ ...value, [k]: e.target.value });
+  return (
+    <div className="space-y-3">
+      <div>
+        <p className="font-semibold text-surface-900 dark:text-white text-sm">Google & Facebook listing</p>
+        <p className="text-xs text-surface-500 dark:text-surface-400">Optional. Helps your product show up on Google Shopping and Instagram/Facebook Shops.</p>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold text-surface-600 dark:text-surface-300">Brand</span>
+          <input className={input} value={value.brand} onChange={set("brand")} maxLength={70} placeholder="Defaults to your store name" />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold text-surface-600 dark:text-surface-300">Barcode (GTIN)</span>
+          <input className={input} value={value.gtin} onChange={set("gtin")} inputMode="numeric" maxLength={14} placeholder="8–14 digits" />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold text-surface-600 dark:text-surface-300">Google category</span>
+          <input className={input} value={value.googleCategory} onChange={set("googleCategory")} maxLength={200} placeholder="e.g. Apparel & Accessories > Shoes" />
+        </label>
+      </div>
+    </div>
+  );
+}

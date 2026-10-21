@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { verifySession, getUserStore } from "@/lib/auth";
+import { verifySession } from "@/lib/auth";
+import { getPageStore } from "@/lib/access";
 import { listCustomers } from "@/lib/customers";
 import CustomersClient from "./CustomersClient";
 
@@ -8,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function CustomersPage() {
   const user = await verifySession();
   if (!user) redirect("/auth/login");
-  const store = await getUserStore(user.firebaseUid);
+  const store = await getPageStore(user, "customers");
   if (!store) redirect("/onboarding");
 
   const customers = await listCustomers(store.id);

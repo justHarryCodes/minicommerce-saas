@@ -11,6 +11,13 @@ vi.mock("@/lib/auth", () => ({
   verifySession: vi.fn(),
   getUserStore: vi.fn(),
 }));
+// The route resolves the store through lib/access, which also checks team
+// memberships — no membership here, so it behaves exactly as owner-only.
+vi.mock("@/lib/db", () => ({
+  query: vi.fn().mockResolvedValue([]),
+  queryOne: vi.fn().mockResolvedValue(null),
+  toCamel: (r: unknown) => r,
+}));
 vi.mock("@/lib/plan", () => ({
   getEffectivePlan: vi.fn(),
 }));

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifySession, getUserStore } from '@/lib/auth'
+import { verifySession } from '@/lib/auth'
+import { getStoreFor } from "@/lib/access";
 import { query, toCamel } from '@/lib/db'
 import { cacheDel, CacheKey } from '@/lib/redis'
 
@@ -8,7 +9,7 @@ type Params = { params: Promise<{ subcategoryId: string }> }
 export async function PATCH(req: NextRequest, { params }: Params) {
   const user = await verifySession()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const store = await getUserStore(user.firebaseUid)
+  const store = await getStoreFor(user, "products")
   if (!store) return NextResponse.json({ error: 'No store' }, { status: 404 })
 
   const { subcategoryId } = await params
@@ -25,7 +26,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 export async function DELETE(_: NextRequest, { params }: Params) {
   const user = await verifySession()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const store = await getUserStore(user.firebaseUid)
+  const store = await getStoreFor(user, "products")
   if (!store) return NextResponse.json({ error: 'No store' }, { status: 404 })
 
   const { subcategoryId } = await params

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { Loader2, Package } from "lucide-react";
 import { VariantEditor, initialVariantState, variantPayload, type VariantState } from "@/components/dashboard/VariantEditor";
-import { BookableFields, SizeGuideEditor } from "@/components/dashboard/ProductExtras";
+import { BookableFields, ListingFields, SizeGuideEditor, type ListingInfo } from "@/components/dashboard/ProductExtras";
 import { parseSizeGuide, type SizeGuide } from "@/lib/size-guide";
 import type { Product } from "@/types";
 
@@ -40,6 +40,10 @@ export default function EditProductForm({ product }: Props) {
     durationMinutes: product.duration_minutes ?? product.durationMinutes ?? null,
   });
   const [sizeGuide, setSizeGuide] = useState<SizeGuide | null>(() => parseSizeGuide(product.size_guide ?? product.sizeGuide));
+  const [listing, setListing] = useState<ListingInfo>(() => {
+    const p = product as { brand?: string | null; gtin?: string | null; google_category?: string | null };
+    return { brand: p.brand ?? "", gtin: p.gtin ?? "", googleCategory: p.google_category ?? "" };
+  });
   const [lowStockThreshold, setLowStockThreshold] = useState<string>(
     String(product.low_stock_threshold ?? product.lowStockThreshold ?? "")
   );
@@ -88,6 +92,9 @@ export default function EditProductForm({ product }: Props) {
         isBookable: service.isBookable,
         durationMinutes: service.durationMinutes,
         sizeGuide,
+        brand: listing.brand.trim() || null,
+        gtin: listing.gtin.replace(/D/g, "") || null,
+        googleCategory: listing.googleCategory.trim() || null,
       };
       const cp = parseFloat(form.comparePrice);
       body.comparePrice = !isNaN(cp) && cp > 0 ? cp : null;
@@ -263,6 +270,10 @@ export default function EditProductForm({ product }: Props) {
       {/* Size guide */}
       <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-5">
         <SizeGuideEditor value={sizeGuide} onChange={setSizeGuide} />
+      </div>
+
+      <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-5">
+        <ListingFields value={listing} onChange={setListing} />
       </div>
       </>)}
 

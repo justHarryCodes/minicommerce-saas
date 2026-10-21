@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { verifySession, getUserStore } from "@/lib/auth";
+import { verifySession } from "@/lib/auth";
+import { getPageAccess, can } from "@/lib/access";
 import { query } from "@/lib/db";
 import { lowStockItems } from "@/lib/inventory";
 import { waitingCounts } from "@/lib/stock-alerts";
@@ -10,8 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function InventoryPage() {
   const user = await verifySession();
   if (!user) redirect("/auth/login");
-  const store = await getUserStore(user.firebaseUid);
-  if (!store) redirect("/onboarding");
+  const { store, role } = await getPageAccess(user, "inventory");
 
   const threshold = Number(store.lowStockThreshold ?? store.low_stock_threshold ?? 3);
   const [low, movements, waiting] = await Promise.all([
@@ -47,6 +47,8 @@ export default async function InventoryPage() {
           waiting: (waiting.get(`${l.product_id}|${l.variant_label ?? ""}`) ?? 0) + (l.variant_label ? waiting.get(`${l.product_id}|`) ?? 0 : 0),
         }))}
         movements={movements}
+        canEditProducts={can(role, "products")}
+        canEditThreshold={role === "owner"}
       />
     </div>
   );

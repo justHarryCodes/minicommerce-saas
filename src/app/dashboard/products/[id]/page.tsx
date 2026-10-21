@@ -1,5 +1,6 @@
 import { redirect, notFound } from "next/navigation";
-import { verifySession, getUserStore } from "@/lib/auth";
+import { verifySession } from "@/lib/auth";
+import { getPageStore } from "@/lib/access";
 import { queryOne, queryMany } from "@/lib/db";
 import ProductForm from "@/components/dashboard/ProductForm";
 import type { Product, Category } from "@/types";
@@ -14,7 +15,7 @@ export default async function EditProductPage({ params }: Props) {
   const user = await verifySession();
   if (!user) redirect("/auth/login");
 
-  const store = await getUserStore(user.firebaseUid);
+  const store = await getPageStore(user, "products");
   if (!store) redirect("/onboarding");
 
   const [product, categories] = await Promise.all([

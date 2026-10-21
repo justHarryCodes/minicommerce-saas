@@ -1,11 +1,12 @@
-import { verifySession, getUserStore } from "@/lib/auth";
+import { verifySession } from "@/lib/auth";
+import { getPageStore } from "@/lib/access";
 import { queryMany } from "@/lib/db";
 import CategoryManager from "@/components/dashboard/CategoryManager";
 import type { Category } from "@/types";
 
 export default async function CategoriesPage() {
   const user = await verifySession();
-  const store = await getUserStore(user!.firebaseUid);
+  const store = await getPageStore(user!, "products");
 
   const categories = await queryMany<Category>(
     `SELECT * FROM categories WHERE store_id = $1 ORDER BY sort_order ASC, name ASC`,

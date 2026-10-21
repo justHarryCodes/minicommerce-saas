@@ -45,11 +45,15 @@ export default function InventoryClient({
   threshold,
   lowStock,
   movements,
+  canEditProducts = true,
+  canEditThreshold = true,
 }: {
   storeId: string;
   threshold: number;
   lowStock: LowItem[];
   movements: Movement[];
+  canEditProducts?: boolean;
+  canEditThreshold?: boolean;
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<"low" | "history">(lowStock.length ? "low" : "history");
@@ -90,7 +94,7 @@ export default function InventoryClient({
   return (
     <div className="space-y-5">
       {/* Summary + default alert level */}
-      <div className="grid gap-3 sm:grid-cols-[1fr_1fr_1.4fr]">
+      <div className={`grid gap-3 ${canEditThreshold ? "sm:grid-cols-[1fr_1fr_1.4fr]" : "sm:grid-cols-2"}`}>
         <div className="rounded-2xl border border-surface-100 bg-white p-4 dark:border-surface-800 dark:bg-surface-900">
           <p className="text-xs text-surface-500 dark:text-surface-400">Running low</p>
           <p className="mt-1 text-2xl font-bold text-amber-600 dark:text-amber-400">{lowStock.length - soldOut}</p>
@@ -99,6 +103,7 @@ export default function InventoryClient({
           <p className="text-xs text-surface-500 dark:text-surface-400">Sold out</p>
           <p className="mt-1 text-2xl font-bold text-red-500">{soldOut}</p>
         </div>
+        {canEditThreshold && (
         <div className="rounded-2xl border border-surface-100 bg-white p-4 dark:border-surface-800 dark:bg-surface-900">
           <p className="flex items-center gap-1.5 text-xs text-surface-500 dark:text-surface-400">
             <Bell className="h-3.5 w-3.5" /> Alert me when stock drops to
@@ -122,6 +127,7 @@ export default function InventoryClient({
           </div>
           <p className="mt-1.5 text-[11px] text-surface-400">Store default — each product can override it.</p>
         </div>
+        )}
       </div>
 
       {/* Tabs */}
@@ -170,12 +176,14 @@ export default function InventoryClient({
                 <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${l.stock === 0 ? "bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400" : "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300"}`}>
                   {l.stock === 0 ? "Sold out" : `${l.stock} left`}
                 </span>
+                {canEditProducts && (
                 <Link
                   href={`/dashboard/products/${l.product_id}/edit`}
                   className="rounded-lg border border-surface-200 px-3 py-1.5 text-xs font-semibold text-surface-700 hover:bg-surface-50 dark:border-surface-700 dark:text-surface-200 dark:hover:bg-surface-800"
                 >
                   Restock
                 </Link>
+                )}
               </li>
             ))}
           </ul>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { verifySession, getUserStore } from "@/lib/auth";
+import { verifySession } from "@/lib/auth";
+import { getStoreFor } from "@/lib/access";
 import { query } from "@/lib/db";
 
 const Schema = z.object({ status: z.enum(["confirmed", "completed", "cancelled", "no_show"]) });
@@ -9,7 +10,7 @@ const Schema = z.object({ status: z.enum(["confirmed", "completed", "cancelled",
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await verifySession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const store = await getUserStore(user.firebaseUid);
+  const store = await getStoreFor(user, "bookings");
   if (!store) return NextResponse.json({ error: "No store" }, { status: 404 });
 
   const parsed = Schema.safeParse(await req.json().catch(() => ({})));

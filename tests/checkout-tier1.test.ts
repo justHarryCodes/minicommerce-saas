@@ -91,7 +91,7 @@ describe("delivery", () => {
 describe("computeTotals", () => {
   it("adds delivery after the discount and computes the POD deposit", () => {
     expect(computeTotals({ subtotal: 20_000, discount: 2_000, deliveryFee: 2_500, payOnDelivery: true, depositPercent: 20 })).toEqual({
-      subtotal: 20_000, discount: 2_000, deliveryFee: 2_500, total: 20_500, deposit: 4_100,
+      subtotal: 20_000, discount: 2_000, deliveryFee: 2_500, giftCard: 0, total: 20_500, deposit: 4_100,
     });
   });
   it("never lets the discount exceed the subtotal", () => {
@@ -251,7 +251,7 @@ describe("POST /api/storefront/[slug]/orders — pricing", () => {
 
     expect(res.status).toBe(201);
     const body = await res.json();
-    expect(body.totals).toEqual({ subtotal: 10_000, discount: 0, deliveryFee: 2_500, total: 12_500, deposit: 0 });
+    expect(body.totals).toEqual({ subtotal: 10_000, discount: 0, deliveryFee: 2_500, giftCard: 0, total: 12_500, deposit: 0 });
     expect(inserted()).toMatchObject({ subtotal: 10_000, fee: 2_500, total: 12_500, discount: 0, zone: "Lagos Island", payment: "bank_transfer" });
   });
 

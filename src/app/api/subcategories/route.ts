@@ -1,7 +1,8 @@
 // Subcategories are stored in the same `categories` table with a parent_id.
 // This route is an alias that forwards to /api/categories with parentId set.
 import { NextRequest, NextResponse } from 'next/server'
-import { verifySession, getUserStore } from '@/lib/auth'
+import { verifySession } from '@/lib/auth'
+import { getStoreFor } from "@/lib/access";
 import { query, queryOne, toCamel } from '@/lib/db'
 import { cacheDel, CacheKey } from '@/lib/redis'
 import { slugify } from '@/lib/utils'
@@ -16,7 +17,7 @@ const Schema = z.object({
 export async function POST(req: NextRequest) {
   const user = await verifySession()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const store = await getUserStore(user.firebaseUid)
+  const store = await getStoreFor(user, "products")
   if (!store) return NextResponse.json({ error: 'No store' }, { status: 404 })
 
   const body = await req.json()

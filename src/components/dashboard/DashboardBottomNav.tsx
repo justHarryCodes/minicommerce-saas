@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, ShoppingBag, Settings, Plus } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingBag, Settings, Plus, CalendarDays, Boxes, ScanBarcode } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { Role } from "@/lib/access-shared";
 
 const TABS = [
   { href: "/dashboard",          label: "Home",     icon: LayoutDashboard, exact: true  },
@@ -12,15 +13,36 @@ const TABS = [
   { href: "/dashboard/settings", label: "Settings", icon: Settings,        exact: false },
 ];
 
-export default function DashboardBottomNav() {
+// Team members get tabs for what their role can actually open
+const ROLE_TABS: Record<Exclude<Role, "owner">, typeof TABS> = {
+  manager: [
+    { href: "/dashboard",          label: "Home",     icon: LayoutDashboard, exact: true  },
+    { href: "/dashboard/orders",   label: "Orders",   icon: ShoppingBag,     exact: false },
+    { href: "/dashboard/products", label: "Products", icon: Package,         exact: false },
+    { href: "/dashboard/pos",      label: "POS",      icon: ScanBarcode,     exact: false },
+  ],
+  staff: [
+    { href: "/dashboard/orders",    label: "Orders",   icon: ShoppingBag,  exact: false },
+    { href: "/dashboard/bookings",  label: "Bookings", icon: CalendarDays, exact: false },
+    { href: "/dashboard/inventory", label: "Stock",    icon: Boxes,        exact: false },
+    { href: "/dashboard/pos",       label: "POS",      icon: ScanBarcode,  exact: false },
+  ],
+};
+
+export default function DashboardBottomNav({ role = "owner" }: { role?: Role }) {
   const pathname = usePathname();
+  const tabs = role === "owner" ? TABS : ROLE_TABS[role];
+  // Staff can't add products, so their quick action is a new in-person sale
+  const fab = role === "staff"
+    ? { href: "/dashboard/pos", label: "New sale" }
+    : { href: "/dashboard/products/new", label: "List new product" };
 
   const isActive = (href: string, exact: boolean) =>
     exact ? pathname === href : pathname.startsWith(href);
 
   // Split into 2 tabs left + FAB center + 2 tabs right
-  const leftTabs  = TABS.slice(0, 2);
-  const rightTabs = TABS.slice(2);
+  const leftTabs  = tabs.slice(0, 2);
+  const rightTabs = tabs.slice(2);
 
   return (
     <nav className="lg:hidden fixed bottom-0 inset-x-0 z-30 flex items-stretch bg-white dark:bg-zinc-950 border-t border-zinc-100 dark:border-zinc-800"
@@ -53,9 +75,9 @@ export default function DashboardBottomNav() {
       {/* FAB — list product */}
       <div className="flex items-center justify-center px-2">
         <Link
-          href="/dashboard/products/new"
+          href={fab.href}
           className="w-12 h-12 rounded-2xl bg-accent-500 hover:bg-accent-600 flex items-center justify-center shadow-lg shadow-accent-500/30 transition-colors"
-          aria-label="List new product"
+          aria-label={fab.label}
         >
           <Plus className="w-6 h-6 text-black" strokeWidth={2.5} />
         </Link>

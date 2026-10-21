@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { verifySession, getUserStore } from "@/lib/auth";
+import { verifySession } from "@/lib/auth";
+import { getStoreFor } from "@/lib/access";
 import { requirePro } from "@/lib/plan";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { isAiEnabled, analyzeImage, logAiUsage } from "@/lib/ai";
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest) {
   const user = await verifySession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const store = await getUserStore(user.firebaseUid);
+  const store = await getStoreFor(user, "products");
   if (!store) return NextResponse.json({ error: "Store not found" }, { status: 404 });
 
   const proErr = await requirePro(store.id);

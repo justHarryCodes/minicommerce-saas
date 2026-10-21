@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifySession, getUserStore } from "@/lib/auth";
+import { verifySession } from "@/lib/auth";
+import { getStoreFor } from "@/lib/access";
 import { query } from "@/lib/db";
 
 /** Dismiss an abandoned checkout (hides it and stops its reminder). */
 export async function PATCH(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await verifySession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const store = await getUserStore(user.firebaseUid);
+  const store = await getStoreFor(user, "abandoned");
   if (!store) return NextResponse.json({ error: "No store" }, { status: 404 });
 
   const { id } = await params;

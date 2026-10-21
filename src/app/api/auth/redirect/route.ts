@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { verifySession, getUserStore } from "@/lib/auth";
+import { cookies } from "next/headers";
+import { INVITE_COOKIE } from "@/lib/team";
+import { verifySession } from "@/lib/auth";
+import { getStoreAccess } from "@/lib/access";
 import { verifyAdminSession, getPlatformSettings } from "@/lib/admin-auth";
 
 export async function GET() {
@@ -9,8 +12,16 @@ export async function GET() {
   const admin = await verifyAdminSession();
   if (admin) return NextResponse.json({ url: "/admin" });
 
-  const store = await getUserStore(user.firebaseUid);
-  if (!store) return NextResponse.json({ url: "/onboarding" });
+  // Signed in from a team invitation link: go back and accept it
+  const invite = (await cookies()).get(INVITE_COOKIE)?.value;
+  if (invite) return NextResponse.json({ url: `/team/join?token=${encodeURIComponent(invite)}` });
+
+  const access = await getStoreAccess(user);
+  if (!access) return NextResponse.json({ url: "/onboarding" });
+  const { store } = access;
+  // Team members land on the work they do; the owner handles billing.
+  if (access.role === "staff") return NextResponse.json({ url: "/dashboard/orders" });
+  if (access.role === "manager") return NextResponse.json({ url: "/dashboard" });
 
   // Resolve the final destination including the billing gate so the client
   // only does a single navigation (no server-side redirect chain).

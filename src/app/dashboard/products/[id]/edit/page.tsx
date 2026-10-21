@@ -1,7 +1,8 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { verifySession, getUserStore } from "@/lib/auth";
+import { verifySession } from "@/lib/auth";
+import { getPageStore } from "@/lib/access";
 import { queryOne, queryMany } from "@/lib/db";
 import type { Product, ProductSize } from "@/types";
 import EditProductForm from "./EditProductForm";
@@ -21,7 +22,7 @@ export default async function EditProductPage({ params }: Props) {
   const user = await verifySession();
   if (!user) redirect("/auth/login");
 
-  const store = await getUserStore(user.firebaseUid);
+  const store = await getPageStore(user, "products");
   if (!store) redirect("/onboarding");
 
   const product = await queryOne<Product>(

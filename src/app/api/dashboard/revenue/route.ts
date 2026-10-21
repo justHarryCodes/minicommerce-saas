@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifySession, getUserStore } from '@/lib/auth'
+import { verifySession } from '@/lib/auth'
+import { getStoreFor } from "@/lib/access";
 import { query } from '@/lib/db'
 
 export async function GET(req: NextRequest) {
   const user = await verifySession()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const store = await getUserStore(user.firebaseUid)
+  const store = await getStoreFor(user, "overview")
   if (!store) return NextResponse.json({ error: 'No store' }, { status: 404 })
 
   const days = Math.min(30, parseInt(req.nextUrl.searchParams.get('days') ?? '7') || 7)

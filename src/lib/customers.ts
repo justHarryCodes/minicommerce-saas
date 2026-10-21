@@ -23,6 +23,8 @@ export async function listCustomers(storeId: string, limit = 2000): Promise<Cust
        SELECT o.*, ${PHONE_KEY_SQL} AS phone_key
        FROM orders o
        WHERE o.store_id = $1 AND o.order_status <> 'cancelled'
+         -- walk-in POS sales with no phone aren't a customer we can recognise
+         AND o.customer_phone ~ '[0-9]'
      )
      SELECT phone_key AS key,
             (array_agg(customer_name ORDER BY created_at DESC))[1] AS name,

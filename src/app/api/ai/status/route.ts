@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { verifySession, getUserStore } from "@/lib/auth";
+import { verifySession } from "@/lib/auth";
+import { getStoreFor } from "@/lib/access";
 import { getEffectivePlan } from "@/lib/plan";
 import { isAiEnabled } from "@/lib/ai";
 
@@ -21,7 +22,7 @@ export async function GET() {
   const user = await verifySession();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const store = await getUserStore(user.firebaseUid);
+  const store = await getStoreFor(user, "products");
   // No store yet (mid-onboarding) — nothing here is Pro-gated at that point
   // (suggest-store-structure is free for everyone), so isPro is moot; false
   // is the safe default rather than pretending Pro access exists.

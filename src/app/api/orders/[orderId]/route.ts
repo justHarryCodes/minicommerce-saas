@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifySession, getUserStore } from '@/lib/auth'
+import { verifySession } from '@/lib/auth'
+import { getStoreFor } from "@/lib/access";
 import { query, queryOne } from '@/lib/db'
 import { eventsForChange, notifyCustomer } from '@/lib/notify/order-messages'
 import { restockCancelledOrder } from '@/lib/inventory'
+import { refundGiftCardForOrder } from '@/lib/gift-cards'
 
 type Params = { params: Promise<{ orderId: string }> }
 
 export async function GET(_: NextRequest, { params }: Params) {
   const user = await verifySession()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const store = await getUserStore(user.firebaseUid)
+  const store = await getStoreFor(user, "orders")
   if (!store) return NextResponse.json({ error: 'No store' }, { status: 404 })
 
   const { orderId } = await params
@@ -25,7 +27,7 @@ export async function GET(_: NextRequest, { params }: Params) {
 export async function PATCH(req: NextRequest, { params }: Params) {
   const user = await verifySession()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const store = await getUserStore(user.firebaseUid)
+  const store = await getStoreFor(user, "orders")
   if (!store) return NextResponse.json({ error: 'No store' }, { status: 404 })
 
   const { orderId } = await params
@@ -50,6 +52,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const after = rows[0] as { order_status: string; payment_status: string } | undefined
   if (after?.order_status === 'cancelled' && before.order_status !== 'cancelled') {
     await restockCancelledOrder(orderId, store.id).catch((e) => console.error('[restock] failed:', e))
+    await refundGiftCardForOrder(orderId, store.id).catch((e) => console.error('[gift card refund] failed:', e))
   }
   if (after) for (const event of eventsForChange(before, after)) void notifyCustomer(orderId, event)
   return NextResponse.json({ data: rows[0] })

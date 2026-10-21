@@ -20,6 +20,7 @@ import {
   Receipt,
   Store as StoreIcon,
   Truck,
+  Gift,
 } from "lucide-react";
 import { useCart } from "@/components/storefront/CartProvider";
 import { useStore } from "@/lib/store-context";
@@ -28,6 +29,7 @@ import { clThumb } from "@/lib/cloudinary";
 import toast from "react-hot-toast";
 import { hasDeliveryOptions, quoteDelivery, type DeliverySettings, type PayOnDeliverySettings } from "@/lib/delivery";
 import { computeTotals } from "@/lib/order-pricing";
+import { loyaltyDiscount } from "@/lib/loyalty-shared";
 import { openStatus, type WeeklyHours } from "@/lib/hours";
 import { formatAppointment } from "@/lib/booking";
 
@@ -107,6 +109,12 @@ export default function CheckoutClient({
     null,
   );
   const [validatingCoupon, setValidatingCoupon] = useState(false);
+  // Gift card / store credit and the loyalty reward (both re-checked by the server)
+  const [giftCodeInput, setGiftCodeInput] = useState("");
+  const [appliedGift, setAppliedGift] = useState<{ code: string; balance: number } | null>(null);
+  const [checkingGift, setCheckingGift] = useState(false);
+  const [showGiftInput, setShowGiftInput] = useState(false);
+  const [loyalty, setLoyalty] = useState<{ eligible: boolean; remaining: number; percent: number; everyN: number } | null>(null);
   const [policyOpen, setPolicyOpen] = useState(false);
 
   const [form, setForm] = useState({
@@ -132,12 +140,14 @@ export default function CheckoutClient({
     deliveryMethod === "pickup" ? { method: "pickup" } : { method: "delivery", zoneId },
     goodsTotal,
   );
+  const loyaltyAmount = loyalty?.eligible ? loyaltyDiscount(goodsTotal, loyalty.percent) : 0;
   const totals = computeTotals({
     subtotal: totalAmount,
-    discount: discountAmount,
+    discount: discountAmount + loyaltyAmount,
     deliveryFee: quote.ok ? quote.fee : 0,
     payOnDelivery: payMethod === "pay_on_delivery",
     depositPercent: payOnDelivery.depositPercent,
+    giftCardBalance: appliedGift?.balance ?? 0,
   });
   const finalTotal = totals.total;
   // Minimum order is measured on goods after discounts (like the server)
@@ -151,6 +161,26 @@ export default function CheckoutClient({
     fee === 0 || (delivery.freeDeliveryThreshold != null && goodsTotal >= delivery.freeDeliveryThreshold)
       ? "Free"
       : formatCurrency(fee);
+
+  // Loyalty preview once we know who's ordering (keyed by phone number)
+  const phoneDigits = form.customerPhone.replace(/\D/g, "");
+  useEffect(() => {
+    if (phoneDigits.length < 10) {
+      setLoyalty(null);
+      return;
+    }
+    const t = setTimeout(() => {
+      fetch(`/api/storefront/${storeSlug}/rewards`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: phoneDigits }),
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => setLoyalty(d?.loyalty ?? null))
+        .catch(() => {});
+    }, 600);
+    return () => clearTimeout(t);
+  }, [phoneDigits, storeSlug]);
 
   // ── Checkout token + abandoned-cart recovery ───────────────────────────────
   const tokenKey = `checkout-token-${storeSlug}`;
@@ -237,6 +267,31 @@ export default function CheckoutClient({
     );
   }
 
+
+  async function handleApplyGift() {
+    const code = giftCodeInput.trim();
+    if (!code) return;
+    setCheckingGift(true);
+    try {
+      const res = await fetch(`/api/storefront/${storeSlug}/rewards`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ giftCardCode: code }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.giftCard || data.giftCard.error) {
+        toast.error(data.giftCard?.error ?? data.error ?? "Couldn't check that gift card");
+        return;
+      }
+      setAppliedGift(data.giftCard);
+      toast.success(`Gift card applied — ${formatCurrency(data.giftCard.balance)} available`);
+    } catch {
+      toast.error("Couldn't check that gift card");
+    } finally {
+      setCheckingGift(false);
+    }
+  }
+
   async function handleApplyCoupon() {
     const code = couponCode.trim().toUpperCase();
     if (!code) return;
@@ -307,6 +362,7 @@ export default function CheckoutClient({
           deliveryMethod: allBookable ? "appointment" : deliveryMethod,
           deliveryZoneId: deliveryMethod === "delivery" ? zoneId : null,
           couponCode: appliedCoupon?.code ?? null,
+          giftCardCode: appliedGift?.code ?? null,
           checkoutToken,
         }),
       });
@@ -382,7 +438,7 @@ export default function CheckoutClient({
           Order #{orderNumber}
         </p>
 
-        {payMethod === "transfer" && (
+        {payMethod === "transfer" && placedTotal > 0 && (
           <div className="mt-6 p-5 rounded-2xl bg-surface-50 dark:bg-surface-900 border border-surface-100 dark:border-surface-800 text-left space-y-3">
             <p className="font-bold text-surface-900 dark:text-white">
               Bank Transfer Details
@@ -979,6 +1035,71 @@ export default function CheckoutClient({
                 )}
               </div>
 
+              {/* Gift card / store credit */}
+              <div className="mb-4">
+                {appliedGift ? (
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Gift className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0" />
+                      <span className="text-sm font-bold text-green-700 dark:text-green-400 font-mono truncate">{appliedGift.code}</span>
+                      <span className="text-xs text-green-600 dark:text-green-400 shrink-0">{formatCurrency(appliedGift.balance)} balance</span>
+                    </div>
+                    <button
+                      onClick={() => { setAppliedGift(null); setGiftCodeInput(""); }}
+                      aria-label="Remove gift card"
+                      className="p-1 rounded-lg text-green-500 hover:text-green-700 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors shrink-0 ml-2"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : showGiftInput ? (
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 flex items-center rounded-xl border border-surface-200 dark:border-surface-700 overflow-hidden min-w-0">
+                      <Gift className="w-4 h-4 text-surface-400 ml-3 shrink-0" />
+                      <input
+                        type="text"
+                        value={giftCodeInput}
+                        onChange={(e) => setGiftCodeInput(e.target.value.toUpperCase())}
+                        onKeyDown={(e) => e.key === "Enter" && handleApplyGift()}
+                        placeholder="GIFT-XXXX-XXXX-XXXX"
+                        maxLength={24}
+                        autoFocus
+                        className="flex-1 min-w-0 px-3 py-2.5 bg-transparent text-surface-900 dark:text-white placeholder:text-surface-400 text-sm font-mono focus:outline-none"
+                      />
+                    </div>
+                    <button
+                      onClick={handleApplyGift}
+                      disabled={checkingGift || !giftCodeInput.trim()}
+                      className="px-3 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-50 border border-surface-200 dark:border-surface-700 text-surface-700 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-800 shrink-0"
+                    >
+                      {checkingGift ? <Loader2 className="w-4 h-4 animate-spin" /> : "Apply"}
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowGiftInput(true)}
+                    className="text-xs font-semibold text-surface-500 underline underline-offset-2 hover:text-surface-800 dark:hover:text-surface-200"
+                  >
+                    Have a gift card or store credit?
+                  </button>
+                )}
+              </div>
+
+              {loyalty && (
+                <div
+                  className={`mb-4 rounded-xl px-3 py-2.5 text-xs font-medium ${
+                    loyalty.eligible
+                      ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"
+                      : "bg-surface-50 text-surface-600 dark:bg-surface-800/60 dark:text-surface-300"
+                  }`}
+                >
+                  {loyalty.eligible
+                    ? `🎉 Thanks for coming back! This order gets ${loyalty.percent}% off.`
+                    : `${loyalty.remaining} more order${loyalty.remaining === 1 ? "" : "s"} after this one and you'll get ${loyalty.percent}% off.`}
+                </div>
+              )}
+
               {/* Totals */}
               <div className="border-t border-surface-100 dark:border-surface-800 pt-4 space-y-2">
                 <div className="flex justify-between text-sm text-surface-500 dark:text-surface-400">
@@ -989,6 +1110,12 @@ export default function CheckoutClient({
                   <div className="flex justify-between text-sm text-green-600 dark:text-green-400 font-medium">
                     <span>Discount ({appliedCoupon.code})</span>
                     <span>-{formatCurrency(appliedCoupon.discountAmount)}</span>
+                  </div>
+                )}
+                {loyaltyAmount > 0 && (
+                  <div className="flex justify-between text-sm text-green-600 dark:text-green-400 font-medium">
+                    <span>Loyalty reward ({loyalty?.percent}%)</span>
+                    <span>-{formatCurrency(loyaltyAmount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between gap-3 text-sm text-surface-500 dark:text-surface-400">
@@ -1009,6 +1136,12 @@ export default function CheckoutClient({
                     )}
                   </span>
                 </div>
+                {totals.giftCard > 0 && (
+                  <div className="flex justify-between text-sm text-green-600 dark:text-green-400 font-medium">
+                    <span>Gift card</span>
+                    <span>-{formatCurrency(totals.giftCard)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between font-black text-lg text-surface-900 dark:text-white border-t border-surface-100 dark:border-surface-800 pt-3 mt-1">
                   <span>Total</span>
                   <span>{formatCurrency(finalTotal)}</span>

@@ -8,6 +8,8 @@ interface Props {
   theme: ResolvedTheme;
   storeBase: string;
   categories: Category[];
+  /** Published store pages (About, FAQ, policies…) and blog */
+  pageLinks?: { href: string; label: string }[];
 }
 
 const year = () => new Date().getFullYear();
@@ -23,7 +25,7 @@ function PoweredBy() {
   );
 }
 
-export default function StorefrontFooter({ store, theme, storeBase, categories }: Props) {
+export default function StorefrontFooter({ store, theme, storeBase, categories, pageLinks = [] }: Props) {
   const homeHref = storeBase || "/";
   const whatsappHref = store.whatsapp ? `https://wa.me/${store.whatsapp.replace(/[^0-9]/g, "")}` : null;
   const shopLinks = [
@@ -33,6 +35,7 @@ export default function StorefrontFooter({ store, theme, storeBase, categories }
   const helpLinks = [
     { href: `${storeBase}/track`, label: "Track your order" },
     { href: `${storeBase}/reels`, label: "Reels" },
+    ...pageLinks,
   ];
 
   if (theme.layout.footer === "minimal") {

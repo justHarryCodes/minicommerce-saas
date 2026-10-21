@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Search, SearchX } from "lucide-react";
-import { verifySession, getUserStore } from "@/lib/auth";
+import { verifySession } from "@/lib/auth";
+import { getPageStore } from "@/lib/access";
 import { getAnalytics, pctChange, RANGES, type RangeDays } from "@/lib/analytics";
 import { SOURCE_LABELS, type TrafficSource } from "@/lib/traffic-source";
 import { BarList, StatTile, count, naira } from "@/components/dashboard/charts-static";
@@ -14,6 +15,9 @@ const PAYMENT_LABEL: Record<string, string> = {
   bank_transfer: "Bank transfer",
   transfer: "Bank transfer",
   pay_on_delivery: "Pay on delivery",
+  cash: "Cash (in store)",
+  card_terminal: "Card (in store)",
+  gift_card: "Gift card",
 };
 
 const pct = (part: number, whole: number) => (whole ? `${Math.round((part / whole) * 1000) / 10}%` : "—");
@@ -21,7 +25,7 @@ const pct = (part: number, whole: number) => (whole ? `${Math.round((part / whol
 export default async function AnalyticsPage({ searchParams }: { searchParams: Promise<{ range?: string }> }) {
   const user = await verifySession();
   if (!user) redirect("/auth/login");
-  const store = await getUserStore(user.firebaseUid);
+  const store = await getPageStore(user, "analytics");
   if (!store) redirect("/onboarding");
 
   const { range } = await searchParams;

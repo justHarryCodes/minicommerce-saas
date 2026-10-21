@@ -1,4 +1,5 @@
-import { verifySession, getUserStore } from "@/lib/auth";
+import { verifySession } from "@/lib/auth";
+import { getPageStore } from "@/lib/access";
 import { queryOne, queryMany } from "@/lib/db";
 import { getEffectivePlan } from "@/lib/plan";
 import { formatCurrency, formatDate, getStoreUrl } from "@/lib/utils";
@@ -73,7 +74,7 @@ const STATUS_STYLES: Record<string, string> = {
 
 export default async function DashboardPage() {
   const user = await verifySession();
-  const store = await getUserStore(user!.firebaseUid);
+  const store = await getPageStore(user!, "overview");
   const [{ stats, recentOrders }, effectivePlan] = await Promise.all([
     getDashboardStats(store!.id),
     getEffectivePlan(store!.id),

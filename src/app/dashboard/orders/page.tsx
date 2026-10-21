@@ -1,5 +1,6 @@
 import Image from "next/image";
-import { verifySession, getUserStore } from "@/lib/auth";
+import { verifySession } from "@/lib/auth";
+import { getPageStore } from "@/lib/access";
 import { queryMany } from "@/lib/db";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { getAppUrl } from "@/lib/paystack";
@@ -22,6 +23,9 @@ const PAYMENT_LABEL: Record<string, string> = {
   bank_transfer: "Bank transfer",
   transfer: "Bank transfer",
   pay_on_delivery: "Pay on delivery",
+  cash: "Cash (in store)",
+  card_terminal: "Card (in store)",
+  gift_card: "Gift card",
 };
 
 const PAY_STATUS_STYLES: Record<string, string> = {
@@ -35,7 +39,7 @@ const PAY_STATUS_STYLES: Record<string, string> = {
 
 export default async function OrdersPage() {
   const user = await verifySession();
-  const store = await getUserStore(user!.firebaseUid);
+  const store = await getPageStore(user!, "orders");
   const appUrl = getAppUrl();
 
   const orders = await queryMany<Order>(
@@ -95,6 +99,9 @@ export default async function OrdersPage() {
                     <span className="font-bold text-surface-900 dark:text-white text-sm">
                       {order.order_number}
                     </span>
+                    {(order as { channel?: string }).channel === "pos" && (
+                      <span className="text-xs px-2 py-1 rounded-full bg-surface-900 text-white dark:bg-white dark:text-black font-semibold">In store</span>
+                    )}
                     <span
                       className={`text-xs px-2 py-1 rounded-full border font-medium ${
                         STATUS_STYLES[order.order_status ?? "pending"]

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { verifySession, getUserStore } from "@/lib/auth";
+import { verifySession } from "@/lib/auth";
+import { getPageStore } from "@/lib/access";
 import { query } from "@/lib/db";
 import { lagosParts } from "@/lib/hours";
 import BookingsClient from "./BookingsClient";
@@ -9,7 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function BookingsPage() {
   const user = await verifySession();
   if (!user) redirect("/auth/login");
-  const store = await getUserStore(user.firebaseUid);
+  const store = await getPageStore(user, "bookings");
   if (!store) redirect("/onboarding");
 
   const [services, staff] = await Promise.all([

@@ -5,6 +5,7 @@ import { getOrSet, cacheKey, TTL } from "@/lib/redis";
 import StorefrontHome from "@/components/storefront/StorefrontHome";
 import type { CategoryTileData } from "@/components/storefront/ThemeSections";
 import { getRequestTheme } from "@/lib/themes/server";
+import { footerPages, pageLinksFor } from "@/lib/store-pages";
 import { isSoldOutToday } from "@/lib/hours";
 import type { Testimonial } from "@/lib/themes/types";
 import type { Product, Category, Store } from "@/types";
@@ -111,6 +112,7 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
   const activeSub = subcategories.find((s) => s.slug === sub);
 
   const isHome = !category;
+  const footerLinks = pageLinksFor(await footerPages(store.id), storeBase);
   const theme = await getRequestTheme(store);
   const wants = (id: string) => isHome && theme.layout.sections.includes(id as never);
 
@@ -177,6 +179,7 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
       categoryTiles={categoryTiles}
       railRows={railRows}
       testimonials={testimonials}
+      footerLinks={footerLinks}
     />
   );
 }
