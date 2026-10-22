@@ -14,6 +14,7 @@ import {
   Minus,
 } from "lucide-react";
 import { query } from "@/lib/db";
+import { getOrSet, cacheKey } from "@/lib/redis";
 import HomeNav from "../HomeNav";
 import Footer from "@/components/Footer";
 
@@ -101,12 +102,23 @@ const FAQ = [
   },
 ];
 
+// Rendered per request (from a 5-minute cache) — it used to be built once
+// at deploy time, so plan changes in the admin never showed until the next
+// deploy, and a slow database could fail the whole build.
+export const dynamic = "force-dynamic";
+
 export default async function PricingPage() {
-  const plans = await query<Plan>(
-    `SELECT id, name, description, price_monthly, max_products, max_reels
-     FROM plans WHERE is_active = true ORDER BY sort_order ASC`,
-    [],
-  );
+  const plans =
+    (await getOrSet<Plan[]>(
+      cacheKey.publicPlans(),
+      () =>
+        query<Plan>(
+          `SELECT id, name, description, price_monthly, max_products, max_reels
+           FROM plans WHERE is_active = true ORDER BY sort_order ASC`,
+          [],
+        ),
+      300,
+    )) ?? [];
 
   const popularIndex = plans.length > 2 ? 1 : -1;
 

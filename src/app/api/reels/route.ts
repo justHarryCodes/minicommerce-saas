@@ -3,7 +3,7 @@ import { ownProductIds } from "@/lib/tenant";
 import { z } from "zod";
 import { verifySession } from "@/lib/auth";
 import { query, queryOne } from "@/lib/db";
-import { redis, reelKey, cacheDel } from "@/lib/redis";
+import { safeRedis, reelKey, cacheDel } from "@/lib/redis";
 import { requireFeature, getEffectivePlan } from "@/lib/plan";
 import type { Reel } from "@/types";
 
@@ -33,8 +33,11 @@ async function checkRateLimit(
 ): Promise<{ allowed: boolean; reason?: string }> {
   // Hourly rate limit — max 3 uploads per hour to prevent bursts
   const hourKey = reelKey.hourlyRate(storeId);
-  const count = await redis.incr(hourKey);
-  if (count === 1) await redis.expire(hourKey, 3600);
+  const count = await safeRedis(async (r) => {
+    const n = await r.incr(hourKey);
+    if (n === 1) await r.expire(hourKey, 3600);
+    return n;
+  }, 0);
   if (count > 3) return { allowed: false, reason: "Too many uploads — please wait before uploading again." };
 
   // Monthly quota — a per-store override (set from the admin vendor detail page)

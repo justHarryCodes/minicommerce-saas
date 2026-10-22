@@ -18,6 +18,7 @@ vi.mock("@/lib/db", () => ({
 }));
 vi.mock("@/lib/auth", () => ({ verifySession: vi.fn(), getUserStore: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn((to: string) => { throw new Error(`REDIRECT:${to}`); }) }));
+vi.mock("@/lib/store-cache", () => ({ invalidateStore: vi.fn(), invalidateStoreSoon: vi.fn(), storeCached: vi.fn((_s: string, _k: string, fn: () => unknown) => fn()) }));
 vi.mock("@/lib/redis", () => ({
   cacheDel: vi.fn(), cacheGet: vi.fn().mockResolvedValue(null), cacheSet: vi.fn(), cacheDelPattern: vi.fn(),
   getOrSet: vi.fn(async (_k: string, fn: () => unknown) => fn()),

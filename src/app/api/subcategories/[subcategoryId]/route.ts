@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { invalidateStore } from "@/lib/store-cache";
 import { verifySession } from '@/lib/auth'
 import { getStoreFor } from "@/lib/access";
 import { query, toCamel } from '@/lib/db'
@@ -20,6 +21,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   )
   if (!rows[0]) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   await cacheDel(CacheKey.categories(store.id))
+  await invalidateStore(store.id)
   return NextResponse.json({ data: toCamel(rows[0] as Record<string, unknown>) })
 }
 
@@ -35,5 +37,6 @@ export async function DELETE(_: NextRequest, { params }: Params) {
     [subcategoryId, store.id]
   )
   await cacheDel(CacheKey.categories(store.id))
+  await invalidateStore(store.id)
   return NextResponse.json({ ok: true })
 }

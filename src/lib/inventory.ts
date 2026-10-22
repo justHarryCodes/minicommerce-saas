@@ -6,6 +6,7 @@
 // the merchant gets one alert — on the crossing, not on every later sale.
 
 import type { PoolClient } from "pg";
+import { invalidateStoreSoon } from "@/lib/store-cache";
 import { query, withTransaction } from "@/lib/db";
 import { notifyStoreEvent } from "@/lib/push";
 import { notifyBackInStock } from "@/lib/stock-alerts";
@@ -136,6 +137,7 @@ export async function restockCancelledOrder(orderId: string, storeId: string): P
     return changes.length;
   });
   for (const b of backFromZero) void notifyBackInStock(storeId, b.productId, b.label);
+  if (restored) invalidateStoreSoon(storeId);
   return restored;
 }
 

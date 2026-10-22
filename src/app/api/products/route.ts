@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { invalidateStore } from "@/lib/store-cache";
 import { foreignCategory } from '@/lib/tenant'
 import { verifySession } from '@/lib/auth'
 import { getStoreFor } from "@/lib/access";
 import { query, queryOne, withTransaction, rowsToCamel, toCamel } from '@/lib/db'
-import { cacheDelPattern } from '@/lib/redis'
 import { ensureUncategorized } from '@/lib/categories'
 import { slugify } from '@/lib/utils'
 import { getEffectivePlan, requireFeature } from '@/lib/plan'
@@ -164,6 +164,6 @@ export async function POST(req: NextRequest) {
     return row
   })
 
-  await cacheDelPattern(`products:${store.id}*`)
+  await invalidateStore(store.id)
   return NextResponse.json({ data: toCamel(product as Record<string, unknown>) }, { status: 201 })
 }

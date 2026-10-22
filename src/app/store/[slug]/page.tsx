@@ -5,6 +5,9 @@ import { getOrSet, cacheKey, TTL } from "@/lib/redis";
 import StorefrontHome from "@/components/storefront/StorefrontHome";
 import type { CategoryTileData } from "@/components/storefront/ThemeSections";
 import { getRequestTheme } from "@/lib/themes/server";
+import { storeCached } from "@/lib/store-cache";
+import { dateOnly, getCachedStore } from "@/lib/storefront-page";
+import { toCardProduct } from "@/lib/public-store";
 import { footerPages, pageLinksFor } from "@/lib/store-pages";
 import { isSoldOutToday } from "@/lib/hours";
 import type { Testimonial } from "@/lib/themes/types";
@@ -91,7 +94,8 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
   const slug = h.get("x-store-slug") ?? paramSlug;
   const storeBase = isSubdomain ? "" : `/store/${slug}`;
 
-  const store = await queryOne<Store>("SELECT * FROM stores WHERE slug = $1", [slug]);
+  // Same cached row the layout uses (one lookup, no extra database trip)
+  const store = await getCachedStore(slug);
   if (!store) return notFound();
   if (!store.is_active) return notFound();
 
@@ -112,21 +116,26 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
   const activeSub = subcategories.find((s) => s.slug === sub);
 
   const isHome = !category;
-  const footerLinks = pageLinksFor(await footerPages(store.id), storeBase);
-  const theme = await getRequestTheme(store);
+  const [pages, theme] = await Promise.all([footerPages(store.id), getRequestTheme(store)]);
+  const footerLinks = pageLinksFor(pages, storeBase);
   const wants = (id: string) => isHome && theme.layout.sections.includes(id as never);
 
+  // Everything below is cached per store and refreshed the moment the
+  // merchant changes products, stock, categories, reviews or settings.
+  const sections = (["categories", "categoryRails", "testimonials"] as const).filter(wants).join(",");
+  const featuredIds = isHome ? store.featured_product_ids ?? [] : [];
+  const data = await storeCached(store.id, `home:${category ?? ""}:${sub ?? ""}:${sections}:${featuredIds.join(",")}`, async () => {
   const [products, featuredProducts, categoryTiles, railRows, testimonials] = await Promise.all([
     getStoreProducts(store.id, category, sub),
 
     // Featured products (vendor-selected, in order)
-    isHome && store.featured_product_ids?.length
+    featuredIds.length
       ? query<Product>(
           `SELECT * FROM products
            WHERE store_id = $1 AND id = ANY($2::uuid[]) AND is_active = true`,
-          [store.id, store.featured_product_ids],
+          [store.id, featuredIds],
         ).then((rows) => {
-          const order = store.featured_product_ids!;
+          const order = featuredIds;
           return rows.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
         })
       : Promise.resolve([] as Product[]),
@@ -155,12 +164,22 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
 
     wants("testimonials") ? getTestimonials(store.id) : Promise.resolve([] as Testimonial[]),
   ]);
+  // DATE columns → plain YYYY-MM-DD before caching (JSON would shift them through UTC)
+  for (const list of [products, featuredProducts, railRows]) {
+    for (const p of list) p.sold_out_until = dateOnly(p.sold_out_until) as never;
+  }
+  return { products, featuredProducts, categoryTiles, railRows, testimonials };
+  });
+  const { products, featuredProducts, categoryTiles, railRows, testimonials } = data;
 
   // Food stores: flag items marked "sold out today" (cards show a badge)
+  // Per request (not cached): "today" moves. Copies, so the cached rows stay untouched.
   const now = new Date();
-  for (const list of [products, featuredProducts, railRows]) {
-    for (const p of list) p.sold_out_today = isSoldOutToday(p.sold_out_until, now);
-  }
+  const forCards = (list: Product[]) =>
+    list.map((p) => toCardProduct({ ...p, sold_out_today: isSoldOutToday(p.sold_out_until, now) }) as Product);
+  const cardProducts = forCards(products);
+  const cardFeatured = forCards(featuredProducts);
+  const cardRails = forCards(railRows);
 
   return (
     <StorefrontHome
@@ -174,10 +193,10 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
       subcategories={subcategories}
       activeCategory={activeCategory}
       activeSub={activeSub}
-      products={products}
-      featuredProducts={featuredProducts}
+      products={cardProducts}
+      featuredProducts={cardFeatured}
       categoryTiles={categoryTiles}
-      railRows={railRows}
+      railRows={cardRails}
       testimonials={testimonials}
       footerLinks={footerLinks}
     />

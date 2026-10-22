@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { invalidateStore } from "@/lib/store-cache";
 import { requireFeature } from "@/lib/plan";
 import { z } from "zod";
 import { verifySession, getUserStore } from "@/lib/auth";
@@ -17,5 +18,6 @@ export async function PATCH(req: NextRequest) {
   const parsed = z.object({ feedsEnabled: z.boolean() }).safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: "Invalid request" }, { status: 422 });
   await queryOne("UPDATE stores SET feeds_enabled = $2 WHERE id = $1 RETURNING id", [store.id, parsed.data.feedsEnabled]);
+  await invalidateStore(store.id, store.slug);
   return NextResponse.json({ ok: true });
 }

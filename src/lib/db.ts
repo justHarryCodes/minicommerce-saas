@@ -76,8 +76,9 @@ export async function query<T = Record<string, unknown>>(
 ): Promise<T[]> {
   const start = Date.now()
   const res = await pool.query(text, params)
-  if (process.env.NODE_ENV === 'development') {
-    console.log('[DB]', { query: text.slice(0, 80), ms: Date.now() - start, rows: res.rowCount })
+  // DB_LOG=1 traces every query in any environment (used to count queries per page)
+  if (process.env.NODE_ENV === 'development' || process.env.DB_LOG === '1') {
+    console.log('[DB]', { query: text.replace(/\s+/g, ' ').slice(0, 90), ms: Date.now() - start, rows: res.rowCount })
   }
   return res.rows as T[]
 }

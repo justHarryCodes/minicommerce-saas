@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { invalidatePlanCache } from '@/lib/plan'
+import { cacheDel, cacheKey } from '@/lib/redis'
 import { verifyAdminSession, logAdminAction } from '@/lib/admin-auth'
 import { query } from '@/lib/db'
 import { z } from 'zod'
@@ -48,6 +50,10 @@ export async function POST(req: NextRequest) {
     targetId: plan.id,
     details: { name, price_monthly, max_products, max_reels },
   })
+
+  invalidatePlanCache()
+
+  await cacheDel(cacheKey.publicPlans())
 
   return NextResponse.json({ success: true, id: plan.id }, { status: 201 })
 }

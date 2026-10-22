@@ -7,7 +7,7 @@
 import { useMemo, useState } from "react";
 import { Layers, Plus, Trash2, X } from "lucide-react";
 import { CLOTHING_SIZES, SHOE_SIZES } from "@/lib/sizes";
-import { MAX_OPTIONS, MAX_VARIANTS, combinations, optionsOf, variantLabel } from "@/lib/variants";
+import { MAX_OPTIONS, MAX_VARIANTS, combinations, optionsOf, variantLabel } from "@/lib/variants-shared";
 import type { ProductSize } from "@/types";
 
 export interface VariantState {

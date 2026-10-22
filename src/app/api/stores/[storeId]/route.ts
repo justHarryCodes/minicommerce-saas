@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { invalidateStore } from "@/lib/store-cache";
 import { verifySession } from '@/lib/auth'
 import { queryOne, query, toCamel } from '@/lib/db'
 import { cacheDel } from '@/lib/redis'
@@ -110,6 +111,7 @@ export async function PATCH(
 
   // Invalidate cache
   await cacheDel(`store:${store.slug}`)
+  await invalidateStore(store.id, store.slug)
 
   return NextResponse.json({ data: toCamel(rows[0] as Record<string, unknown>) })
 }

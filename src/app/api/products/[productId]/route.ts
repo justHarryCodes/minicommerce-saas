@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { invalidateStore } from "@/lib/store-cache";
 import { requireFeature } from '@/lib/plan'
 import { foreignCategory } from '@/lib/tenant'
 import { verifySession } from '@/lib/auth'
 import { getStoreFor } from "@/lib/access";
 import { query, queryOne, queryMany, withTransaction, toCamel, rowsToCamel } from '@/lib/db'
-import { cacheDelPattern } from '@/lib/redis'
 import { z } from 'zod'
 import { normalizeVariants, optionNamesSchema, variantInputSchema, type NormalizedVariant } from '@/lib/variants'
 import { recordMovements } from '@/lib/inventory'
@@ -200,7 +200,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   for (const r of restocked) void notifyBackInStock(store.id, productId, r.variantLabel)
 
   if (!product) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  await cacheDelPattern(`products:${store.id}*`)
+  await invalidateStore(store.id)
   return NextResponse.json({ data: toCamel(product) })
 }
 
@@ -212,6 +212,6 @@ export async function DELETE(_: NextRequest, { params }: Params) {
 
   const { productId } = await params
   await query('DELETE FROM products WHERE id=$1 AND store_id=$2', [productId, store.id])
-  await cacheDelPattern(`products:${store.id}*`)
+  await invalidateStore(store.id)
   return NextResponse.json({ ok: true })
 }

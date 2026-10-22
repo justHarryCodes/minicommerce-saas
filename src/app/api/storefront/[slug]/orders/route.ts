@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { invalidateStoreSoon } from "@/lib/store-cache";
 import { hasFeature } from "@/lib/plan";
 import { queryOne, withTransaction } from "@/lib/db";
 import { notifyStoreNewOrder } from "@/lib/push";
@@ -419,6 +420,7 @@ export async function POST(
     });
 
     void alertLowStock(store.id, lowStock);
+    invalidateStoreSoon(store.id, slug); // stock changed
 
     // Fire-and-forget — don't await so push never delays the response.
     // Two independent channels for the same event: the existing Expo push

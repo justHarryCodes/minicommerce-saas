@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { invalidateStore } from "@/lib/store-cache";
 import { verifySession, getUserStore } from "@/lib/auth";
 import { query } from "@/lib/db";
 import { z } from "zod";
@@ -22,6 +23,7 @@ export async function PUT(req: NextRequest) {
     "UPDATE stores SET banner_images = $1 WHERE id = $2",
     [parsed.data.images, store.id]
   );
+  await invalidateStore(store.id, store.slug);
 
   return NextResponse.json({ ok: true });
 }

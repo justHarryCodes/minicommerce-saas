@@ -1,8 +1,6 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import { DEFAULT_THEME_ID, getTheme } from "@/lib/themes/catalog";
-import { mergeTheme } from "@/lib/themes/resolve";
 import type { ResolvedTheme } from "@/lib/themes/types";
 
 interface StoreCtx {
@@ -15,12 +13,13 @@ interface StoreCtx {
   aiAssistantEnabled: boolean;
 }
 
-const fallbackTheme = mergeTheme(getTheme(DEFAULT_THEME_ID)!, {});
-
+// No default theme on purpose: building one here pulled the whole theme
+// catalog, the resolver, zod and chroma-js into every storefront page's
+// JavaScript. StorefrontShell always provides the server-resolved theme.
 const StoreCtx = createContext<StoreCtx>({
   storeSlug: "",
   storeBase: "",
-  theme: fallbackTheme,
+  theme: null as unknown as ResolvedTheme,
   aiAssistantEnabled: false,
 });
 
@@ -28,13 +27,13 @@ export function StoreProvider({
   children,
   storeSlug,
   storeBase,
-  theme = fallbackTheme,
+  theme,
   aiAssistantEnabled = false,
 }: {
   children: React.ReactNode;
   storeSlug: string;
   storeBase: string;
-  theme?: ResolvedTheme;
+  theme: ResolvedTheme;
   aiAssistantEnabled?: boolean;
 }) {
   return (

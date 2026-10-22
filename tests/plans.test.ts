@@ -8,13 +8,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/lib/db", () => ({ query: vi.fn(), queryOne: vi.fn(), withTransaction: vi.fn() }));
 
 import { queryOne } from "@/lib/db";
-import { getStoreFeatures, hasFeature, requireFeature } from "@/lib/plan";
+import { getStoreFeatures, hasFeature, invalidatePlanCache, requireFeature } from "@/lib/plan";
 import { ALL_FEATURES, featureForPath, featuresForPlan, FREE_THEME_IDS } from "@/lib/features-shared";
 import { resolveStoreTheme } from "@/lib/themes/resolve";
 import { THEMES } from "@/lib/themes/catalog";
 
 const mockedQueryOne = vi.mocked(queryOne);
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  invalidatePlanCache(); // each test sets up its own plan rows
+});
 
 const FREE = { id: "free", name: "Free", price_monthly: 0, max_products: 10, max_reels: 0, features: null };
 const PRO = { id: "pro", name: "Pro", price_monthly: 5000, max_products: 1000, max_reels: 50, features: null };

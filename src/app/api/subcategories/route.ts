@@ -1,6 +1,7 @@
 // Subcategories are stored in the same `categories` table with a parent_id.
 // This route is an alias that forwards to /api/categories with parentId set.
 import { NextRequest, NextResponse } from 'next/server'
+import { invalidateStore } from "@/lib/store-cache";
 import { verifySession } from '@/lib/auth'
 import { getStoreFor } from "@/lib/access";
 import { query, queryOne, toCamel } from '@/lib/db'
@@ -46,5 +47,6 @@ export async function POST(req: NextRequest) {
   )
 
   await cacheDel(CacheKey.categories(store.id))
+  await invalidateStore(store.id)
   return NextResponse.json({ data: toCamel(rows[0] as Record<string, unknown>) }, { status: 201 })
 }

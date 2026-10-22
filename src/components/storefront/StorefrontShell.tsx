@@ -7,6 +7,7 @@ import { themeCss } from "@/lib/themes/resolve";
 import { openStatus, parseHours } from "@/lib/hours";
 import type { ResolvedTheme } from "@/lib/themes/types";
 import { StoreProvider } from "@/lib/store-context";
+import { toPublicStore } from "@/lib/public-store";
 import StorefrontNav from "@/components/storefront/Nav";
 import CartProvider from "@/components/storefront/CartProvider";
 import ColorModeLock from "@/components/storefront/ColorModeLock";
@@ -35,6 +36,7 @@ export default function StorefrontShell({ store, theme, categories, storeSlug, s
     <StoreProvider storeSlug={storeSlug} storeBase={storeBase} theme={theme} aiAssistantEnabled={aiAssistantEnabled}>
       <CartProvider storeId={store.id}>
         <div className={`storefront min-h-screen ${mode === "dark" ? "dark" : ""}`} style={{ fontFamily: "var(--sf-font)" }} data-theme={theme.id}>
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
           <link rel="stylesheet" href={googleFontsHref([bodyFont, headingFont])} />
           <style dangerouslySetInnerHTML={{ __html: themeCss(theme) }} />
@@ -55,7 +57,7 @@ export default function StorefrontShell({ store, theme, categories, storeSlug, s
               {!status.open && store.allow_preorders !== false ? " — you can still order ahead" : ""}
             </div>
           )}
-          <StorefrontNav store={store} categories={categories} />
+          <StorefrontNav store={toPublicStore(store)} categories={categories} />
           {extras}
           <main>{children}</main>
         </div>

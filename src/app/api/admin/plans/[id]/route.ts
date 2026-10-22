@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { invalidatePlanCache } from '@/lib/plan'
+import { cacheDel, cacheKey } from '@/lib/redis'
 import { verifyAdminSession, logAdminAction } from '@/lib/admin-auth'
 import { query, queryOne } from '@/lib/db'
 import { z } from 'zod'
@@ -63,6 +65,10 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     details: { plan_name: plan.name, changes: d },
   })
 
+  invalidatePlanCache()
+
+  await cacheDel(cacheKey.publicPlans())
+
   return NextResponse.json({ success: true })
 }
 
@@ -80,6 +86,10 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     targetType: 'plan',
     targetId: id,
   })
+
+  invalidatePlanCache()
+
+  await cacheDel(cacheKey.publicPlans())
 
   return NextResponse.json({ success: true })
 }

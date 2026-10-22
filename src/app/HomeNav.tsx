@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Sora } from "next/font/google";
+import localFont from "next/font/local";
 import type { LucideIcon } from "lucide-react";
 import {
   Menu,
@@ -25,9 +25,11 @@ import {
 } from "lucide-react";
 
 /* Wordmark font */
-const wordmarkFont = Sora({
-  subsets: ["latin"],
-  weight: ["800"],
+// Self-hosted: next/font/google downloads the font at build time, so a slow
+// connection to Google could fail the whole build.
+const wordmarkFont = localFont({
+  src: "../fonts/sora-latin.woff2",
+  weight: "100 800",
   display: "swap",
 });
 

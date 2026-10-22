@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { invalidateStore } from "@/lib/store-cache";
 import { verifyAdminSession, logAdminAction } from '@/lib/admin-auth'
 import { query, queryOne } from '@/lib/db'
 import { z } from 'zod'
@@ -79,6 +80,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       targetId: id,
       details: { store_name: store.name, new_status: act.status },
     })
+    await invalidateStore(id)
     return NextResponse.json({ success: true, status: act.status })
   }
 
@@ -97,6 +99,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       targetId: id,
       details: { store_name: store.name },
     })
+    await invalidateStore(id)
     return NextResponse.json({ success: true })
   }
 
@@ -115,6 +118,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       targetId: id,
       details: { store_name: store.name },
     })
+    await invalidateStore(id)
     return NextResponse.json({ success: true })
   }
 
@@ -137,6 +141,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       targetId: id,
       details: { store_name: store.name },
     })
+    await invalidateStore(id)
     return NextResponse.json({ success: true })
   }
 

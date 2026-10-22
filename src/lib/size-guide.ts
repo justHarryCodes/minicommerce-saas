@@ -1,32 +1,32 @@
 // Per-product size guides (a small table + note). Browser-safe.
 
-import { z } from "zod";
-
 export interface SizeGuide {
   columns: string[];
   rows: string[][];
   note?: string;
 }
 
-const cell = z.string().trim().max(30);
-export const sizeGuideSchema = z
-  .object({
-    columns: z.array(cell).min(1).max(8),
-    rows: z.array(z.array(cell).max(8)).max(30),
-    note: z.string().trim().max(300).optional(),
-  })
-  .transform((g) => ({
-    columns: g.columns,
-    // pad/trim every row to the column count; drop fully empty rows
-    rows: g.rows.map((r) => g.columns.map((_, i) => r[i] ?? "")).filter((r) => r.some((c) => c)),
-    ...(g.note ? { note: g.note } : {}),
-  }));
+// Hand-checked rather than zod: this ships in the product page's JavaScript.
+// Rules: 1–8 columns, up to 30 rows of up to 8 cells, cells ≤ 30 chars,
+// note ≤ 300 chars (all trimmed); anything else makes the guide invalid.
+const cellOk = (v: unknown): v is string => typeof v === "string" && v.trim().length <= 30;
 
 /** Valid guide or null (also null for an empty table). */
 export function parseSizeGuide(raw: unknown): SizeGuide | null {
-  if (!raw) return null;
-  const p = sizeGuideSchema.safeParse(raw);
-  return p.success && p.data.rows.length ? p.data : null;
+  if (!raw || typeof raw !== "object") return null;
+  const g = raw as { columns?: unknown; rows?: unknown; note?: unknown };
+  if (!Array.isArray(g.columns) || g.columns.length < 1 || g.columns.length > 8 || !g.columns.every(cellOk)) return null;
+  if (!Array.isArray(g.rows) || g.rows.length > 30) return null;
+  if (!g.rows.every((r) => Array.isArray(r) && r.length <= 8 && r.every(cellOk))) return null;
+  if (g.note !== undefined && (typeof g.note !== "string" || g.note.trim().length > 300)) return null;
+  const columns = (g.columns as string[]).map((c) => c.trim());
+  // pad/trim every row to the column count; drop fully empty rows
+  const rows = (g.rows as string[][])
+    .map((r) => columns.map((_, i) => (r[i] ?? "").trim()))
+    .filter((r) => r.some((c) => c));
+  if (!rows.length) return null;
+  const note = typeof g.note === "string" ? g.note.trim() : "";
+  return { columns, rows, ...(note ? { note } : {}) };
 }
 
 export const SIZE_GUIDE_TEMPLATES: { label: string; guide: SizeGuide }[] = [

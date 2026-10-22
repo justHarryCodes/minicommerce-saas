@@ -25,7 +25,7 @@ import { useStore } from "@/lib/store-context";
 import { clLogo } from "@/lib/cloudinary";
 import { formatCurrency, getProductUrl, waLink } from "@/lib/utils";
 import type { Product, Store } from "@/types";
-import { optionNamesOf, optionsOf } from "@/lib/variants";
+import { optionNamesOf, optionsOf } from "@/lib/variants-shared";
 import { lagosParts } from "@/lib/hours";
 import { formatAppointment } from "@/lib/booking";
 import { parseSizeGuide } from "@/lib/size-guide";

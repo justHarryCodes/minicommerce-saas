@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { invalidateStore } from "@/lib/store-cache";
 import { FREE_THEME_IDS } from "@/lib/features-shared";
 import { requireFeature } from "@/lib/plan";
 import { z } from "zod";
@@ -56,6 +57,7 @@ export async function PUT(req: NextRequest) {
   );
 
   await cacheDel(cacheKey.storeMeta(store.slug));
+  await invalidateStore(store.id, store.slug);
 
   return NextResponse.json({ ok: true, themeId: theme.id, customization });
 }

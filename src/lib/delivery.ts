@@ -2,8 +2,6 @@
 // the checkout UI (to preview) and the order API (which is authoritative —
 // the client's numbers are never trusted).
 
-import { z } from "zod";
-
 export interface DeliveryZone {
   id: string;
   name: string;
@@ -25,11 +23,18 @@ export interface PayOnDeliverySettings {
 
 export const MAX_ZONES = 30;
 
-const zoneSchema = z.object({
-  id: z.string().trim().min(1).max(40),
-  name: z.string().trim().min(1).max(60),
-  fee: z.coerce.number().min(0).max(10_000_000),
-});
+// Hand-checked rather than zod: this module ships in checkout's JavaScript.
+function parseZone(raw: unknown): DeliveryZone | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as { id?: unknown; name?: unknown; fee?: unknown };
+  if (typeof r.id !== "string" || typeof r.name !== "string") return null;
+  const id = r.id.trim();
+  const name = r.name.trim();
+  const fee = typeof r.fee === "string" && r.fee.trim() === "" ? 0 : Number(r.fee);
+  if (!id || id.length > 40 || !name || name.length > 60) return null;
+  if (!Number.isFinite(fee) || fee < 0 || fee > 10_000_000) return null;
+  return { id, name, fee };
+}
 
 /** Parse stored/submitted zones, dropping anything malformed and duplicate ids. */
 export function parseZones(raw: unknown): DeliveryZone[] {
@@ -37,10 +42,10 @@ export function parseZones(raw: unknown): DeliveryZone[] {
   const seen = new Set<string>();
   const out: DeliveryZone[] = [];
   for (const z of raw.slice(0, MAX_ZONES)) {
-    const p = zoneSchema.safeParse(z);
-    if (!p.success || seen.has(p.data.id)) continue;
-    seen.add(p.data.id);
-    out.push({ ...p.data, fee: Math.round(p.data.fee) });
+    const p = parseZone(z);
+    if (!p || seen.has(p.id)) continue;
+    seen.add(p.id);
+    out.push({ ...p, fee: Math.round(p.fee) });
   }
   return out;
 }

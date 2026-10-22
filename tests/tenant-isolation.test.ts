@@ -60,6 +60,7 @@ vi.mock("@/lib/db", () => {
     ),
   };
 });
+vi.mock("@/lib/store-cache", () => ({ invalidateStore: vi.fn(), invalidateStoreSoon: vi.fn(), storeCached: vi.fn((_s: string, _k: string, fn: () => unknown) => fn()) }));
 vi.mock("@/lib/redis", () => ({
   cacheDel: vi.fn(),
   cacheDelPattern: vi.fn(),

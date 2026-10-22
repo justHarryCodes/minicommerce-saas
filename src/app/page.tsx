@@ -2,9 +2,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { verifySession, getUserStore } from "@/lib/auth";
+import { verifySession } from "@/lib/auth";
 import { verifyAdminSession } from "@/lib/admin-auth";
 import { query } from "@/lib/db";
+import { getOrSet } from "@/lib/redis";
+import { getStoreAccess } from "@/lib/access";
 import {
   ArrowRight,
   Check,
@@ -263,20 +265,23 @@ export default async function HomePage() {
   if (user) {
     const admin = await verifyAdminSession();
     if (admin) redirect("/admin");
-    const store = await getUserStore(user.firebaseUid);
-    redirect(store ? "/dashboard" : "/onboarding");
+    // Owners and team members go to their dashboard
+    const access = await getStoreAccess(user);
+    redirect(access ? (access.role === "staff" ? "/dashboard/orders" : "/dashboard") : "/onboarding");
   }
 
+  // Platform-wide figures: the same for every visitor, so cached briefly
+  // (the product query sorts the whole catalogue at random).
   const [categoryStats, products] = await Promise.all([
-    query<{ primary_category: string; count: string }>(
+    getOrSet("home:categoryStats", () => query<{ primary_category: string; count: string }>(
       `SELECT primary_category, COUNT(*) as count
        FROM stores
        WHERE is_active = true AND primary_category IS NOT NULL
        GROUP BY primary_category
        ORDER BY count DESC`,
       [],
-    ),
-    query<ProductSlide>(
+    ), 600).then((r) => r ?? []),
+    getOrSet("home:productSlides", () => query<ProductSlide>(
       `SELECT p.id, p.name, p.slug, p.price::float AS price,
               p.compare_price::float AS compare_price, p.image_url,
               s.name AS store_name, s.slug AS store_slug
@@ -289,7 +294,7 @@ export default async function HomePage() {
        ORDER BY RANDOM()
        LIMIT 12`,
       [],
-    ),
+    ), 300).then((r) => r ?? []),
   ]);
 
   const totalStores = categoryStats.reduce(

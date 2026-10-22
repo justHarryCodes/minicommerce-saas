@@ -4,20 +4,54 @@ import ProductDetailClient from "./ProductDetailClient";
 import type { Metadata } from "next";
 import { getStoreUrl } from "@/lib/utils";
 import { getStoreFeatures } from "@/lib/plan";
-import type { Product, ProductSize, Store } from "@/types";
+import { toCardProduct, toPublicStore } from "@/lib/public-store";
+import { storeCached } from "@/lib/store-cache";
+import { dateOnly, getCachedStore } from "@/lib/storefront-page";
+import type { Product, ProductSize } from "@/types";
 
 interface Props {
   params: Promise<{ slug: string; productSlug: string }>;
 }
 
-async function loadForMeta(storeSlug: string, productSlug: string) {
-  const store = await queryOne<Store>("SELECT * FROM stores WHERE slug = $1 AND is_active = true", [storeSlug]);
+/**
+ * Store + product (with variants) + related items. Shared by the page and
+ * its metadata, cached per store and refreshed on any product change.
+ */
+async function loadProductPage(storeSlug: string, productSlug: string) {
+  const store = await getCachedStore(storeSlug);
   if (!store) return null;
-  const product = await queryOne<Product>(
-    "SELECT * FROM products WHERE store_id = $1 AND (slug = $2 OR id::text = $2) AND is_active = true",
-    [store.id, productSlug]
-  );
-  return product ? { store, product } : null;
+  const data = await storeCached(store.id, `pdp:${productSlug}`, async () => {
+    const product = await queryOne<Product>(
+      `SELECT p.*, c.name AS category_name, c.slug AS category_slug
+       FROM products p
+       LEFT JOIN categories c ON c.id = p.category_id
+       WHERE p.store_id = $1 AND (p.slug = $2 OR p.id::text = $2) AND p.is_active = true`,
+      [store.id, productSlug]
+    );
+    if (!product) return null;
+    // DATE → plain YYYY-MM-DD (safe for the client and for the JSON cache)
+    product.sold_out_until = dateOnly(product.sold_out_until) as never;
+    const [sizes, related] = await Promise.all([
+      product.has_sizes ?? product.hasSizes
+        ? queryMany<ProductSize>(
+            "SELECT id, label, stock_quantity, sort_order, options, price, image_url FROM product_sizes WHERE product_id = $1 ORDER BY sort_order, created_at",
+            [product.id]
+          )
+        : Promise.resolve(undefined),
+      product.category_id ?? product.categoryId
+        ? query<Product>(
+            `SELECT * FROM products
+             WHERE store_id = $1 AND category_id = $2 AND id != $3 AND is_active = true
+             ORDER BY created_at DESC LIMIT 4`,
+            [store.id, product.category_id ?? product.categoryId, product.id]
+          )
+        : Promise.resolve([] as Product[]),
+    ]);
+    if (sizes) product.sizes = sizes;
+    for (const r of related) r.sold_out_until = dateOnly(r.sold_out_until) as never;
+    return { product, related };
+  });
+  return data ? { store, ...data } : null;
 }
 
 function productImages(p: Product): string[] {
@@ -28,7 +62,7 @@ function productImages(p: Product): string[] {
 // Open Graph tags, so a pasted product link shows its photo, name and price.
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug, productSlug } = await params;
-  const found = await loadForMeta(slug, productSlug);
+  const found = await loadProductPage(slug, productSlug);
   if (!found) return {};
   const { store, product } = found;
   const price = `₦${Number(product.price).toLocaleString("en-NG")}`;
@@ -61,45 +95,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ProductDetailPage({ params }: Props) {
   const { slug: storeSlug, productSlug } = await params;
 
-  const store = await queryOne<Store>(
-    "SELECT * FROM stores WHERE slug = $1 AND is_active = true",
-    [storeSlug]
-  );
-  if (!store) notFound();
-
-  const product = await queryOne<Product>(
-    `SELECT p.*, 
-       c.name AS category_name,
-       c.slug AS category_slug
-     FROM products p
-     LEFT JOIN categories c ON c.id = p.category_id
-     WHERE p.store_id = $1 AND (p.slug = $2 OR p.id::text = $2) AND p.is_active = true`,
-    [store.id, productSlug]
-  );
-  if (!product) notFound();
-
-  // pg returns DATE columns as a local-midnight Date — hand the client a plain YYYY-MM-DD
-  const soldOut = (product as { sold_out_until?: unknown }).sold_out_until;
-  if (soldOut instanceof Date) {
-    (product as { sold_out_until?: unknown }).sold_out_until =
-      `${soldOut.getFullYear()}-${String(soldOut.getMonth() + 1).padStart(2, "0")}-${String(soldOut.getDate()).padStart(2, "0")}`;
-  }
-
-  if (product.has_sizes ?? product.hasSizes) {
-    product.sizes = await queryMany<ProductSize>(
-      "SELECT id, label, stock_quantity, sort_order, options, price, image_url FROM product_sizes WHERE product_id = $1 ORDER BY sort_order, created_at",
-      [product.id]
-    );
-  }
-
-  const related = product.category_id ?? product.categoryId
-    ? await query<Product>(
-        `SELECT * FROM products
-         WHERE store_id = $1 AND category_id = $2 AND id != $3 AND is_active = true
-         ORDER BY created_at DESC LIMIT 4`,
-        [store.id, product.category_id ?? product.categoryId, product.id]
-      )
-    : [];
+  const found = await loadProductPage(storeSlug, productSlug);
+  if (!found) notFound();
+  const { store, product, related } = found;
 
   const features = await getStoreFeatures(store.id);
 
@@ -127,8 +125,8 @@ export default async function ProductDetailPage({ params }: Props) {
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
     <ProductDetailClient
       product={product as any}
-      related={related as Product[]}
-      store={store}
+      related={related.map((r) => toCardProduct(r as unknown as Record<string, unknown>) as unknown as Product)}
+      store={toPublicStore(store)}
       storeSlug={storeSlug}
       bookingsEnabled={features.has("bookings")}
       stockAlertsEnabled={features.has("stock_alerts")}

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { invalidateStore } from "@/lib/store-cache";
 import { ownProductIds } from "@/lib/tenant";
 import { verifySession, getUserStore } from "@/lib/auth";
 import { query } from "@/lib/db";
@@ -23,6 +24,7 @@ export async function PUT(req: NextRequest) {
     "UPDATE stores SET featured_product_ids = $1 WHERE id = $2",
     [await ownProductIds(store.id, parsed.data.product_ids), store.id]
   );
+  await invalidateStore(store.id, store.slug);
 
   return NextResponse.json({ ok: true });
 }

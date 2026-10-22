@@ -1,4 +1,4 @@
-import { redis } from '@/lib/redis'
+import { safeRedis } from '@/lib/redis'
 import { NextRequest, NextResponse } from 'next/server'
 
 /** Extract the best-available client IP from a Next.js request. */
@@ -25,13 +25,13 @@ export async function rateLimit(
   max: number,
   window: number
 ): Promise<boolean> {
-  try {
-    const current = await redis.incr(key)
-    if (current === 1) await redis.expire(key, window)
-    return current <= max
-  } catch {
-    return true // fail open — never block on Redis outage
-  }
+  // Fails open (and fast) — never block or slow traffic on a Redis outage
+  const current = await safeRedis(async (r) => {
+    const n = await r.incr(key)
+    if (n === 1) await r.expire(key, window)
+    return n
+  }, 0)
+  return current <= max
 }
 
 /**

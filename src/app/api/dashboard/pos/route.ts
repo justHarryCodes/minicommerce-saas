@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { invalidateStoreSoon } from "@/lib/store-cache";
 import { requireFeature } from "@/lib/plan";
 import { newOrderNumber } from "@/lib/order-number";
 import { z } from "zod";
@@ -177,6 +178,7 @@ export async function POST(req: NextRequest) {
     });
 
     void alertLowStock(store.id, lowStock);
+    invalidateStoreSoon(store.id, store.slug); // stock changed
 
     const base = getStoreUrl(store.slug, store.customDomain ?? store.custom_domain ?? null);
     return NextResponse.json(

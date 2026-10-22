@@ -1,4 +1,5 @@
 import { query, queryOne } from '@/lib/db'
+import { invalidatePlanCache } from './plan'
 import { getPlatformSettings } from '@/lib/admin-auth'
 
 type PaymentType = 'setup_fee' | 'monthly' | 'plan'
@@ -98,6 +99,7 @@ export async function fulfillSubscriptionPayment(
        WHERE id = $3`,
       [planId, expiresAt.toISOString(), payment.store_id]
     )
+    invalidatePlanCache(payment.store_id)
 
     await query(
       `UPDATE subscription_payments SET period_start = $1, period_end = $2 WHERE payment_reference = $3`,
@@ -185,6 +187,7 @@ async function rewardReferrerOnFirstPlanPayment(referredStoreId: string, now: Da
      WHERE id = $3`,
     [proPlan.id, grantExpiresAt.toISOString(), referrerId]
   )
+  invalidatePlanCache(referrerId)
 }
 
 /**

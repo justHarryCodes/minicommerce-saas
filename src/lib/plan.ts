@@ -32,11 +32,32 @@ async function getFreePlan(): Promise<EffectivePlan> {
   return { ...free, isPro: false, isFallback: true }
 }
 
+// Plans are read on almost every request (feature gates), so the resolved
+// plan is kept in memory for a short while. Anything that changes a store's
+// plan calls invalidatePlanCache(); other server processes catch up within
+// PLAN_TTL_MS.
+const PLAN_TTL_MS = 30_000
+const planMemo = new Map<string, { plan: EffectivePlan; at: number }>()
+
+export function invalidatePlanCache(storeId?: string): void {
+  if (storeId) planMemo.delete(storeId)
+  else planMemo.clear()
+}
+
 // Resolves the plan that actually applies to a store right now. A store always
 // resolves to at least the Free plan — an expired or missing paid plan falls
 // back to Free limits rather than blocking the store entirely.
 // Memoised per request so a page and its components share one lookup.
 export const getEffectivePlan = cache(async (storeId: string): Promise<EffectivePlan> => {
+  const memo = planMemo.get(storeId)
+  if (memo && Date.now() - memo.at < PLAN_TTL_MS) return memo.plan
+  const plan = await loadEffectivePlan(storeId)
+  if (planMemo.size > 5000) planMemo.clear()
+  planMemo.set(storeId, { plan, at: Date.now() })
+  return plan
+})
+
+async function loadEffectivePlan(storeId: string): Promise<EffectivePlan> {
   const store = await queryOne<{ current_plan_id: string | null; plan_expires_at: string | null }>(
     'SELECT current_plan_id, plan_expires_at FROM stores WHERE id = $1',
     [storeId]
@@ -57,7 +78,7 @@ export const getEffectivePlan = cache(async (storeId: string): Promise<Effective
   }
 
   return getFreePlan()
-})
+}
 
 /** The paid features this store can use right now. */
 export async function getStoreFeatures(storeId: string): Promise<Set<Feature>> {

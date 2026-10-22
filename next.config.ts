@@ -69,6 +69,13 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "images.unsplash.com" },
     ],
     unoptimized: false,
+    // Cloudinary images resize on Cloudinary's CDN; others use /_next/image
+    loader: "custom",
+    loaderFile: "./src/lib/image-loader.ts",
+    // Fewer candidate widths: each one is a full URL in every image's srcset
+    // (the 16 defaults made srcsets ~30% of a storefront page's HTML).
+    deviceSizes: [384, 640, 828, 1200, 1920],
+    imageSizes: [96, 256],
     minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days
   },
 
@@ -86,6 +93,11 @@ const nextConfig: NextConfig = {
       {
         source: "/(.*)",
         headers: securityHeaders,
+      },
+      {
+        // Self-hosted fonts never change in place (a new file gets a new name)
+        source: "/fonts/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
       },
       {
         source: "/_next/static/:path*",
@@ -120,4 +132,11 @@ export default withSentryConfig(nextConfig, {
   silent: true,
   telemetry: false,
   disableLogger: true,
+  // Replay isn't used; keep its code (and SDK debug logging) out of the bundle
+  bundleSizeOptimizations: {
+    excludeDebugStatements: true,
+    excludeReplayIframe: true,
+    excludeReplayShadowDom: true,
+    excludeReplayWorker: true,
+  },
 });

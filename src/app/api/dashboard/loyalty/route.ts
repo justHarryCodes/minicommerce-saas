@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { invalidateStore } from "@/lib/store-cache";
 import { requireFeature } from "@/lib/plan";
 import { z } from "zod";
 import { verifySession, getUserStore } from "@/lib/auth";
@@ -28,5 +29,6 @@ export async function PATCH(req: NextRequest) {
     parsed.data.everyN,
     parsed.data.percent,
   ]);
+  await invalidateStore(store.id, store.slug);
   return NextResponse.json({ ok: true });
 }
