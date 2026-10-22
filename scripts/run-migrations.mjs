@@ -52,6 +52,7 @@ const MIGRATIONS = [
   { name: "tier4_growth.sql",                   path: join(__dirname, "../migrations/tier4_growth.sql") },
   { name: "plan_features.sql",                  path: join(__dirname, "../migrations/plan_features.sql") },
   { name: "payments_and_theme_store.sql",       path: join(__dirname, "../migrations/payments_and_theme_store.sql") },
+  { name: "product_details.sql",                path: join(__dirname, "../migrations/product_details.sql") },
 ];
 
 async function run() {

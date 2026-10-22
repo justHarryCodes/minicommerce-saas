@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { queryOne, query } from '@/lib/db'
 import { checkRateLimit } from '@/lib/rate-limit'
+import { searchProducts } from '@/lib/storefront-search'
 
 export async function GET(
   req: NextRequest,
@@ -19,30 +20,12 @@ export async function GET(
   )
   if (!store) return NextResponse.json({ results: [] })
 
-  const pattern = `%${q}%`
-  const results = await query<{
-    id: string
-    name: string
-    slug: string
-    price: number
-    compare_price: number | null
-    images: string[]
-    image_url: string | null
-    stock_quantity: number
-    has_sizes: boolean
-  }>(
-    `SELECT id, name, slug, price, compare_price, images, image_url, stock_quantity, has_sizes
-     FROM products
-     WHERE store_id = $1
-       AND is_active = true
-       AND stock_quantity > 0
-       AND (name ILIKE $2 OR description ILIKE $2)
-     ORDER BY
-       CASE WHEN name ILIKE $2 THEN 0 ELSE 1 END,
-       sort_order, created_at DESC
-     LIMIT 24`,
-    [store.id, pattern]
-  )
+  const rows = await searchProducts(store.id, q, 24)
+  const results = rows.map((p) => ({
+    id: p.id, name: p.name, slug: p.slug, price: p.price, compare_price: p.compare_price ?? null,
+    images: (p.images ?? []).slice(0, 1), image_url: p.image_url ?? null, stock_quantity: p.stock_quantity,
+    has_sizes: p.has_sizes ?? false, is_bookable: p.is_bookable ?? false, category_name: (p as { category_name?: string }).category_name ?? null,
+  }))
 
   return NextResponse.json({ results })
 }

@@ -34,6 +34,9 @@ import type {
   SectionId,
   NavOptions,
   ThemeTier,
+  ProductLayout,
+  CollectionLayout,
+  SearchStyle,
 } from "@/lib/themes/types";
 import ThemeThumbnail from "./ThemeThumbnail";
 
@@ -45,7 +48,30 @@ interface Props {
   savedCustomization: ThemeCustomization;
   /** Premium themes this store bought individually */
   ownedThemes?: string[];
+  /** A real category / product to preview those pages with */
+  previewTargets?: { category?: string; product?: string };
 }
+
+const PRODUCT_PAGE_OPTIONS: { value: ProductLayout; label: string; hint: string }[] = [
+  { value: "classic", label: "Classic", hint: "Thumbnails beside the photo, tidy buy box" },
+  { value: "editorial", label: "Editorial", hint: "Tall stacked photos, quiet sticky details" },
+  { value: "showcase", label: "Showcase", hint: "Big stage, key specs up front, tabs" },
+  { value: "split", label: "Split", hint: "Photo mosaic with a floating buy panel" },
+  { value: "compact", label: "Compact", hint: "One column, quick to order — food & market" },
+];
+const COLLECTION_OPTIONS: { value: CollectionLayout; label: string; hint: string }[] = [
+  { value: "grid", label: "Grid", hint: "Your product cards in a grid" },
+  { value: "lookbook", label: "Lookbook", hint: "Large editorial tiles" },
+  { value: "menu", label: "Menu", hint: "Restaurant menu with quick add" },
+  { value: "aisle", label: "Aisle", hint: "Dense shelf with − / + on every item" },
+  { value: "catalog", label: "Catalog", hint: "Comparison rows with key specs" },
+];
+const SEARCH_OPTIONS: { value: SearchStyle; label: string; hint: string }[] = [
+  { value: "list", label: "List", hint: "Quick rows from the top" },
+  { value: "visual", label: "Visual", hint: "A photo grid" },
+  { value: "spotlight", label: "Spotlight", hint: "Centred, keyboard friendly" },
+];
+type PreviewPage = "home" | "category" | "product" | "search";
 
 const ACCENT_SWATCHES = ["#f59e0b", "#ef4444", "#f97316", "#ec4899", "#e11d48", "#8b5cf6", "#2563eb", "#0ea5e9", "#10b981", "#0d9488", "#a3e635", "#18181b"];
 
@@ -210,6 +236,47 @@ function Segmented<T extends string | number>({
   );
 }
 
+/** Radio cards for a page layout: name + one-line description. */
+function PagePicker<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+  locked,
+}: {
+  label: string;
+  value: T;
+  options: { value: T; label: string; hint: string }[];
+  onChange: (v: T) => void;
+  locked?: boolean;
+}) {
+  return (
+    <Field label={label}>
+      <div className={`grid gap-1.5 sm:grid-cols-2 ${locked ? "pointer-events-none" : ""}`} role="radiogroup" aria-label={label}>
+        {options.map((o) => {
+          const active = value === o.value;
+          if (locked && !active) return null;
+          return (
+            <button
+              key={o.value}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              onClick={() => onChange(o.value)}
+              className={`rounded-xl border px-3 py-2 text-left transition-colors ${
+                active ? "border-surface-900 bg-surface-900 text-white dark:border-white dark:bg-white dark:text-black" : "border-surface-200 hover:bg-surface-50 dark:border-surface-700 dark:hover:bg-surface-800"
+              }`}
+            >
+              <span className="block text-xs font-bold">{o.label}</span>
+              <span className={`block text-[11px] leading-snug ${active ? "opacity-75" : "text-surface-400"}`}>{o.hint}</span>
+            </button>
+          );
+        })}
+      </div>
+    </Field>
+  );
+}
+
 function ColorInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [draft, setDraft] = useState(value);
   useEffect(() => setDraft(value), [value]);
@@ -290,14 +357,14 @@ const selectCls =
 
 /* ───────────────────────────── Studio ───────────────────────────── */
 
-export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, savedThemeId, savedCustomization, ownedThemes = [] }: Props) {
+export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, savedThemeId, savedCustomization, ownedThemes = [], previewTargets = {} }: Props) {
   // Themes are bought one at a time (plans don't include them)
   const isLocked = (id: string) => !FREE_THEME_IDS.has(id) && !ownedThemes.includes(id);
   const priceOf = (id: string) => `₦${(getTheme(id)?.price ?? 0).toLocaleString("en-NG")}`;
   const isOwned = (id: string) => ownedThemes.includes(id);
   const [buying, setBuying] = useState<string | null>(null);
 
-  /** One-time purchase (₦2,500) — redirects to Paystack; unlocks on confirmed payment. */
+  /** One-time purchase at the theme's price — redirects to Paystack; unlocks on confirmed payment. */
   async function buyTheme(id: string) {
     setBuying(id);
     try {
@@ -350,6 +417,7 @@ export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, save
   const [content, setContent] = useState<"store" | "demo">("store");
   const [saving, setSaving] = useState(false);
   const [previewSrc, setPreviewSrc] = useState("");
+  const [previewPage, setPreviewPage] = useState<PreviewPage>("home");
 
   const theme = getTheme(themeId)!;
   const resolved = useMemo(() => mergeTheme(theme, custom), [theme, custom]);
@@ -361,11 +429,21 @@ export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, save
     if (view !== "customize") return;
     const id = setTimeout(() => {
       const preview = encodeThemePreview({ themeId, customization: custom });
-      const base = content === "demo" ? `/theme-demo/${themeId}` : `/store/${storeSlug}`;
-      setPreviewSrc(`${base}?theme_preview=${preview}`);
+      // Demo stores only have a home page; inner pages preview with real products
+      const page = content === "demo" ? "home" : previewPage;
+      const root = content === "demo" ? `/theme-demo/${themeId}` : `/store/${storeSlug}`;
+      const path =
+        page === "product" && previewTargets.product
+          ? `${root}/products/${previewTargets.product}?`
+          : page === "category" && previewTargets.category
+            ? `${root}?category=${previewTargets.category}&`
+            : page === "search"
+              ? `${root}/search?q=${encodeURIComponent(previewTargets.product?.split("-")[0] ?? "a")}&`
+              : `${root}?`;
+      setPreviewSrc(`${path}theme_preview=${preview}`);
     }, 450);
     return () => clearTimeout(id);
-  }, [themeId, custom, storeSlug, view, content]);
+  }, [themeId, custom, storeSlug, view, content, previewPage, previewTargets.product, previewTargets.category]);
 
   useEffect(() => {
     if (!dirty) return;
@@ -731,6 +809,13 @@ export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, save
               </>}
             </Panel>
 
+            <Panel title="Product, category & search pages">
+              {!caps.pages && <TierNote tier="premium" what="Switching page layouts" />}
+              <PagePicker label="Product page" value={resolved.layout.product} options={PRODUCT_PAGE_OPTIONS} locked={!caps.pages} onChange={(v) => { setLayout("product", v); setPreviewPage("product"); }} />
+              <PagePicker label="Category & search results" value={resolved.layout.collection} options={COLLECTION_OPTIONS} locked={!caps.pages} onChange={(v) => { setLayout("collection", v); setPreviewPage("category"); }} />
+              <PagePicker label="Search pop-up" value={resolved.layout.search} options={SEARCH_OPTIONS} locked={!caps.pages} onChange={(v) => setLayout("search", v)} />
+            </Panel>
+
             <Panel title="Homepage sections">
               {!caps.style ? <TierNote tier="starter" what="Reordering and hiding sections" /> : <>
               <p className="-mt-1 text-xs text-surface-400">Reorder with the arrows, hide anything you don&apos;t need.</p>
@@ -862,6 +947,14 @@ export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, save
                   </button>
                 ))}
               </div>
+              {content === "store" && (
+                <select value={previewPage} onChange={(e) => setPreviewPage(e.target.value as PreviewPage)} aria-label="Page to preview" className="rounded-xl border border-surface-200 bg-transparent px-2.5 py-1.5 text-xs font-semibold text-surface-600 dark:border-surface-700 dark:text-surface-300">
+                  <option value="home">Home</option>
+                  <option value="category" disabled={!previewTargets.category}>Category page</option>
+                  <option value="product" disabled={!previewTargets.product}>Product page</option>
+                  <option value="search">Search results</option>
+                </select>
+              )}
               <span className="hidden text-xs text-surface-400 xl:inline">{dirty ? "Unsaved — only you can see this" : "Matches your live store"}</span>
               {previewSrc && (
                 <a href={previewSrc} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs font-semibold text-surface-500 hover:text-surface-900 dark:hover:text-white">

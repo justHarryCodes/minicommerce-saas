@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import { ChevronRight, Film, MessageCircle, Package } from "lucide-react";
-import ProductCard from "@/components/storefront/ProductCard";
+import CollectionView from "@/components/storefront/collection/CollectionView";
 import BookmarkSlider from "@/components/storefront/BookmarkSlider";
 import StorefrontFooter from "@/components/storefront/StorefrontFooter";
 import {
@@ -356,11 +356,7 @@ export default function StorefrontHome(props: StorefrontHomeProps) {
                 )}
               </div>
             ) : (
-              <div className={gridClass(theme.layout)}>
-                {products.map((product) => (
-                  <ProductCard key={product.id} product={product} storeSlug={slug} />
-                ))}
-              </div>
+              <CollectionView products={products} layout={theme.layout.collection ?? "grid"} slug={slug} gridCls={gridClass(theme.layout)} toolbar={!isHome} />
             )}
           </section>
         )}

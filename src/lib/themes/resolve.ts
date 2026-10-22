@@ -5,7 +5,7 @@ import { deriveThemeColors } from "@/lib/utils";
 import { DEFAULT_THEME_ID, getTheme, THEMES } from "./catalog";
 import { FREE_THEME_IDS } from "@/lib/features-shared";
 import { TIER_CAPS } from "./kits";
-import { HIGHLIGHT_ICONS, NAV_STYLES, SECTION_IDS } from "./types";
+import { COLLECTION_LAYOUTS, HIGHLIGHT_ICONS, NAV_STYLES, PRODUCT_LAYOUTS, SEARCH_STYLES, SECTION_IDS } from "./types";
 import type { Density, HeadingStyle, ResolvedTheme, StorefrontTheme, ThemeCustomization, Radius } from "./types";
 
 // ── Validation ──────────────────────────────────────────────────────────────
@@ -39,6 +39,9 @@ export const customizationSchema = z
       .object({
         header: oneOf(["standard", "centered", "minimal"] as const),
         nav: oneOf(NAV_STYLES),
+        product: oneOf(PRODUCT_LAYOUTS),
+        collection: oneOf(COLLECTION_LAYOUTS),
+        search: oneOf(SEARCH_STYLES),
         navOptions: z
           .object({
             sticky: z.boolean().optional().catch(undefined),
@@ -345,6 +348,11 @@ export function capCustomization(theme: StorefrontTheme, c: ThemeCustomization):
   if (!caps.layout) {
     for (const k of ["background", "backgroundDark", "density"] as const) delete tokens[k];
     for (const k of ["header", "hero", "card", "categories", "footer", "columns"] as const) delete layout[k];
+  }
+  if (!caps.pages) {
+    delete layout.product;
+    delete layout.collection;
+    delete layout.search;
   }
   const out: ThemeCustomization = { ...c };
   if (Object.keys(tokens).length) out.tokens = tokens;

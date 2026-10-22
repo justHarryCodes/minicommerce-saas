@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { parseProductDetails } from '@/lib/product-details'
 import { invalidateStore } from "@/lib/store-cache";
 import { requireFeature } from '@/lib/plan'
 import { foreignCategory } from '@/lib/tenant'
@@ -82,6 +83,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if ('soldOutUntil' in body) {
     body.soldOutUntil = body.soldOutUntil === 'today' ? lagosParts(new Date()).date : null
   }
+  if ('details' in body) {
+    const det = parseProductDetails(body.details)
+    body.details = det ? JSON.stringify(det) : null
+  }
   if ('sizeGuide' in body) {
     const g = parseSizeGuide(body.sizeGuide)
     body.sizeGuide = g ? JSON.stringify(g) : null
@@ -114,7 +119,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const allowed = ['name', 'description', 'short_description', 'price', 'compare_price',
     'stock_quantity', 'category_id', 'subcategory_id', 'image_url', 'images', 'is_active',
     'is_featured', 'sort_order', 'has_sizes', 'option_names', 'low_stock_threshold',
-    'is_bookable', 'duration_minutes', 'sold_out_until', 'size_guide', 'brand', 'gtin', 'google_category']
+    'is_bookable', 'duration_minutes', 'sold_out_until', 'size_guide', 'brand', 'gtin', 'google_category', 'details']
 
   // Catalog fields (Sales channels): short plain strings, GTIN digits only
   for (const [key, max] of [['brand', 70], ['googleCategory', 200]] as const) {

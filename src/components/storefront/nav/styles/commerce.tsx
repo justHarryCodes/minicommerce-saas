@@ -74,7 +74,7 @@ export function TwoTierNav() {
           </div>
         </div>
       </div>
-      <div className="border-b border-[color:var(--nav-line)]" style={{ ...toneStyle("page"), background: "var(--nav-bg)" }}>
+      <div className="border-b border-[color:var(--nav-line)]" style={{ ...toneStyle(opts.tone), background: "var(--nav-bg)", color: "var(--nav-fg)" }}>
         <MobileRow search={false} />
         {opts.search !== "hidden" && (
           <div className="px-3 pb-3 lg:hidden">

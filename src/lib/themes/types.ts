@@ -26,6 +26,18 @@ export const NAV_STYLES = [
 ] as const;
 export type NavStyle = (typeof NAV_STYLES)[number];
 
+/** Product page layouts (components/storefront/product). */
+export const PRODUCT_LAYOUTS = ["classic", "editorial", "showcase", "split", "compact"] as const;
+export type ProductLayout = (typeof PRODUCT_LAYOUTS)[number];
+
+/** Category / search-result layouts (components/storefront/collection). */
+export const COLLECTION_LAYOUTS = ["grid", "lookbook", "menu", "aisle", "catalog"] as const;
+export type CollectionLayout = (typeof COLLECTION_LAYOUTS)[number];
+
+/** Search overlay styles. */
+export const SEARCH_STYLES = ["list", "visual", "spotlight"] as const;
+export type SearchStyle = (typeof SEARCH_STYLES)[number];
+
 /** Simple switches every nav style understands. */
 export interface NavOptions {
   sticky: boolean;
@@ -112,6 +124,9 @@ export interface ThemeLayout {
   header: HeaderVariant;
   nav: NavStyle;
   navOptions: NavOptions;
+  product: ProductLayout;
+  collection: CollectionLayout;
+  search: SearchStyle;
   hero: HeroVariant;
   card: CardVariant;
   categories: CategoryStyle;

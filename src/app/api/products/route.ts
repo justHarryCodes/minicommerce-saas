@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { parseProductDetails } from '@/lib/product-details'
 import { invalidateStore } from "@/lib/store-cache";
 import { foreignCategory } from '@/lib/tenant'
 import { verifySession } from '@/lib/auth'
@@ -35,6 +36,7 @@ const Schema = z.object({
   isBookable:       z.boolean().optional().default(false),
   durationMinutes:  z.number().int().min(5).max(1440).nullable().optional(),
   sizeGuide:        z.unknown().optional(),
+  details:          z.unknown().optional(),
 })
 
 export async function GET(req: NextRequest) {
@@ -125,20 +127,22 @@ export async function POST(req: NextRequest) {
       ? sizes.reduce((sum, s) => sum + s.stockQuantity, 0)
       : d.stockQuantity
   const sizeGuide = parseSizeGuide(d.sizeGuide)
+  const details = parseProductDetails(d.details)
 
   const product = await withTransaction(async (client) => {
     const rows = await client.query(`
       INSERT INTO products (
         store_id, category_id, subcategory_id, name, slug, description, short_description,
         price, compare_price, stock_quantity, image_url, images, is_active, is_featured, has_sizes,
-        option_names, low_stock_threshold, is_bookable, duration_minutes, size_guide
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20::jsonb) RETURNING *
+        option_names, low_stock_threshold, is_bookable, duration_minutes, size_guide, details
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20::jsonb,$21::jsonb) RETURNING *
     `, [
       store.id, categoryId, d.subcategoryId || null, d.name, slug,
       d.description || null, d.shortDescription || null, d.price, d.comparePrice || null,
       stockQuantity, imageUrl, d.images, d.isActive, d.isFeatured, hasSizes,
       hasSizes ? optionNames : [], d.lowStockThreshold ?? null, d.isBookable, d.isBookable ? d.durationMinutes ?? 60 : null,
       sizeGuide ? JSON.stringify(sizeGuide) : null,
+      details ? JSON.stringify(details) : null,
     ])
     const row = rows.rows[0]
 

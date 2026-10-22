@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { VariantEditor, initialVariantState, variantPayload, type VariantState } from "@/components/dashboard/VariantEditor";
 import { BookableFields, SizeGuideEditor } from "@/components/dashboard/ProductExtras";
+import DetailsEditor from "@/components/dashboard/DetailsEditor";
+import { parseProductDetails, type ProductDetails } from "@/lib/product-details";
 import { parseSizeGuide, type SizeGuide } from "@/lib/size-guide";
 import type { Category, Product } from "@/types";
 
@@ -80,6 +82,7 @@ export default function ProductForm({ categories, product, bookingsEnabled = tru
     durationMinutes: product?.duration_minutes ?? product?.durationMinutes ?? null,
   });
   const [sizeGuide, setSizeGuide] = useState<SizeGuide | null>(() => parseSizeGuide(product?.size_guide ?? product?.sizeGuide));
+  const [details, setDetails] = useState<ProductDetails | null>(() => parseProductDetails((product as { details?: unknown } | undefined)?.details));
   const [lowStockThreshold, setLowStockThreshold] = useState<string>(
     String(product?.low_stock_threshold ?? product?.lowStockThreshold ?? ""),
   );
@@ -265,6 +268,7 @@ export default function ProductForm({ categories, product, bookingsEnabled = tru
           isBookable: service.isBookable,
           durationMinutes: service.durationMinutes,
           sizeGuide,
+          details,
         }),
       });
 
@@ -492,6 +496,10 @@ export default function ProductForm({ categories, product, bookingsEnabled = tru
 
             <div className="mt-5 pt-5 border-t border-surface-100 dark:border-surface-800">
               <SizeGuideEditor value={sizeGuide} onChange={setSizeGuide} />
+            </div>
+
+            <div className="mt-5 pt-5 border-t border-surface-100 dark:border-surface-800">
+              <DetailsEditor value={details} onChange={setDetails} />
             </div>
             </>)}
           </section>

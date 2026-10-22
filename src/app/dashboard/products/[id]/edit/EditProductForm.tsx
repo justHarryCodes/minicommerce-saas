@@ -7,6 +7,8 @@ import toast from "react-hot-toast";
 import { Loader2, Package } from "lucide-react";
 import { VariantEditor, initialVariantState, variantPayload, type VariantState } from "@/components/dashboard/VariantEditor";
 import { BookableFields, ListingFields, SizeGuideEditor, type ListingInfo } from "@/components/dashboard/ProductExtras";
+import DetailsEditor from "@/components/dashboard/DetailsEditor";
+import { parseProductDetails, type ProductDetails } from "@/lib/product-details";
 import { parseSizeGuide, type SizeGuide } from "@/lib/size-guide";
 import type { Product } from "@/types";
 
@@ -41,6 +43,7 @@ export default function EditProductForm({ product, bookingsEnabled = true }: Pro
     durationMinutes: product.duration_minutes ?? product.durationMinutes ?? null,
   });
   const [sizeGuide, setSizeGuide] = useState<SizeGuide | null>(() => parseSizeGuide(product.size_guide ?? product.sizeGuide));
+  const [details, setDetails] = useState<ProductDetails | null>(() => parseProductDetails((product as { details?: unknown }).details));
   const [listing, setListing] = useState<ListingInfo>(() => {
     const p = product as { brand?: string | null; gtin?: string | null; google_category?: string | null };
     return { brand: p.brand ?? "", gtin: p.gtin ?? "", googleCategory: p.google_category ?? "" };
@@ -93,6 +96,7 @@ export default function EditProductForm({ product, bookingsEnabled = true }: Pro
         isBookable: service.isBookable,
         durationMinutes: service.durationMinutes,
         sizeGuide,
+        details,
         brand: listing.brand.trim() || null,
         gtin: listing.gtin.replace(/D/g, "") || null,
         googleCategory: listing.googleCategory.trim() || null,
@@ -271,6 +275,11 @@ export default function EditProductForm({ product, bookingsEnabled = true }: Pro
       {/* Size guide */}
       <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-5">
         <SizeGuideEditor value={sizeGuide} onChange={setSizeGuide} />
+      </div>
+
+      {/* Highlights, specs, scent notes */}
+      <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-5">
+        <DetailsEditor value={details} onChange={setDetails} />
       </div>
 
       <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-5">

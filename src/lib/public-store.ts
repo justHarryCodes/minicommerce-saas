@@ -1,4 +1,5 @@
 import type { Store } from '@/types'
+import { keySpecs, parseProductDetails } from './product-details'
 
 // Fields a shopper's browser may receive. Anything passed to a client
 // component is embedded in the page HTML, so the full store row must never
@@ -32,6 +33,8 @@ export function toCardProduct<P extends Record<string, unknown>>(p: P): P {
     image_url: p.image_url, images, stock_quantity: p.stock_quantity, sold_out_today: p.sold_out_today,
     short_description: p.short_description, description, is_bookable: p.is_bookable, has_sizes: p.has_sizes,
     category_id: p.category_id, created_at: p.created_at, duration_minutes: p.duration_minutes,
+    // Three headline specs for catalog-style category pages
+    specs: p.details ? keySpecs(parseProductDetails(p.details), 3) : undefined,
   }
   for (const k of Object.keys(pick)) if (pick[k] === undefined) delete pick[k]
   return pick as P
