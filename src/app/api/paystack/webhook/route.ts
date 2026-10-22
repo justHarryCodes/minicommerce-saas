@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { queryOne } from "@/lib/db";
 import { fulfillSubscriptionPayment } from "@/lib/billing-fulfillment";
 import { markOrderPaidOnline } from "@/lib/order-payments";
+import { koboOf, settlePayment, type PaystackCharge } from "@/lib/payments";
 import crypto from "crypto";
 
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
@@ -48,6 +49,20 @@ export async function POST(req: NextRequest) {
       metadata?: Record<string, unknown>;
     };
 
+    // ── Everything started since payment attempts were introduced ──────
+    // settlePayment checks status, exact amount and currency, and applies
+    // each payment once no matter how many times Paystack retries.
+    const settled = await settlePayment(reference, "webhook", event.data as PaystackCharge);
+    if (settled.state !== "unknown_reference") {
+      return NextResponse.json({ received: true });
+    }
+
+    // ── Legacy checkouts opened before the switch (still in flight) ─────
+    const charge = event.data as PaystackCharge;
+    if (charge.status !== "success" || (charge.currency ?? "NGN").toUpperCase() !== "NGN") {
+      return NextResponse.json({ received: true });
+    }
+
     // ── Order payments ──────────────────────────────────────────────
     const orderId = metadata?.orderId as string | undefined;
     if (orderId) {
@@ -55,15 +70,23 @@ export async function POST(req: NextRequest) {
         id: string;
         payment_reference: string | null;
         payment_status: string;
+        payment_method: string;
+        deposit_amount: number;
+        total_amount: number | null;
+        total: number;
       }>(
-        "SELECT id, payment_reference, payment_status FROM orders WHERE id = $1",
+        "SELECT id, payment_reference, payment_status, payment_method, deposit_amount, total_amount, total FROM orders WHERE id = $1",
         [orderId]
       );
+      const due = order
+        ? order.payment_method === "pay_on_delivery" ? order.deposit_amount : (order.total_amount ?? order.total)
+        : 0;
 
       if (
         order &&
         order.payment_reference === reference &&
-        order.payment_status === "pending"
+        order.payment_status === "pending" &&
+        Number(charge.amount) === koboOf(due)
       ) {
         await markOrderPaidOnline(orderId);
       }
@@ -75,12 +98,18 @@ export async function POST(req: NextRequest) {
     const subPayment = await queryOne<{
       type: string;
       payment_status: string;
+      amount: number;
     }>(
-      "SELECT type, payment_status FROM subscription_payments WHERE payment_reference = $1",
+      "SELECT type, payment_status, amount FROM subscription_payments WHERE payment_reference = $1",
       [reference]
     );
 
-    if (subPayment && subPayment.payment_status === "pending") {
+    // 'failed' too: older return pages marked payments failed too early
+    if (
+      subPayment &&
+      (subPayment.payment_status === "pending" || subPayment.payment_status === "failed") &&
+      Number(charge.amount) === koboOf(subPayment.amount)
+    ) {
       const validTypes = ["setup_fee", "monthly", "plan"];
       if (validTypes.includes(subPayment.type)) {
         await fulfillSubscriptionPayment(

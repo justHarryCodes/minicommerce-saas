@@ -209,7 +209,134 @@ const SERVICES_SALON: DemoSeed = {
   ],
 };
 
+const PERFUME: DemoSeed = {
+  name: "Maison Ọ̀rí",
+  description: "Original designer and niche fragrances, oud and body mists — authentic, sealed and delivered across Nigeria.",
+  banners: ["1541643600914-78b084683601", "1592945403244-b3fbafd7f539", "1594035910387-fea47794261f"],
+  categories: ["For Her", "For Him", "Oud & Oils", "Gift Sets"],
+  products: [
+    ["Velvet Rose Eau de Parfum", "1541643600914-78b084683601", 65000, "For Her", "Damask rose, pink pepper and soft musk. 100ml.", 72000],
+    ["Amber Nights", "1592945403244-b3fbafd7f539", 58000, "For Her", "Warm amber, vanilla and sandalwood — made for evenings out."],
+    ["Bloom Body Mist", "1588405748880-12d1d2a59f75", 9500, "For Her", "Light floral mist for everyday freshness. 250ml."],
+    ["Noir Intense", "1594035910387-fea47794261f", 72000, "For Him", "Leather, tobacco and black pepper. Long-lasting and bold.", 80000],
+    ["Citrus Cologne", "1523293182086-7651a899d37f", 38000, "For Him", "Bergamot, neroli and vetiver — crisp and clean for the office."],
+    ["Aqua Sport", "1587017539504-67cfbddac569", 32000, "For Him", "Fresh marine notes for gym, travel and hot days."],
+    ["Royal Oud Oil", "1608528577891-eb055944f2e7", 25000, "Oud & Oils", "Concentrated oud oil, alcohol-free. A few drops last all day."],
+    ["Bakhoor Incense Set", "1585386959984-a4155224a1ad", 18000, "Oud & Oils", "Scented bakhoor with a burner for the home."],
+    ["Signature Discovery Set", "1592945403244-b3fbafd7f539", 30000, "Gift Sets", "Five 10ml bestsellers in a keepsake box.", 36000],
+    ["Couple's Gift Box", "1541643600914-78b084683601", 120000, "Gift Sets", "His-and-hers fragrances, gift-wrapped with a card."],
+  ],
+  reviews: [
+    ["Ifeoma K.", "100% original — the Velvet Rose lasts all day and I get compliments everywhere.", 0],
+    ["Segun B.", "Noir Intense is my new signature. Delivery was quick and the packaging was beautiful.", 3],
+    ["Hauwa M.", "The oud oil is rich and long-lasting. Will definitely restock.", 6],
+  ],
+};
+
+const MARKET: DemoSeed = {
+  name: "Mama Nkechi's Market",
+  description: "Fresh foodstuff, pepper, grains and provisions from the market to your kitchen — same-day delivery.",
+  banners: ["1542838132-92c53300491e", "1488459716781-31db52582fe9", "1543168256-418811576931"],
+  categories: ["Grains & Rice", "Fresh Produce", "Provisions", "Bulk Deals"],
+  products: [
+    ["Local Rice (10kg)", "1586201375761-83865001e31c", 18500, "Grains & Rice", "Stone-free, parboiled local rice. Cooks soft and fluffy.", 20000],
+    ["Honey Beans (5kg)", "1574323347407-f5e1ad6d020b", 9000, "Grains & Rice", "Sweet oloyin beans, handpicked and clean."],
+    ["Garri Ijebu (5kg)", "1550989460-0adf9ea622e2", 5500, "Grains & Rice", "Crisp, sour Ijebu garri — perfect for soaking."],
+    ["Fresh Tomatoes (basket)", "1506484381205-f7945653044d", 12000, "Fresh Produce", "Firm, ripe tomatoes straight from the market.", 14000],
+    ["Mixed Peppers (paint)", "1488459716781-31db52582fe9", 4500, "Fresh Produce", "Tatashe, rodo and shombo for your stews."],
+    ["Fresh Vegetables Bundle", "1543168256-418811576931", 6000, "Fresh Produce", "Ugu, efo and spinach — washed and bundled."],
+    ["Groundnut Oil (5L)", "1610348725531-843dff563e2c", 11000, "Provisions", "Pure, filtered groundnut oil for cooking and frying."],
+    ["Seasoning & Spice Pack", "1597362925123-77861d3fbac7", 3500, "Provisions", "Curry, thyme, crayfish and stock cubes in one pack."],
+    ["Family Provisions Box", "1542838132-92c53300491e", 25000, "Provisions", "Milk, tea, sugar, noodles and cereal for the month."],
+    ["Rice Bag (50kg)", "1586201375761-83865001e31c", 82000, "Bulk Deals", "Full bag for families, parties and caterers.", 88000],
+    ["Yam Tubers (10 pcs)", "1518977676601-b53f82aba655", 30000, "Bulk Deals", "Big, healthy Abuja yams — great for parties."],
+  ],
+  reviews: [
+    ["Chioma A.", "Everything was fresh and well packed. Saved me a whole Saturday at the market!", 3],
+    ["Bola T.", "The rice is stone-free like they promised. Delivery same day.", 0],
+    ["Aminu S.", "Ordered the bulk rice for my shop — good price and quick delivery.", 9],
+  ],
+};
+
+const GADGETS: DemoSeed = {
+  name: "Volt Gadgets",
+  description: "Original phones, laptops, audio and accessories with warranty — delivered same day in Lagos.",
+  banners: ["1511707171634-5f897ff02aa9", "1496181133206-80ce9b88a853", "1593642632559-0c6d3fc62b89"],
+  categories: ["Phones", "Laptops", "Audio", "Accessories"],
+  products: [
+    ["Flagship Smartphone 256GB", "1511707171634-5f897ff02aa9", 650000, "Phones", "6.7\" OLED display, triple camera and all-day battery.", 720000],
+    ["Mid-range Smartphone 128GB", "1546054454-aa26e2b734c7", 215000, "Phones", "Big screen, 5000mAh battery and a great camera for the price."],
+    ["Ultrabook 14\" (16GB RAM)", "1496181133206-80ce9b88a853", 890000, "Laptops", "Light, fast and quiet — 512GB SSD and a 12-hour battery."],
+    ["Pro Laptop 16\"", "1517336714731-489689fd1ca8", 1850000, "Laptops", "For creators: powerful chip, stunning display, 1TB storage.", 1990000],
+    ["Work Laptop 15\"", "1593642632559-0c6d3fc62b89", 520000, "Laptops", "Reliable everyday laptop for office and school."],
+    ["Wireless Earbuds", "1606220945770-b5b6c2c55bf1", 45000, "Audio", "Noise cancelling, 30-hour battery with case.", 52000],
+    ["Over-Ear Headphones", "1505740420928-5e560c06d30e", 62000, "Audio", "Deep bass, plush cushions and 40-hour battery."],
+    ["Bluetooth Speaker", "1608043152269-423dbba4e7e1", 27000, "Audio", "Waterproof, room-filling sound, 12-hour playtime."],
+    ["Smart Watch", "1546868871-7041f2a55e12", 68000, "Accessories", "Health tracking, notifications and a bright display."],
+    ["Wireless Mouse", "1527864550417-7fd91fc51a46", 12000, "Accessories", "Silent clicks, ergonomic grip, USB-C charging."],
+    ["Mechanical Keyboard", "1585060544812-6b45742d762f", 38000, "Accessories", "Tactile switches with backlight — for work and play."],
+  ],
+  reviews: [
+    ["Tobi O.", "Phone was brand new and sealed, with a receipt and warranty. Delivered in 3 hours.", 0],
+    ["Grace E.", "Laptop is super fast and the battery really lasts all day.", 2],
+    ["Ahmed L.", "The earbuds sound amazing for the price. Great customer service too.", 5],
+  ],
+};
+
+const HAIR: DemoSeed = {
+  name: "Crown & Co. Hair",
+  description: "100% human hair wigs, bundles, closures and hair care — luxury quality, delivered nationwide.",
+  banners: ["1519699047748-de8e457a634e", "1580618672591-eb180b1a973f", "1562322140-8baeececf3df"],
+  categories: ["Wigs", "Bundles", "Closures & Frontals", "Hair Care"],
+  products: [
+    ["Bone Straight Wig 24\"", "1519699047748-de8e457a634e", 185000, "Wigs", "13x4 HD lace, 200% density, pre-plucked hairline.", 210000],
+    ["Body Wave Wig 20\"", "1580618672591-eb180b1a973f", 145000, "Wigs", "Soft, bouncy body wave on a glueless cap."],
+    ["Pixie Curl Wig", "1595476108010-b4d1f102b1b1", 85000, "Wigs", "Short, sassy and ready to wear in minutes."],
+    ["Straight Bundles (3 pcs)", "1605497788044-5a32c7078486", 120000, "Bundles", "Double-drawn, minimal shedding. 18/20/22\".", 135000],
+    ["Deep Wave Bundles (3 pcs)", "1634449571010-02389ed0f9b0", 135000, "Bundles", "Defined curls that last wash after wash."],
+    ["HD Lace Closure 5x5", "1626954079979-ec4f7b05e032", 55000, "Closures & Frontals", "Melts into every skin tone. Pre-plucked."],
+    ["13x6 Frontal", "1562322140-8baeececf3df", 75000, "Closures & Frontals", "Ear-to-ear frontal for a natural hairline."],
+    ["Silk Press Treatment Kit", "1522337360788-8b13dee7a37e", 18000, "Hair Care", "Heat protectant, serum and wrap strips."],
+    ["Growth Oil", "1560066984-138dadb4c035", 9500, "Hair Care", "Rosemary and castor blend for edges and scalp."],
+  ],
+  reviews: [
+    ["Amaka N.", "The bone straight is so silky and the lace melted perfectly. Worth every naira!", 0],
+    ["Ruth A.", "Bundles came full and soft, no shedding after three washes.", 3],
+    ["Zainab O.", "Ordered on Monday, got it Tuesday. The frontal is everything.", 6],
+  ],
+};
+
+const INTERIOR: DemoSeed = {
+  name: "Studio Ìlé Interiors",
+  description: "Curated furniture, decor and interior styling for homes and offices in Lagos and Abuja.",
+  banners: ["1586023492125-27b2c045efd7", "1618221195710-dd6b41faaea6", "1616486338812-3dadae4b4ace"],
+  categories: ["Living Room", "Bedroom", "Decor", "Design Services"],
+  products: [
+    ["Bouclé Three-Seater Sofa", "1555041469-a586c61ea9bc", 950000, "Living Room", "Deep seats, oak legs and a soft bouclé finish.", 1050000],
+    ["Marble Coffee Table", "1600210492486-724fe5c67fb0", 320000, "Living Room", "Solid marble top on a brushed brass base."],
+    ["Accent Lounge Chair", "1567538096630-e0c55bd6374c", 280000, "Living Room", "Sculpted chair for reading corners."],
+    ["Upholstered Bed Frame", "1616486338812-3dadae4b4ace", 680000, "Bedroom", "King size, padded headboard in linen."],
+    ["Bedside Table Lamp", "1513694203232-719a280e022f", 45000, "Bedroom", "Warm, dimmable light with a linen shade."],
+    ["Ceramic Vase Set", "1493663284031-b7e3aefcae8e", 38000, "Decor", "Three handmade vases in earthy tones.", 45000],
+    ["Wooden Side Stool", "1503602642458-232111445657", 35000, "Decor", "Solid hardwood stool that doubles as a side table."],
+    ["Room Styling Consultation", "1586023492125-27b2c045efd7", 150000, "Design Services", "On-site visit, mood board and shopping list for one room."],
+    ["Full Home Design Package", "1618221195710-dd6b41faaea6", 1500000, "Design Services", "Concept, 3D renders, sourcing and installation."],
+  ],
+  reviews: [
+    ["Funke D.", "They transformed our living room in two weeks. It finally feels like us.", 7],
+    ["Emeka U.", "The sofa is even better in person — solid build and so comfortable.", 0],
+    ["Lara K.", "Loved the vases and the delivery team placed everything for me.", 5],
+  ],
+};
+
 function seedFor(theme: StorefrontTheme): DemoSeed {
+  switch (theme.category) {
+    case "perfume": return PERFUME;
+    case "market": return MARKET;
+    case "gadgets": return GADGETS;
+    case "hair": return HAIR;
+    case "interior": return INTERIOR;
+  }
   if (theme.category === "food") {
     if (theme.id === "sweet-treats") return FOOD_BAKERY;
     if (theme.id === "fresh-bowl") return FOOD_HEALTHY;

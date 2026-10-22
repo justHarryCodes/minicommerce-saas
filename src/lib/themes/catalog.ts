@@ -1,4 +1,5 @@
 import type { StorefrontTheme, ThemeCategory, ThemeCopy } from "./types";
+import { MORE_THEMES } from "./catalog-more";
 
 // ── Shared copy per vertical ────────────────────────────────────────────────
 // Themes spread these and override a few lines so each one has its own voice
@@ -108,7 +109,8 @@ const LIGHT_BG = "#ffffff";
 const DARK_BG = "#09090b";
 
 // ── Catalog ─────────────────────────────────────────────────────────────────
-// 5 e-commerce · 5 food delivery · 5 clothing · 3 business services.
+// 5 e-commerce · 5 food delivery · 5 clothing · 3 business services ·
+// 5 perfume · 5 local market · 5 gadgets · 5 hair · 3 interiors.
 // The first e-commerce theme reproduces the original storefront look and is
 // what stores without a chosen theme fall back to.
 
@@ -381,6 +383,9 @@ export const THEMES: StorefrontTheme[] = [
       ],
     },
   },
+
+  // Perfume, local market, gadgets, hair and interiors (catalog-more.ts)
+  ...MORE_THEMES,
 ];
 
 export const DEFAULT_THEME_ID = "classic";
@@ -390,6 +395,11 @@ export const THEME_CATEGORIES: { id: ThemeCategory; label: string; limit: number
   { id: "food", label: "Food delivery", limit: 5 },
   { id: "clothing", label: "Clothing brand", limit: 5 },
   { id: "services", label: "Business services", limit: 3 },
+  { id: "perfume", label: "Perfume", limit: 5 },
+  { id: "market", label: "Local market", limit: 5 },
+  { id: "gadgets", label: "Gadgets", limit: 5 },
+  { id: "hair", label: "Hair", limit: 5 },
+  { id: "interior", label: "Interior & aesthetics", limit: 3 },
 ];
 
 const BY_ID = new Map(THEMES.map((t) => [t.id, t]));

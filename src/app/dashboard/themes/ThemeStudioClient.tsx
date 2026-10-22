@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { FREE_THEME_IDS } from "@/lib/features-shared";
+import { FREE_THEME_IDS, THEME_PRICE_NGN } from "@/lib/features-shared";
 import toast from "react-hot-toast";
 import {
   ArrowDown,
@@ -41,6 +41,8 @@ interface Props {
   savedCustomization: ThemeCustomization;
   /** Plan includes premium themes; free themes are always available */
   premiumUnlocked?: boolean;
+  /** Premium themes this store bought individually */
+  ownedThemes?: string[];
 }
 
 const ACCENT_SWATCHES = ["#f59e0b", "#ef4444", "#f97316", "#ec4899", "#e11d48", "#8b5cf6", "#2563eb", "#0ea5e9", "#10b981", "#0d9488", "#a3e635", "#18181b"];
@@ -274,8 +276,53 @@ const selectCls =
 
 /* ───────────────────────────── Studio ───────────────────────────── */
 
-export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, savedThemeId, savedCustomization, premiumUnlocked = true }: Props) {
-  const isLocked = (id: string) => !premiumUnlocked && !FREE_THEME_IDS.has(id);
+export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, savedThemeId, savedCustomization, premiumUnlocked = true, ownedThemes = [] }: Props) {
+  const isLocked = (id: string) => !premiumUnlocked && !FREE_THEME_IDS.has(id) && !ownedThemes.includes(id);
+  const isOwned = (id: string) => ownedThemes.includes(id);
+  const [buying, setBuying] = useState<string | null>(null);
+
+  /** One-time purchase (₦2,500) — redirects to Paystack; unlocks on confirmed payment. */
+  async function buyTheme(id: string) {
+    setBuying(id);
+    try {
+      const res = await fetch("/api/dashboard/themes/purchase", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ themeId: id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data.alreadyPaid) {
+        toast.success("You already bought this theme — refreshing…");
+        window.location.reload();
+        return;
+      }
+      if (data.authorization_url) {
+        window.location.href = data.authorization_url;
+        return;
+      }
+      toast.error(data.error ?? "Couldn't start the payment");
+    } catch {
+      toast.error("Network error");
+    }
+    setBuying(null);
+  }
+
+  // Back from Paystack: say how it went, and open the theme if it's ready
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    const state = p.get("purchase");
+    const id = p.get("theme");
+    if (!state) return;
+    const name = (id && getTheme(id)?.name) || "Theme";
+    if (state === "success") toast.success(`${name} is yours — customise it and apply it whenever you're ready.`);
+    else if (state === "processing") toast(`Payment for ${name} is still being confirmed. It unlocks automatically once Paystack completes it.`, { icon: "⏳" });
+    else toast.error(`Payment for ${name} didn't go through. You haven't been charged.`);
+    window.history.replaceState(null, "", window.location.pathname);
+    if (state === "success" && id && getTheme(id)) {
+      setThemeId(id);
+      setView("customize");
+    }
+  }, []);
   const [saved, setSaved] = useState({ themeId: savedThemeId, customization: savedCustomization });
   const [themeId, setThemeId] = useState(savedThemeId);
   const [custom, setCustom] = useState<ThemeCustomization>(savedCustomization);
@@ -477,6 +524,10 @@ export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, save
                         <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                           <Check className="h-3 w-3" /> Live
                         </span>
+                      ) : isOwned(t.id) ? (
+                        <span className="rounded-full bg-accent-100 px-2 py-0.5 text-[11px] font-bold text-accent-800 dark:bg-accent-900/30 dark:text-accent-300">
+                          Owned
+                        </span>
                       ) : (
                         <span className="rounded-full bg-surface-100 px-2 py-0.5 text-[11px] font-semibold text-surface-500 dark:bg-surface-800 dark:text-surface-400">
                           {categoryLabel(t.category)}
@@ -500,13 +551,14 @@ export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, save
                         Demo <ExternalLink className="h-3 w-3" />
                       </a>
                       {!isLive && isLocked(t.id) && (
-                        <a
-                          href="/dashboard/billing"
-                          className="flex items-center gap-1 rounded-xl bg-surface-900 px-3 py-2 text-xs font-bold text-white hover:bg-surface-800 dark:bg-white dark:text-black"
-                          title="Premium theme — upgrade to apply it"
+                        <button
+                          onClick={() => buyTheme(t.id)}
+                          disabled={buying === t.id}
+                          className="flex items-center gap-1 whitespace-nowrap rounded-xl bg-surface-900 px-3 py-2 text-xs font-bold text-white hover:bg-surface-800 disabled:opacity-60 dark:bg-white dark:text-black"
+                          title={`One-time payment — or get every theme with Pro`}
                         >
-                          <Lock className="h-3 w-3" /> Pro
-                        </a>
+                          {buying === t.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Lock className="h-3 w-3" />} ₦{THEME_PRICE_NGN.toLocaleString("en-NG")}
+                        </button>
                       )}
                       {!isLive && !isLocked(t.id) && (
                         <button
@@ -702,12 +754,20 @@ export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, save
                 </button>
               )}
               {isLocked(themeId) ? (
-              <a
-                href="/dashboard/billing"
-                className="ml-auto flex items-center gap-2 rounded-xl bg-surface-900 px-5 py-2.5 text-sm font-bold text-white dark:bg-white dark:text-black"
-              >
-                <Lock className="h-4 w-4" /> Upgrade to apply {theme.name}
-              </a>
+              <span className="ml-auto flex flex-wrap items-center justify-end gap-2">
+                <a href="/dashboard/billing" className="text-xs font-semibold text-surface-500 underline hover:text-surface-800 dark:hover:text-surface-200">
+                  or every theme with Pro
+                </a>
+                <button
+                  type="button"
+                  onClick={() => buyTheme(themeId)}
+                  disabled={buying === themeId}
+                  className="flex items-center gap-2 rounded-xl bg-surface-900 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60 dark:bg-white dark:text-black"
+                >
+                  {buying === themeId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+                  Buy {theme.name} · ₦{THEME_PRICE_NGN.toLocaleString("en-NG")} once
+                </button>
+              </span>
               ) : (
               <button
                 type="button"

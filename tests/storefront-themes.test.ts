@@ -16,7 +16,7 @@ describe("theme catalog", () => {
     for (const { id, limit } of THEME_CATEGORIES) {
       expect(THEMES.filter((t) => t.category === id)).toHaveLength(limit);
     }
-    expect(THEMES).toHaveLength(18);
+    expect(THEMES).toHaveLength(41);
   });
 
   it("has unique ids and valid accent colors", () => {

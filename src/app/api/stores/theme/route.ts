@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { invalidateStore } from "@/lib/store-cache";
-import { FREE_THEME_IDS } from "@/lib/features-shared";
-import { requireFeature } from "@/lib/plan";
+import { THEME_PRICE_NGN } from "@/lib/features-shared";
+import { canUseTheme } from "@/lib/theme-access";
 import { z } from "zod";
 import { verifySession, getUserStore } from "@/lib/auth";
 import { query } from "@/lib/db";
@@ -25,9 +25,11 @@ export async function PUT(req: NextRequest) {
 
   const theme = getTheme(parsed.data.themeId);
   if (!theme) return NextResponse.json({ error: "Unknown theme" }, { status: 400 });
-  if (!FREE_THEME_IDS.has(theme.id)) {
-    const denied = await requireFeature(store.id, "premium_themes");
-    if (denied) return denied;
+  if (!(await canUseTheme(store.id, theme.id))) {
+    return NextResponse.json(
+      { error: `${theme.name} is a premium theme. Buy it once for ₦${THEME_PRICE_NGN.toLocaleString("en-NG")} or upgrade to Pro for every theme.`, code: "plan_required", feature: "premium_themes" },
+      { status: 403 }
+    );
   }
 
   const customization = parseCustomization(parsed.data.customization);

@@ -85,4 +85,10 @@ export function featureForPath(pathname: string): Feature | null {
 }
 
 /** Free themes: the first design in each category. Everything else is premium. */
-export const FREE_THEME_IDS = new Set(['classic', 'quick-bites', 'atelier', 'consult'])
+export const FREE_THEME_IDS = new Set([
+  'classic', 'quick-bites', 'atelier', 'consult',
+  'noir-essence', 'mama-market', 'tech-grid', 'crown-hair', 'nest-interiors',
+])
+
+/** One-time price of a single premium theme (no Pro plan needed). */
+export const THEME_PRICE_NGN = 2500

@@ -35,11 +35,19 @@ export async function fulfillSubscriptionPayment(
   // Guard against type-swapping: stored type must match what we were told
   if (payment.type !== expectedType) return { ok: false, error: 'type_mismatch' }
 
-  // Mark payment as paid
-  await query(
-    `UPDATE subscription_payments SET payment_status = 'paid' WHERE payment_reference = $1`,
-    [reference]
+  // Claim the payment atomically. The webhook, the return page and the
+  // reconcile job can all arrive at once; only the one whose UPDATE flips
+  // the row applies the effects below (it used to be read-then-write, so
+  // two of them could both extend the plan and pay the referral reward).
+  // 'failed' is claimable too: an early return page once marked a payment
+  // failed before Paystack finished, and the real success must still land.
+  const claimed = await queryOne<{ id: string }>(
+    `UPDATE subscription_payments SET payment_status = 'paid'
+     WHERE payment_reference = $1 AND type = $2 AND payment_status IN ('pending', 'failed')
+     RETURNING id`,
+    [reference, expectedType]
   )
+  if (!claimed) return { ok: false, error: 'already_paid' }
 
   const settings = await getPlatformSettings()
   const now = new Date()
@@ -88,7 +96,15 @@ export async function fulfillSubscriptionPayment(
     const planId = payment.plan_id
     if (!planId) return { ok: false, error: 'missing_plan_id' }
 
-    const expiresAt = new Date(now)
+    // Renewing the same plan early adds a month on top of what's left
+    // (it used to restart from today, throwing away the remaining days).
+    const current = await queryOne<{ current_plan_id: string | null; plan_expires_at: string | Date | null }>(
+      'SELECT current_plan_id, plan_expires_at FROM stores WHERE id = $1',
+      [payment.store_id]
+    )
+    const currentEnd = current?.plan_expires_at ? new Date(current.plan_expires_at) : null
+    const startFrom = current?.current_plan_id === planId && currentEnd && currentEnd > now ? currentEnd : now
+    const expiresAt = new Date(startFrom)
     expiresAt.setMonth(expiresAt.getMonth() + 1)
 
     await query(
@@ -103,7 +119,7 @@ export async function fulfillSubscriptionPayment(
 
     await query(
       `UPDATE subscription_payments SET period_start = $1, period_end = $2 WHERE payment_reference = $3`,
-      [now.toISOString(), expiresAt.toISOString(), reference]
+      [startFrom.toISOString(), expiresAt.toISOString(), reference]
     )
 
     // Reward the referrer on this store's *first* successful plan payment.

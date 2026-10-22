@@ -394,6 +394,11 @@ export default function CheckoutClient({
           }),
         });
         const initData = await initRes.json();
+        // Already paid (e.g. in another tab): never start a second charge
+        if (initData.alreadyPaid && data.accessToken) {
+          window.location.href = `/store/${storeSlug}/receipt/${encodeURIComponent(data.orderNumber)}?t=${data.accessToken}&paid=1`;
+          return;
+        }
         if (initData.authorization_url) {
           window.location.href = initData.authorization_url;
           return;

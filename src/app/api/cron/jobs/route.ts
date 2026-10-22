@@ -7,6 +7,7 @@ import crypto from "crypto";
 import { sendDueCartReminders } from "@/lib/notify/cart-reminders";
 import { sendDueBookingReminders } from "@/lib/notify/booking-reminders";
 import { syncCustomDomainsWithPlans } from "@/lib/domains";
+import { reconcilePendingPayments } from "@/lib/payments";
 
 export const dynamic = "force-dynamic";
 
@@ -21,8 +22,14 @@ function authorized(req: NextRequest): boolean {
 async function run(req: NextRequest) {
   if (!process.env.CRON_SECRET) return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 503 });
   if (!authorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const [carts, bookings, domains] = await Promise.all([sendDueCartReminders(), sendDueBookingReminders(), syncCustomDomainsWithPlans()]);
-  return NextResponse.json({ ok: true, carts, bookings, domains });
+  const [carts, bookings, domains, payments] = await Promise.all([
+    sendDueCartReminders(),
+    sendDueBookingReminders(),
+    syncCustomDomainsWithPlans(),
+    // Paystack checkouts still pending: settle missed webhooks, close abandoned ones
+    reconcilePendingPayments(),
+  ]);
+  return NextResponse.json({ ok: true, carts, bookings, domains, payments });
 }
 
 export const GET = run;

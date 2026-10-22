@@ -30,6 +30,11 @@ const DEFAULT_SETTINGS = {
   reels_monthly_limit: 20,
 };
 
+/** The one atomic UPDATE that marks the payment paid (via queryOne, RETURNING id). */
+function claimCalls() {
+  return mockedQueryOne.mock.calls.filter(([sql]) => (sql as string).includes("UPDATE subscription_payments SET payment_status = 'paid'"));
+}
+
 function callsContaining(text: string) {
   return mockedQuery.mock.calls.filter(([sql]) => (sql as string).includes(text));
 }
@@ -39,6 +44,9 @@ function callsContaining(text: string) {
 function mockQueryOneByText(routes: Record<string, unknown>) {
   mockedQueryOne.mockImplementation(async (sql: unknown) => {
     const text = sql as string;
+    // The atomic claim (UPDATE … WHERE payment_status IN (pending, failed)
+    // RETURNING id) succeeds unless a test routes it explicitly.
+    if (text.includes(CLAIM) && !Object.keys(routes).some((k) => text.includes(k))) return { id: "claimed" };
     for (const [needle, result] of Object.entries(routes)) {
       if (text.includes(needle)) return result;
     }
@@ -60,6 +68,7 @@ function mockQueryByText(routes: Record<string, unknown[]>) {
 }
 
 const PAYMENT_LOOKUP = "FROM subscription_payments WHERE payment_reference";
+const CLAIM = "UPDATE subscription_payments SET payment_status = 'paid'";
 const REFERRER_LOOKUP = "referred_by_store_id FROM stores";
 const REFERRER_PLAN_LOOKUP = "current_plan_id, plan_expires_at FROM stores";
 const AFFILIATE_LOOKUP = "referred_by_affiliate_id FROM stores";
@@ -106,23 +115,26 @@ describe("fulfillSubscriptionPayment", () => {
     mockedQueryOne.mockResolvedValueOnce({
       id: "p1", store_id: "s1", type: "setup_fee", payment_status: "pending", plan_id: null,
     });
+    mockedQueryOne.mockResolvedValueOnce({ id: "claimed" }); // atomic claim
 
     const result = await fulfillSubscriptionPayment("ref1", "setup_fee");
 
     expect(result).toEqual({ ok: true });
-    expect(callsContaining("SET payment_status = 'paid'")).toHaveLength(1);
+    expect(claimCalls()).toHaveLength(1);
     expect(callsContaining("subscription_status = 'setup_fee_paid'")).toHaveLength(1);
     expect(callsContaining("referral_credits")).toHaveLength(0);
     expect(callsContaining("payout_balance")).toHaveLength(0);
-    // Only one queryOne call (the payment lookup) — setup_fee never queries
-    // for a referrer/affiliate at all any more.
-    expect(mockedQueryOne).toHaveBeenCalledTimes(1);
+    // Only the payment lookup and the atomic claim — setup_fee never
+    // queries for a referrer/affiliate at all any more.
+    expect(mockedQueryOne).toHaveBeenCalledTimes(2);
+    expect(mockedQueryOne.mock.calls.some(([sql]) => /referred_by/.test(sql as string))).toBe(false);
   });
 
   it("applies the monthly effect: marks subscribed and extends expiry by 1 month", async () => {
     mockedQueryOne.mockResolvedValueOnce({
       id: "p1", store_id: "s1", type: "monthly", payment_status: "pending", plan_id: null,
     });
+    mockedQueryOne.mockResolvedValueOnce({ id: "claimed" }); // atomic claim
     const result = await fulfillSubscriptionPayment("ref1", "monthly");
     expect(result).toEqual({ ok: true });
     expect(callsContaining("subscription_status = 'subscribed'")).toHaveLength(1);
@@ -132,6 +144,7 @@ describe("fulfillSubscriptionPayment", () => {
     mockedQueryOne.mockResolvedValueOnce({
       id: "p1", store_id: "s1", type: "plan", payment_status: "pending", plan_id: null,
     });
+    mockedQueryOne.mockResolvedValueOnce({ id: "claimed" }); // atomic claim
     const result = await fulfillSubscriptionPayment("ref1", "plan");
     expect(result).toEqual({ ok: false, error: "missing_plan_id" });
     // Payment is still marked paid before the plan_id guard runs — that's

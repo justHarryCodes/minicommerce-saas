@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyTransaction } from '@/lib/paystack'
-import { query } from '@/lib/db'
+import { queryOne } from '@/lib/db'
+import { koboOf } from '@/lib/payments'
 import { fulfillSubscriptionPayment } from '@/lib/billing-fulfillment'
 
 export async function GET(req: NextRequest) {
@@ -12,15 +13,25 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard/billing?error=invalid_params', req.url))
   }
 
+  // Checkouts started through lib/payments settle there (once, amount-checked)
+  if (await queryOne('SELECT 1 FROM payment_attempts WHERE reference = $1', [reference])) {
+    return NextResponse.redirect(new URL(`/api/payments/callback?reference=${encodeURIComponent(reference)}`, req.url))
+  }
+
   // Verify with Paystack before touching the DB
   const paystackRes = await verifyTransaction(reference)
+  const expected = await queryOne<{ amount: number }>('SELECT amount FROM subscription_payments WHERE payment_reference = $1', [reference])
 
-  if (!paystackRes.status || paystackRes.data.status !== 'success') {
-    await query(
-      `UPDATE subscription_payments SET payment_status = 'failed' WHERE payment_reference = $1 AND payment_status = 'pending'`,
-      [reference]
-    )
-    return NextResponse.redirect(new URL('/dashboard/billing?error=payment_failed', req.url))
+  if (
+    !paystackRes.status ||
+    paystackRes.data.status !== 'success' ||
+    !expected ||
+    Number(paystackRes.data.amount) !== koboOf(expected.amount)
+  ) {
+    // Not marked failed: if Paystack is still processing, the webhook
+    // completes it later. Only a confirmed, exact payment is ever applied.
+    const stillOpen = paystackRes.status && paystackRes.data?.status !== 'failed' && paystackRes.data?.status !== 'abandoned'
+    return NextResponse.redirect(new URL(stillOpen ? '/dashboard/billing?pending=1' : '/dashboard/billing?error=payment_failed', req.url))
   }
 
   const result = await fulfillSubscriptionPayment(reference, type)

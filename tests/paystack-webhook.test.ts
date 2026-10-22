@@ -11,6 +11,12 @@ vi.mock("@/lib/db", () => ({
 vi.mock("@/lib/billing-fulfillment", () => ({
   fulfillSubscriptionPayment: vi.fn(),
 }));
+// These tests cover checkouts opened before payment attempts existed (the
+// legacy path); the new path has its own tests in payments.test.ts.
+vi.mock("@/lib/payments", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/payments")>()),
+  settlePayment: vi.fn().mockResolvedValue({ state: "unknown_reference" }),
+}));
 
 import { query, queryOne } from "@/lib/db";
 import { fulfillSubscriptionPayment } from "@/lib/billing-fulfillment";
@@ -76,10 +82,11 @@ describe("POST /api/paystack/webhook", () => {
       id: "order1",
       payment_reference: "ref_order_1",
       payment_status: "pending",
+      payment_method: "paystack", total: 5000, total_amount: 5000, deposit_amount: 0,
     });
     const body = JSON.stringify({
       event: "charge.success",
-      data: { reference: "ref_order_1", metadata: { orderId: "order1" } },
+      data: { status: "success", amount: 500000, currency: "NGN", reference: "ref_order_1", metadata: { orderId: "order1" } },
     });
     const res = await POST(makeRequest(body, sign(body)));
     expect(res.status).toBe(200);
@@ -97,20 +104,36 @@ describe("POST /api/paystack/webhook", () => {
       id: "order1",
       payment_reference: "ref_order_1",
       payment_status: "paid",
+      payment_method: "paystack", total: 5000, total_amount: 5000, deposit_amount: 0,
     });
     const body = JSON.stringify({
       event: "charge.success",
-      data: { reference: "ref_order_1", metadata: { orderId: "order1" } },
+      data: { status: "success", amount: 500000, currency: "NGN", reference: "ref_order_1", metadata: { orderId: "order1" } },
+    });
+    await POST(makeRequest(body, sign(body)));
+    expect(mockedQuery).not.toHaveBeenCalled();
+  });
+
+  it("never marks an order paid when the amount doesn't match", async () => {
+    mockedQueryOne.mockResolvedValueOnce({
+      id: "order1",
+      payment_reference: "ref_order_1",
+      payment_status: "pending",
+      payment_method: "paystack", total: 5000, total_amount: 5000, deposit_amount: 0,
+    });
+    const body = JSON.stringify({
+      event: "charge.success",
+      data: { status: "success", amount: 100, currency: "NGN", reference: "ref_order_1", metadata: { orderId: "order1" } },
     });
     await POST(makeRequest(body, sign(body)));
     expect(mockedQuery).not.toHaveBeenCalled();
   });
 
   it("fulfills a pending subscription payment for a valid type", async () => {
-    mockedQueryOne.mockResolvedValueOnce({ type: "setup_fee", payment_status: "pending" });
+    mockedQueryOne.mockResolvedValueOnce({ type: "setup_fee", payment_status: "pending", amount: 10000 });
     const body = JSON.stringify({
       event: "charge.success",
-      data: { reference: "ref_sub_1", metadata: {} },
+      data: { status: "success", amount: 1000000, currency: "NGN", reference: "ref_sub_1", metadata: {} },
     });
     const res = await POST(makeRequest(body, sign(body)));
     expect(res.status).toBe(200);
@@ -118,10 +141,10 @@ describe("POST /api/paystack/webhook", () => {
   });
 
   it("does not re-fulfill an already-paid subscription payment", async () => {
-    mockedQueryOne.mockResolvedValueOnce({ type: "setup_fee", payment_status: "paid" });
+    mockedQueryOne.mockResolvedValueOnce({ type: "setup_fee", payment_status: "paid", amount: 10000 });
     const body = JSON.stringify({
       event: "charge.success",
-      data: { reference: "ref_sub_1", metadata: {} },
+      data: { status: "success", amount: 1000000, currency: "NGN", reference: "ref_sub_1", metadata: {} },
     });
     await POST(makeRequest(body, sign(body)));
     expect(mockedFulfill).not.toHaveBeenCalled();

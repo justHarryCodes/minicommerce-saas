@@ -262,6 +262,9 @@ export default function BillingClient({
     if (success === "already_paid") toast.success("This payment was already processed.");
     if (error === "payment_failed") toast.error("Payment failed. Please try again.");
     if (error === "invalid_params") toast.error("Invalid payment reference.");
+    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("pending") === "1") {
+      toast("Your payment is still being confirmed by Paystack. This page will update once it completes.", { icon: "⏳" });
+    }
   }, [success, error]);
 
   useEffect(() => {
@@ -307,7 +310,8 @@ export default function BillingClient({
     try {
       const res = await fetch("/api/billing/setup-fee", { method: "POST" });
       const data = await res.json();
-      if (data.authorization_url) window.location.href = data.authorization_url;
+      if (data.alreadyPaid) { toast.success("This payment was already completed."); window.location.reload(); }
+      else if (data.authorization_url) window.location.href = data.authorization_url;
       else toast.error(data.error ?? "Failed to initiate payment");
     } catch { toast.error("Network error"); }
     finally { setLoadingSetupFee(false); }
@@ -318,7 +322,8 @@ export default function BillingClient({
     try {
       const res = await fetch("/api/billing/subscribe", { method: "POST" });
       const data = await res.json();
-      if (data.authorization_url) window.location.href = data.authorization_url;
+      if (data.alreadyPaid) { toast.success("This payment was already completed."); window.location.reload(); }
+      else if (data.authorization_url) window.location.href = data.authorization_url;
       else toast.error(data.error ?? "Failed to initiate payment");
     } catch { toast.error("Network error"); }
     finally { setLoadingSubscribe(false); }
@@ -333,7 +338,8 @@ export default function BillingClient({
         body: JSON.stringify({ plan_id: planId }),
       });
       const data = await res.json();
-      if (data.authorization_url) window.location.href = data.authorization_url;
+      if (data.alreadyPaid) { toast.success("This payment was already completed."); window.location.reload(); }
+      else if (data.authorization_url) window.location.href = data.authorization_url;
       else toast.error(data.error ?? "Failed to initiate payment");
     } catch { toast.error("Network error"); }
     finally { setLoadingPlan(null); }

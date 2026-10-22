@@ -41,6 +41,7 @@ interface PaystackVerifyResponse {
     status: 'success' | 'failed' | 'abandoned'
     reference: string
     amount: number // in kobo
+    currency?: string
     customer: { email: string }
   }
 }

@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifySession } from '@/lib/auth'
-import { queryOne, query } from '@/lib/db'
+import { queryOne } from '@/lib/db'
 import { getPlatformSettings } from '@/lib/admin-auth'
-import { initializeTransaction, getAppUrl } from '@/lib/paystack'
-import { v4 as uuidv4 } from 'uuid'
+import { startPayment, targets } from '@/lib/payments'
 
 export async function POST(req: NextRequest) {
   const user = await verifySession()
@@ -36,31 +35,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Plan subscriptions are not required' }, { status: 400 })
   }
 
-  const reference = `PLAN-${store.id}-${uuidv4().slice(0, 8).toUpperCase()}`
-
-  const paystackRes = await initializeTransaction({
-    email: user.email,
+  // One open checkout per store and plan: clicking again reopens it, and a
+  // checkout that was already paid is settled instead of charged again.
+  const started = await startPayment({
+    kind: 'subscription',
+    storeId: store.id,
+    targetId: targets.plan(store.id, plan.id),
     amount: plan.price_monthly,
-    reference,
-    callbackUrl: `${getAppUrl()}/api/billing/verify?type=plan&reference=${reference}`,
-    metadata: {
-      store_id: store.id,
-      store_name: store.name,
-      plan_id: plan.id,
-      plan_name: plan.name,
-      type: 'plan',
+    email: user.email,
+    referencePrefix: 'PLAN',
+    metadata: { store_id: store.id, store_name: store.name, plan_id: plan.id, plan_name: plan.name, type: 'plan' },
+    onCreated: async (client, reference) => {
+      await client.query(
+        `INSERT INTO subscription_payments (store_id, type, amount, payment_reference, payment_status, plan_id)
+         VALUES ($1, 'plan', $2, $3, 'pending', $4)`,
+        [store.id, plan.price_monthly, reference, plan.id]
+      )
     },
   })
-
-  if (!paystackRes.status) {
-    return NextResponse.json({ error: paystackRes.message }, { status: 400 })
-  }
-
-  await query(
-    `INSERT INTO subscription_payments (store_id, type, amount, payment_reference, payment_status, plan_id)
-     VALUES ($1, 'plan', $2, $3, 'pending', $4)`,
-    [store.id, plan.price_monthly, reference, plan.id]
-  )
-
-  return NextResponse.json({ authorization_url: paystackRes.data.authorization_url, reference })
+  if (!started.ok) return NextResponse.json({ error: started.error }, { status: started.status })
+  if ('alreadyPaid' in started) return NextResponse.json({ alreadyPaid: true, reference: started.reference })
+  return NextResponse.json({ authorization_url: started.authorizationUrl, reference: started.reference })
 }

@@ -1,6 +1,6 @@
 import type { FontKey } from "@/lib/theme-presets";
 
-export type ThemeCategory = "ecommerce" | "food" | "clothing" | "services";
+export type ThemeCategory = "ecommerce" | "food" | "clothing" | "services" | "perfume" | "market" | "gadgets" | "hair" | "interior";
 
 /** How the top of the homepage is laid out. */
 export type HeroVariant = "split" | "banner" | "fullbleed" | "centered" | "minimal";
