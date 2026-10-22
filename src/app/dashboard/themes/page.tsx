@@ -3,7 +3,6 @@ import { verifySession } from "@/lib/auth";
 import { queryOne } from "@/lib/db";
 import { getStoreUrl } from "@/lib/utils";
 import { storeThemeState } from "@/lib/themes/resolve";
-import { hasFeature } from "@/lib/plan";
 import { ownedThemeIds } from "@/lib/theme-access";
 import type { Store } from "@/types";
 import ThemeStudioClient from "./ThemeStudioClient";
@@ -23,7 +22,7 @@ export default async function ThemesPage() {
   if (!store) redirect("/onboarding");
 
   const { themeId, customization } = storeThemeState(store);
-  const [premiumUnlocked, ownedThemes] = await Promise.all([hasFeature(store.id, "premium_themes"), ownedThemeIds(store.id)]);
+  const ownedThemes = await ownedThemeIds(store.id);
 
   return (
     <div className="mx-auto max-w-7xl pt-4 lg:pt-0">
@@ -33,7 +32,6 @@ export default async function ThemesPage() {
         storeUrl={getStoreUrl(store.slug, store.custom_domain ?? store.customDomain)}
         savedThemeId={themeId}
         savedCustomization={customization}
-        premiumUnlocked={premiumUnlocked}
         ownedThemes={ownedThemes}
       />
     </div>

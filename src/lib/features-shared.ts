@@ -3,7 +3,6 @@
 // Client-safe: the dashboard nav and upgrade screens read this too.
 
 export type Feature =
-  | 'premium_themes'
   | 'custom_domain'
   | 'coupons'
   | 'reels'
@@ -29,7 +28,6 @@ export interface FeatureInfo {
 }
 
 export const FEATURES: Record<Feature, FeatureInfo> = {
-  premium_themes: { label: 'Premium themes', pitch: 'All 18 professionally designed themes for every kind of business.' },
   custom_domain: { label: 'Custom domain', pitch: 'Sell on your own web address, like yourbrand.com.' },
   coupons: { label: 'Coupons', pitch: 'Discount codes for promotions and influencers.' },
   reels: { label: 'Reels', pitch: 'Shoppable short videos on your store.' },
@@ -90,5 +88,3 @@ export const FREE_THEME_IDS = new Set([
   'noir-essence', 'mama-market', 'tech-grid', 'crown-hair', 'nest-interiors',
 ])
 
-/** One-time price of a single premium theme (no Pro plan needed). */
-export const THEME_PRICE_NGN = 2500

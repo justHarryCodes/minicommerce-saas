@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { FREE_THEME_IDS, THEME_PRICE_NGN } from "@/lib/features-shared";
+import { FREE_THEME_IDS } from "@/lib/features-shared";
+import { TIER_CAPS, TIER_LABEL } from "@/lib/themes/kits";
+import { NavOptionsEditor, NavStylePicker } from "./NavPicker";
 import toast from "react-hot-toast";
 import {
   ArrowDown,
@@ -30,6 +32,8 @@ import type {
   ThemeLayout,
   ThemeTokens,
   SectionId,
+  NavOptions,
+  ThemeTier,
 } from "@/lib/themes/types";
 import ThemeThumbnail from "./ThemeThumbnail";
 
@@ -39,8 +43,6 @@ interface Props {
   storeUrl: string;
   savedThemeId: string;
   savedCustomization: ThemeCustomization;
-  /** Plan includes premium themes; free themes are always available */
-  premiumUnlocked?: boolean;
   /** Premium themes this store bought individually */
   ownedThemes?: string[];
 }
@@ -153,6 +155,18 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
       <h3 className="text-sm font-bold text-surface-900 dark:text-white">{title}</h3>
       {children}
     </section>
+  );
+}
+
+/** "This needs a higher tier" note, shown in place of locked controls. */
+function TierNote({ tier, what }: { tier: ThemeTier; what: string }) {
+  return (
+    <p className="flex items-start gap-2 rounded-lg bg-surface-50 px-3 py-2 text-xs text-surface-500 dark:bg-surface-800/60 dark:text-surface-400">
+      <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+      <span>
+        {what} come{what.endsWith("s") ? "" : "s"} with {TIER_LABEL[tier]} themes and above. Pick one from the gallery to unlock it.
+      </span>
+    </p>
   );
 }
 
@@ -276,8 +290,10 @@ const selectCls =
 
 /* ───────────────────────────── Studio ───────────────────────────── */
 
-export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, savedThemeId, savedCustomization, premiumUnlocked = true, ownedThemes = [] }: Props) {
-  const isLocked = (id: string) => !premiumUnlocked && !FREE_THEME_IDS.has(id) && !ownedThemes.includes(id);
+export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, savedThemeId, savedCustomization, ownedThemes = [] }: Props) {
+  // Themes are bought one at a time (plans don't include them)
+  const isLocked = (id: string) => !FREE_THEME_IDS.has(id) && !ownedThemes.includes(id);
+  const priceOf = (id: string) => `₦${(getTheme(id)?.price ?? 0).toLocaleString("en-NG")}`;
   const isOwned = (id: string) => ownedThemes.includes(id);
   const [buying, setBuying] = useState<string | null>(null);
 
@@ -374,6 +390,22 @@ export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, save
   const setToken = <K extends keyof ThemeTokens>(k: K, v: ThemeTokens[K]) => setGroup("tokens", k, v);
   const setLayout = <K extends keyof ThemeLayout>(k: K, v: ThemeLayout[K]) => setGroup("layout", k, v);
   const setCopy = (k: keyof ThemeCopy, v: ThemeCopy[keyof ThemeCopy]) => setGroup("copy", k, v);
+  /** One nav switch; stored only when it differs from the theme's own setting. */
+  function setNavOption<K extends keyof NavOptions>(k: K, v: NavOptions[K]) {
+    setCustom((prev) => {
+      const layout = { ...(prev.layout ?? {}) };
+      const opts: Partial<NavOptions> = { ...(layout.navOptions ?? {}) };
+      if (theme.layout.navOptions[k] === v) delete opts[k];
+      else opts[k] = v;
+      if (Object.keys(opts).length) layout.navOptions = opts;
+      else delete layout.navOptions;
+      const next: ThemeCustomization = { ...prev, layout };
+      if (!Object.keys(layout).length) delete next.layout;
+      return next;
+    });
+  }
+  // What this theme's tier lets the merchant change
+  const caps = TIER_CAPS[theme.tier];
 
   /** Switching themes keeps only theme-independent text (the announcement). */
   function carryOver(c: ThemeCustomization): ThemeCustomization {
@@ -534,6 +566,15 @@ export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, save
                         </span>
                       )}
                     </div>
+                    <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider">
+                      <span className={t.tier === "signature" ? "text-amber-600 dark:text-amber-400" : t.tier === "premium" ? "text-violet-600 dark:text-violet-400" : "text-surface-400"}>
+                        {TIER_LABEL[t.tier]}
+                      </span>
+                      <span className="text-surface-300 dark:text-surface-600">·</span>
+                      <span className="text-surface-700 dark:text-surface-200">
+                        {t.price === 0 ? "Free" : isOwned(t.id) ? "Owned" : priceOf(t.id)}
+                      </span>
+                    </p>
                     <p className="flex-1 text-xs text-surface-500 dark:text-surface-400">{t.tagline}</p>
                     <div className="mt-3 flex gap-2">
                       <button
@@ -555,9 +596,9 @@ export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, save
                           onClick={() => buyTheme(t.id)}
                           disabled={buying === t.id}
                           className="flex items-center gap-1 whitespace-nowrap rounded-xl bg-surface-900 px-3 py-2 text-xs font-bold text-white hover:bg-surface-800 disabled:opacity-60 dark:bg-white dark:text-black"
-                          title={`One-time payment — or get every theme with Pro`}
+                          title={`One-time payment of ${priceOf(t.id)} — yours forever`}
                         >
-                          {buying === t.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Lock className="h-3 w-3" />} ₦{THEME_PRICE_NGN.toLocaleString("en-NG")}
+                          {buying === t.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Lock className="h-3 w-3" />} {priceOf(t.id)}
                         </button>
                       )}
                       {!isLive && !isLocked(t.id) && (
@@ -592,6 +633,14 @@ export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, save
               </span>
             </div>
 
+            <Panel title="Navigation bar">
+              <NavStylePicker value={resolved.layout.nav} accent={resolved.tokens.accent} locked={!caps.style} onChange={(v) => setLayout("nav", v)} />
+              {!caps.style && <TierNote tier="starter" what="Switching nav styles" />}
+              <div className="border-t border-surface-100 pt-3 dark:border-surface-800">
+                <NavOptionsEditor value={resolved.layout.navOptions} onChange={setNavOption} />
+              </div>
+            </Panel>
+
             <Panel title="Colours">
               <Field label="Accent (buttons, badges, highlights)">
                 <div className="mb-2 flex flex-wrap gap-1.5">
@@ -610,6 +659,7 @@ export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, save
                 </div>
                 <ColorInput value={resolved.tokens.accent} onChange={(v) => setToken("accent", v)} />
               </Field>
+              {caps.layout && (
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Background (light)">
                   <ColorInput value={resolved.tokens.background} onChange={(v) => setToken("background", v)} />
@@ -618,12 +668,14 @@ export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, save
                   <ColorInput value={resolved.tokens.backgroundDark} onChange={(v) => setToken("backgroundDark", v)} />
                 </Field>
               </div>
+              )}
               <Field label="Light / dark">
                 <Segmented value={resolved.tokens.mode} options={MODE_OPTIONS} onChange={(v) => setToken("mode", v)} />
               </Field>
             </Panel>
 
             <Panel title="Typography & shape">
+              {!caps.style ? <TierNote tier="starter" what="Fonts and corner styles" /> : <>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Headings">
                   <select value={resolved.tokens.headingFont} onChange={(e) => setToken("headingFont", e.target.value as ThemeTokens["headingFont"])} className={selectCls}>
@@ -646,15 +698,16 @@ export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, save
               <Field label="Corners">
                 <Segmented value={resolved.tokens.radius} options={RADIUS_OPTIONS} onChange={(v) => setToken("radius", v)} />
               </Field>
+              {caps.layout && (
               <Field label="Spacing between sections">
                 <Segmented value={resolved.tokens.density} options={DENSITY_OPTIONS} onChange={(v) => setToken("density", v)} />
               </Field>
+              )}
+              </>}
             </Panel>
 
             <Panel title="Layout">
-              <Field label="Header">
-                <Segmented value={resolved.layout.header} options={HEADER_OPTIONS} onChange={(v) => setLayout("header", v)} />
-              </Field>
+              {!caps.layout ? <TierNote tier="standard" what="Hero, card and category layouts" /> : <>
               <Field label="Hero style">
                 <Segmented value={resolved.layout.hero} options={HERO_OPTIONS} onChange={(v) => setLayout("hero", v)} />
               </Field>
@@ -675,9 +728,11 @@ export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, save
               <Field label="Footer">
                 <Segmented value={resolved.layout.footer} options={FOOTER_OPTIONS} onChange={(v) => setLayout("footer", v)} />
               </Field>
+              </>}
             </Panel>
 
             <Panel title="Homepage sections">
+              {!caps.style ? <TierNote tier="starter" what="Reordering and hiding sections" /> : <>
               <p className="-mt-1 text-xs text-surface-400">Reorder with the arrows, hide anything you don&apos;t need.</p>
               <ul className="space-y-1.5">
                 {visibleSections.map((id, i) => (
@@ -703,6 +758,7 @@ export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, save
                   </li>
                 ))}
               </ul>
+              </>}
             </Panel>
 
             <Panel title="Highlights bar">
@@ -755,9 +811,7 @@ export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, save
               )}
               {isLocked(themeId) ? (
               <span className="ml-auto flex flex-wrap items-center justify-end gap-2">
-                <a href="/dashboard/billing" className="text-xs font-semibold text-surface-500 underline hover:text-surface-800 dark:hover:text-surface-200">
-                  or every theme with Pro
-                </a>
+                <span className="text-xs text-surface-500">One-time · yours forever</span>
                 <button
                   type="button"
                   onClick={() => buyTheme(themeId)}
@@ -765,7 +819,7 @@ export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, save
                   className="flex items-center gap-2 rounded-xl bg-surface-900 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60 dark:bg-white dark:text-black"
                 >
                   {buying === themeId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
-                  Buy {theme.name} · ₦{THEME_PRICE_NGN.toLocaleString("en-NG")} once
+                  Buy {theme.name} · {priceOf(theme.id)}
                 </button>
               </span>
               ) : (

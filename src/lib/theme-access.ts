@@ -1,8 +1,8 @@
-// Who may use which theme: free themes for everyone, every premium theme
-// on a plan with premium_themes, and individually bought themes forever.
+// Who may use which theme: the free theme of each category for everyone,
+// and any other theme once it's been bought (forever). Plans don't include
+// themes — every paid theme is a one-time purchase.
 import { query } from './db'
 import { cacheDel, getOrSet } from './redis'
-import { hasFeature } from './plan'
 import { FREE_THEME_IDS } from './features-shared'
 
 const ownedKey = (storeId: string) => `themes:owned:${storeId}`
@@ -28,6 +28,5 @@ export async function clearOwnedThemes(storeId: string): Promise<void> {
 
 export async function canUseTheme(storeId: string, themeId: string): Promise<boolean> {
   if (FREE_THEME_IDS.has(themeId)) return true
-  if (await hasFeature(storeId, 'premium_themes')) return true
   return ownsTheme(storeId, themeId)
 }

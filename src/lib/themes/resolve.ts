@@ -4,7 +4,8 @@ import { FONT_KEYS, FONT_STACKS, isFontKey } from "@/lib/theme-presets";
 import { deriveThemeColors } from "@/lib/utils";
 import { DEFAULT_THEME_ID, getTheme, THEMES } from "./catalog";
 import { FREE_THEME_IDS } from "@/lib/features-shared";
-import { HIGHLIGHT_ICONS, SECTION_IDS } from "./types";
+import { TIER_CAPS } from "./kits";
+import { HIGHLIGHT_ICONS, NAV_STYLES, SECTION_IDS } from "./types";
 import type { Density, HeadingStyle, ResolvedTheme, StorefrontTheme, ThemeCustomization, Radius } from "./types";
 
 // ── Validation ──────────────────────────────────────────────────────────────
@@ -37,6 +38,17 @@ export const customizationSchema = z
     layout: z
       .object({
         header: oneOf(["standard", "centered", "minimal"] as const),
+        nav: oneOf(NAV_STYLES),
+        navOptions: z
+          .object({
+            sticky: z.boolean().optional().catch(undefined),
+            search: oneOf(["bar", "icon", "hidden"] as const),
+            categories: z.boolean().optional().catch(undefined),
+            logoSize: oneOf(["sm", "md", "lg"] as const),
+            tone: oneOf(["page", "accent", "dark"] as const),
+          })
+          .optional()
+          .catch(undefined),
         hero: oneOf(["split", "banner", "fullbleed", "centered", "minimal"] as const),
         card: oneOf(["classic", "minimal", "editorial", "menu", "service"] as const),
         categories: oneOf(["tiles", "circles", "pills", "cards"] as const),
@@ -119,7 +131,11 @@ export function mergeTheme(theme: StorefrontTheme, custom: ThemeCustomization): 
     name: theme.name,
     category: theme.category,
     tokens: { ...theme.tokens, ...custom.tokens },
-    layout: { ...theme.layout, ...custom.layout },
+    layout: {
+      ...theme.layout,
+      ...custom.layout,
+      navOptions: { ...theme.layout.navOptions, ...custom.layout?.navOptions },
+    },
     copy: { ...theme.copy, ...custom.copy },
   };
 }
@@ -259,7 +275,8 @@ export function themeCss(t: ResolvedTheme, selector = ".storefront"): string {
       -webkit-font-smoothing: antialiased;
     }
     @media (min-width: 1024px) { ${s} { --sf-gap: ${gapLg}; } }
-    .dark ${s}, ${s}.dark { --sf-page: var(--sf-bg-dark); --sf-accent-ink: ${accentInkDark}; }
+    ${s} { --sf-ink: #18181b; }
+    .dark ${s}, ${s}.dark { --sf-page: var(--sf-bg-dark); --sf-accent-ink: ${accentInkDark}; --sf-ink: #fafafa; }
     ${s} h1, ${s} h2, ${s} h3, ${s} .sf-display {
       font-family: var(--sf-heading-font);
       font-weight: var(--sf-heading-weight);
@@ -276,6 +293,7 @@ export function themeCss(t: ResolvedTheme, selector = ".storefront"): string {
       color: var(--sf-accent-ink);
     }
     ${s} .sf-section { padding-top: var(--sf-gap); }
+    ${t.layout.nav === "app" ? `@media (max-width: 1023px) { ${s} { --sf-tabbar: calc(64px + env(safe-area-inset-bottom)); padding-bottom: var(--sf-tabbar); } }` : ""}
     @media print { ${s} .sf-header, ${s} .sf-no-print { display: none !important; } ${s} { background: #fff !important; } }
     ${s} .sf-header { background-color: color-mix(in srgb, var(--sf-page) 92%, transparent); }
     ${s} .sf-btn {
@@ -309,4 +327,29 @@ export function themeCss(t: ResolvedTheme, selector = ".storefront"): string {
 /** Legacy card-style flag still read by a few components. */
 export function cardStyleFor(t: ResolvedTheme): "rounded" | "sharp" {
   return t.tokens.radius === "none" || t.tokens.radius === "sm" ? "sharp" : "rounded";
+}
+
+/**
+ * Drop overrides the theme's tier doesn't allow (enforced on save; settings
+ * saved before tiers existed keep rendering as they were).
+ */
+export function capCustomization(theme: StorefrontTheme, c: ThemeCustomization): ThemeCustomization {
+  const caps = TIER_CAPS[theme.tier];
+  const tokens = { ...c.tokens };
+  const layout = { ...c.layout };
+  if (!caps.style) {
+    for (const k of ["bodyFont", "headingFont", "headingStyle", "radius"] as const) delete tokens[k];
+    delete layout.nav;
+    delete layout.sections;
+  }
+  if (!caps.layout) {
+    for (const k of ["background", "backgroundDark", "density"] as const) delete tokens[k];
+    for (const k of ["header", "hero", "card", "categories", "footer", "columns"] as const) delete layout[k];
+  }
+  const out: ThemeCustomization = { ...c };
+  if (Object.keys(tokens).length) out.tokens = tokens;
+  else delete out.tokens;
+  if (Object.keys(layout).length) out.layout = layout;
+  else delete out.layout;
+  return out;
 }

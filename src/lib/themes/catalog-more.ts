@@ -1,4 +1,5 @@
-import type { StorefrontTheme, ThemeCopy } from "./types";
+import type { ThemeCopy } from "./types";
+import type { ThemeSeed } from "./kits";
 
 // Five more verticals: perfume, local market (foodstuff), gadgets, hair and
 // interiors. Same structure as catalog.ts — a shared voice per vertical,
@@ -132,7 +133,7 @@ const INTERIOR_COPY: ThemeCopy = {
 const LIGHT_BG = "#ffffff";
 const DARK_BG = "#09090b";
 
-export const MORE_THEMES: StorefrontTheme[] = [
+export const MORE_THEMES: ThemeSeed[] = [
   // ── Perfume ───────────────────────────────────────────────────────────────
   {
     id: "noir-essence",

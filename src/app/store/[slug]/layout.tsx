@@ -6,6 +6,7 @@ import { getRequestTheme } from "@/lib/themes/server";
 import { hasFeature } from "@/lib/plan";
 import { isAiEnabled } from "@/lib/ai";
 import StorefrontShell from "@/components/storefront/StorefrontShell";
+import { storeCached } from "@/lib/store-cache";
 import VisitTracker from "@/components/storefront/VisitTracker";
 import AssistantWidget from "@/components/storefront/AssistantWidget";
 import type { Store, Category } from "@/types";
@@ -62,7 +63,23 @@ export default async function StorefrontLayout({ params, children }: Props) {
 
   const categories = await getCategories(store.id);
   const topCategories = categories.filter((c) => !c.parent_id);
+  // First product photo per category — the mega menu, drawer and chip navs show it
+  const covers = await storeCached(store.id, "nav-covers", async () =>
+    Object.fromEntries(
+      (
+        await query<{ category_id: string; cover: string }>(
+          `SELECT DISTINCT ON (category_id) category_id, COALESCE(NULLIF(image_url, ''), images[1]) AS cover
+           FROM products
+           WHERE store_id = $1 AND is_active = true AND category_id IS NOT NULL
+             AND COALESCE(NULLIF(image_url, ''), images[1]) IS NOT NULL
+           ORDER BY category_id, sort_order, created_at DESC`,
+          [store.id]
+        )
+      ).map((r) => [r.category_id, r.cover])
+    )
+  );
   const withSubs = topCategories.map((cat) => ({
+    cover: (covers as Record<string, string>)[cat.id] ?? null,
     ...cat,
     subcategories: categories.filter((c) => c.parent_id === cat.id),
   }));

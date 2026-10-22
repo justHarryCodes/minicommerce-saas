@@ -138,3 +138,6 @@ html {
 .img-placeholder {
   background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
 }
+/* Horizontal scrollers (category chips, rails) without a visible scrollbar */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

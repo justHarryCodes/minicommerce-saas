@@ -27,7 +27,7 @@ import { verifySession, getUserStore } from "@/lib/auth";
 import { startPayment } from "@/lib/payments";
 import { canUseTheme } from "@/lib/theme-access";
 import { THEMES, THEME_CATEGORIES } from "@/lib/themes/catalog";
-import { FREE_THEME_IDS, THEME_PRICE_NGN } from "@/lib/features-shared";
+import { FREE_THEME_IDS } from "@/lib/features-shared";
 import { getDemoStore } from "@/lib/themes/demo";
 
 const mockedQuery = vi.mocked(query);
@@ -46,20 +46,19 @@ beforeEach(() => {
 });
 
 describe("buying a theme", () => {
-  it("opens a ₦2,500 checkout scoped to this store and theme", async () => {
+  it("opens a checkout for the theme's own price, scoped to this store and theme", async () => {
     const { POST } = await import("@/app/api/dashboard/themes/purchase/route");
     const res = await POST(req({ themeId: "oud-house" }));
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ authorization_url: "https://checkout.paystack.com/x" });
-    expect(mockedStart).toHaveBeenCalledWith(expect.objectContaining({ kind: "theme", storeId: "store-1", targetId: "store-1:oud-house", amount: 2500 }));
-    expect(THEME_PRICE_NGN).toBe(2500);
+    expect(mockedStart).toHaveBeenCalledWith(expect.objectContaining({ kind: "theme", storeId: "store-1", targetId: "store-1:oud-house", amount: 30_000 }));
   });
 
-  it("isn't needed on a plan with every theme", async () => {
-    planMock.set(["premium_themes"]);
+  it("is still a purchase on a paid plan — plans don't include themes", async () => {
+    planMock.set(["pos", "team", "analytics"]);
     const { POST } = await import("@/app/api/dashboard/themes/purchase/route");
-    expect((await POST(req({ themeId: "oud-house" }))).status).toBe(400);
-    expect(mockedStart).not.toHaveBeenCalled();
+    expect((await POST(req({ themeId: "wig-vault" }))).status).toBe(200);
+    expect(mockedStart).toHaveBeenCalledWith(expect.objectContaining({ amount: 35_000 }));
   });
 
   it("can't buy a free theme, an unknown theme, or one you already own", async () => {
@@ -79,13 +78,13 @@ describe("buying a theme", () => {
 });
 
 describe("who can use a theme", () => {
-  it("free themes always, premium with Pro or after buying", async () => {
+  it("free themes always; every other theme only after buying it", async () => {
     expect(await canUseTheme("store-1", "noir-essence")).toBe(true); // free in its category
     expect(await canUseTheme("store-1", "oud-house")).toBe(false);
     mockedQuery.mockResolvedValueOnce([{ theme_id: "oud-house" }]);
     expect(await canUseTheme("store-1", "oud-house")).toBe(true);
-    planMock.set(["premium_themes"]);
-    expect(await canUseTheme("store-1", "wig-vault")).toBe(true);
+    planMock.reset(); // every plan feature on — still not a theme
+    expect(await canUseTheme("store-1", "wig-vault")).toBe(false);
   });
 
   it("applying a bought premium theme is allowed; an unbought one isn't", async () => {

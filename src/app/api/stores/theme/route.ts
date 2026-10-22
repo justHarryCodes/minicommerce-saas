@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { invalidateStore } from "@/lib/store-cache";
-import { THEME_PRICE_NGN } from "@/lib/features-shared";
 import { canUseTheme } from "@/lib/theme-access";
 import { z } from "zod";
 import { verifySession, getUserStore } from "@/lib/auth";
 import { query } from "@/lib/db";
 import { cacheDel, cacheKey } from "@/lib/redis";
 import { cardStyleFor, getTheme, mergeTheme, parseCustomization } from "@/lib/themes";
+import { capCustomization } from "@/lib/themes/resolve";
 
 const Schema = z.object({
   themeId: z.string().min(1).max(50),
@@ -27,12 +27,13 @@ export async function PUT(req: NextRequest) {
   if (!theme) return NextResponse.json({ error: "Unknown theme" }, { status: 400 });
   if (!(await canUseTheme(store.id, theme.id))) {
     return NextResponse.json(
-      { error: `${theme.name} is a premium theme. Buy it once for ₦${THEME_PRICE_NGN.toLocaleString("en-NG")} or upgrade to Pro for every theme.`, code: "plan_required", feature: "premium_themes" },
+      { error: `${theme.name} costs ₦${theme.price.toLocaleString("en-NG")} (one-time). Buy it to apply it to your store.`, code: "theme_not_owned" },
       { status: 403 }
     );
   }
 
-  const customization = parseCustomization(parsed.data.customization);
+  // Only what this theme's tier allows is saved
+  const customization = capCustomization(theme, parseCustomization(parsed.data.customization));
   const resolved = mergeTheme(theme, customization);
 
   // The legacy columns are kept in sync so anything still reading them

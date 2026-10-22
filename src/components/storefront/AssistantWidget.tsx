@@ -67,18 +67,18 @@ export default function AssistantWidget({ storeSlug, storeName }: Props) {
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "Close assistant" : "Ask a question"}
-        className="fixed bottom-5 right-5 z-40 w-14 h-14 rounded-full flex items-center justify-center shadow-[0_8px_24px_rgba(0,0,0,0.2)] transition-transform hover:scale-105 active:scale-95"
-        style={{ background: "var(--sf-accent)", color: "var(--sf-on-accent)" }}
+        className="fixed right-5 z-40 w-14 h-14 rounded-full flex items-center justify-center shadow-[0_8px_24px_rgba(0,0,0,0.2)] transition-transform hover:scale-105 active:scale-95"
+        style={{ bottom: "calc(1.25rem + var(--sf-tabbar, 0px))", background: "var(--sf-accent)", color: "var(--sf-on-accent)" }}
       >
         {open ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
       </button>
 
       {/* Panel */}
       <div
-        className={`fixed bottom-24 right-5 z-40 w-[calc(100vw-2.5rem)] max-w-sm h-[28rem] flex flex-col rounded-2xl overflow-hidden transition-all duration-200 ${
+        className={`fixed right-5 z-40 w-[calc(100vw-2.5rem)] max-w-sm h-[28rem] flex flex-col rounded-2xl overflow-hidden transition-all duration-200 ${
           open ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 translate-y-3 pointer-events-none"
         }`}
-        style={{ background: "var(--sf-bg)", boxShadow: "0 12px 40px rgba(0,0,0,0.2)", border: "1px solid var(--sf-border)" }}
+        style={{ bottom: "calc(6rem + var(--sf-tabbar, 0px))", background: "var(--sf-bg)", boxShadow: "0 12px 40px rgba(0,0,0,0.2)", border: "1px solid var(--sf-border)" }}
       >
         <div className="flex items-center gap-2 px-4 py-3 border-b" style={{ borderColor: "var(--sf-border)" }}>
           <Sparkles className="w-4 h-4" style={{ color: "var(--sf-accent)" }} />

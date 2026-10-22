@@ -46,7 +46,11 @@ export default async function ThemeDemoPage({ params, searchParams }: Props) {
     <StorefrontShell
       store={demo.store}
       theme={theme}
-      categories={demo.categories.map((c) => ({ ...c, subcategories: [] }))}
+      categories={demo.categories.map((c) => ({
+        ...c,
+        subcategories: [],
+        cover: demo.categoryTiles.find((t) => t.id === c.id)?.cover_image ?? null,
+      }))}
       storeSlug={demo.store.slug}
       storeBase={storeBase}
     >

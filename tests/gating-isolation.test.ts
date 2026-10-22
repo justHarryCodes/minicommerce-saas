@@ -82,7 +82,6 @@ describe("Free plan: dashboard APIs answer 403 plan_required", () => {
     ["gift card issue", async () => (await import("@/app/api/dashboard/gift-cards/route")).POST(json({ kind: "gift_card", amount: 5000 }))],
     ["loyalty settings", async () => (await import("@/app/api/dashboard/loyalty/route")).PATCH(json({ everyN: 5, percent: 10 }))],
     ["sales channels", async () => (await import("@/app/api/dashboard/channels/route")).PATCH(json({ feedsEnabled: true }))],
-    ["premium theme", async () => (await import("@/app/api/stores/theme/route")).PUT(json({ themeId: "grill-house" }))],
     ["blog post", async () => (await import("@/app/api/dashboard/pages/route")).POST(json({ kind: "post" }))],
     ["bookable product", async () => {
       mockedQuery.mockResolvedValueOnce([{ count: "0" }]); // under the product limit

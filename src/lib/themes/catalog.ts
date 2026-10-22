@@ -1,4 +1,5 @@
 import type { StorefrontTheme, ThemeCategory, ThemeCopy } from "./types";
+import { withKit, type ThemeSeed } from "./kits";
 import { MORE_THEMES } from "./catalog-more";
 
 // ── Shared copy per vertical ────────────────────────────────────────────────
@@ -114,7 +115,7 @@ const DARK_BG = "#09090b";
 // The first e-commerce theme reproduces the original storefront look and is
 // what stores without a chosen theme fall back to.
 
-export const THEMES: StorefrontTheme[] = [
+const SEEDS: ThemeSeed[] = [
   // ── E-commerce ────────────────────────────────────────────────────────────
   {
     id: "classic",
@@ -387,6 +388,9 @@ export const THEMES: StorefrontTheme[] = [
   // Perfume, local market, gadgets, hair and interiors (catalog-more.ts)
   ...MORE_THEMES,
 ];
+
+/** Every theme, with its kit (tier, price, navigation) applied. */
+export const THEMES: StorefrontTheme[] = SEEDS.map(withKit);
 
 export const DEFAULT_THEME_ID = "classic";
 

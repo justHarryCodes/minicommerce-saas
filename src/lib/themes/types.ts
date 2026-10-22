@@ -10,6 +10,39 @@ export type CardVariant = "classic" | "minimal" | "editorial" | "menu" | "servic
 export type CategoryStyle = "tiles" | "circles" | "pills" | "cards";
 /** Site header: search-led marketplace bar, centred-logo boutique, or a single slim row. */
 export type HeaderVariant = "standard" | "centered" | "minimal";
+
+/** The ten navigation bars. Each is its own component (components/storefront/nav). */
+export const NAV_STYLES = [
+  "classic",     // logo · links · search · cart
+  "boutique",    // centred logo, links split either side
+  "marketplace", // big search bar + department row
+  "floating",    // rounded pill floating over the page
+  "mega",        // category columns with pictures
+  "drawer",      // full-screen menu behind a single button
+  "app",         // slim top bar + bottom tab bar on phones
+  "overlay",     // see-through over the hero, solid on scroll
+  "twotier",     // utility row (contact, delivery) + main bar
+  "chips",       // sticky, scrollable category chips
+] as const;
+export type NavStyle = (typeof NAV_STYLES)[number];
+
+/** Simple switches every nav style understands. */
+export interface NavOptions {
+  sticky: boolean;
+  /** Search as a full bar, an icon, or hidden */
+  search: "bar" | "icon" | "hidden";
+  /** Show category links in the bar */
+  categories: boolean;
+  logoSize: "sm" | "md" | "lg";
+  /** Bar colour: the page, the accent colour, or dark */
+  tone: "page" | "accent" | "dark";
+}
+
+/**
+ * How much a theme offers (and costs). Free: one per category. Higher tiers
+ * have more bespoke pages and unlock deeper customisation.
+ */
+export type ThemeTier = "free" | "starter" | "standard" | "premium" | "signature";
 /** Site footer: light columns, a bold brand block, or a single slim line. */
 export type FooterVariant = "standard" | "bold" | "minimal";
 export type Radius = "none" | "sm" | "md" | "lg" | "xl";
@@ -75,7 +108,10 @@ export interface ThemeTokens {
 }
 
 export interface ThemeLayout {
+  /** Legacy 3-way header (kept for stored customisations); `nav` drives the bar */
   header: HeaderVariant;
+  nav: NavStyle;
+  navOptions: NavOptions;
   hero: HeroVariant;
   card: CardVariant;
   categories: CategoryStyle;
@@ -122,12 +158,15 @@ export interface StorefrontTheme {
   tokens: ThemeTokens;
   layout: ThemeLayout;
   copy: ThemeCopy;
+  tier: ThemeTier;
+  /** One-time price in naira (0 for the free theme of each category) */
+  price: number;
 }
 
 /** What a merchant has changed on top of their chosen theme. */
 export interface ThemeCustomization {
   tokens?: Partial<ThemeTokens>;
-  layout?: Partial<ThemeLayout>;
+  layout?: Partial<Omit<ThemeLayout, "navOptions">> & { navOptions?: Partial<NavOptions> };
   copy?: Partial<ThemeCopy>;
 }
 
