@@ -308,8 +308,8 @@ function OnboardingPage() {
   };
 
   const handleSubmit = async () => {
-    if (!form.name || !form.slug) {
-      toast.error("Store name required");
+    if (form.name.trim().length < 2 || !form.slug) {
+      toast.error("Store name must be at least 2 characters");
       return;
     }
     if (!slugAvailable) {
@@ -599,6 +599,7 @@ function OnboardingPage() {
                   <input
                     className={inputClass}
                     placeholder="e.g. Amaka's Boutique"
+                    maxLength={100}
                     value={form.name}
                     onChange={(e) => handleNameChange(e.target.value)}
                     autoFocus
@@ -661,9 +662,13 @@ function OnboardingPage() {
                     className={inputClass + " resize-none"}
                     rows={3}
                     placeholder="What do you sell? What makes your store special?"
+                    maxLength={1000}
                     value={form.description}
                     onChange={(e) => set("description", e.target.value)}
                   />
+                  {form.description.length > 800 && (
+                    <p className="text-xs text-zinc-400 mt-1 text-right">{form.description.length}/1000</p>
+                  )}
                   <button
                     type="button"
                     onClick={suggestStoreStructure}
@@ -785,6 +790,7 @@ function OnboardingPage() {
                       type="tel"
                       inputMode="tel"
                       placeholder="+234 801 234 5678"
+                      maxLength={30}
                       value={form.phone}
                       onChange={(e) => set("phone", e.target.value)}
                     />
@@ -796,6 +802,7 @@ function OnboardingPage() {
                       type="tel"
                       inputMode="tel"
                       placeholder="+234 801 234 5678"
+                      maxLength={30}
                       value={form.whatsapp}
                       onChange={(e) => set("whatsapp", e.target.value)}
                     />

@@ -33,17 +33,32 @@ const RESERVED_SLUGS = new Set([
   "uploads",
 ]);
 
+const FIELD_LABELS: Record<string, string> = {
+  name: "Store name",
+  slug: "Store link",
+  description: "Description",
+  phone: "Phone number",
+  whatsapp: "WhatsApp number",
+  bankName: "Bank name",
+  bankAccountNumber: "Account number",
+  accountNumber: "Account number",
+  bankAccountName: "Account name",
+  accountName: "Account name",
+};
+
 const CreateStoreSchema = z.object({
-  name: z.string().min(2).max(100),
+  name: z.string().trim().min(2, "must be at least 2 characters").max(100, "must be 100 characters or less"),
   slug: z
     .string()
-    .min(2)
-    .max(60)
-    .regex(/^[a-z0-9-]+$/),
-  description: z.string().max(500).optional(),
+    .trim()
+    .toLowerCase()
+    .min(2, "must be at least 2 characters")
+    .max(60, "must be 60 characters or less")
+    .regex(/^[a-z0-9-]+$/, "can only use letters, numbers and dashes"),
+  description: z.string().trim().max(1000, "must be 1,000 characters or less").optional(),
   logoUrl: z.string().optional().or(z.literal("")),
-  phone: z.string().max(20).optional(),
-  whatsapp: z.string().max(20).optional(),
+  phone: z.string().trim().max(30, "is too long").optional(),
+  whatsapp: z.string().trim().max(30, "is too long").optional(),
   primaryCategory: z.string().optional(),
   // Accept either paymentMethods array (legacy) or paymentPreference string
   paymentMethods: z.array(z.string()).optional(),
@@ -53,7 +68,8 @@ const CreateStoreSchema = z.object({
   accountName: z.string().optional(), // legacy key
   bankAccountNumber: z.string().optional(),
   bankAccountName: z.string().optional(),
-  referralCode: z.string().max(20).optional().nullable(),
+  // A malformed referral code (e.g. a mangled share link) is ignored, never a reason to fail signup
+  referralCode: z.string().trim().max(20).optional().nullable().catch(null),
 });
 
 function derivePaymentPreference(
@@ -103,11 +119,15 @@ export async function POST(req: NextRequest) {
     }
 
     const parsed = CreateStoreSchema.safeParse(body);
-    if (!parsed.success)
-      return NextResponse.json(
-        { error: parsed.error.flatten() },
-        { status: 422 },
-      );
+    if (!parsed.success) {
+      // A sentence the onboarding form can show as-is (it used to get an
+      // object here and could only say "Failed to create store").
+      const issue = parsed.error.issues[0];
+      const field = String(issue?.path[0] ?? "");
+      const message = issue ? `${FIELD_LABELS[field] ?? field} ${issue.message}`.trim() : "Some details are invalid";
+      console.warn("[POST /api/stores] validation failed", parsed.error.flatten().fieldErrors);
+      return NextResponse.json({ error: message, fields: parsed.error.flatten().fieldErrors }, { status: 422 });
+    }
 
     const d = parsed.data;
     if (RESERVED_SLUGS.has(d.slug))
@@ -268,6 +288,15 @@ export async function POST(req: NextRequest) {
       column?: string;
       table?: string;
     };
+    // Two taps on "Create store" race each other: the loser hits a unique
+    // rule. Say what actually happened instead of a generic failure.
+    if (e?.code === "23505") {
+      const taken = e.constraint === "stores_slug_key";
+      return NextResponse.json(
+        { error: taken ? "That store link was just taken — try another" : "Store already exists" },
+        { status: 409 },
+      );
+    }
     console.error("[POST /api/stores] FAILED", e);
     return NextResponse.json(
       {
