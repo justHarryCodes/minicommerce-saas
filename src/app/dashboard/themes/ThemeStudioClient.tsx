@@ -109,6 +109,8 @@ const CATEGORY_OPTIONS: { value: ThemeLayout["categories"]; label: string }[] = 
   { value: "circles", label: "Circles" },
   { value: "pills", label: "Pills" },
   { value: "cards", label: "Photo cards" },
+  { value: "showcase", label: "Showcase grid" },
+  { value: "bento", label: "Bento" },
 ];
 const RADIUS_OPTIONS: { value: ThemeTokens["radius"]; label: string }[] = [
   { value: "none", label: "Square" },

@@ -142,7 +142,7 @@ export const MORE_THEMES: ThemeSeed[] = [
     tagline: "Dark luxury — gold on black, a refined serif and tall bottle shots.",
     bestFor: ["Designer fragrances", "Luxury perfumes", "Niche houses"],
     tokens: { accent: "#c9a227", bodyFont: "inter", headingFont: "cormorant", headingStyle: "elegant", radius: "none", density: "airy", mode: "dark", background: LIGHT_BG, backgroundDark: "#0a0908" },
-    layout: { header: "centered", hero: "fullbleed", card: "editorial", categories: "cards", footer: "minimal", columns: 4, sections: ["hero", "featured", "promo", "categories", "newArrivals", "allProducts", "testimonials", "about"] },
+    layout: { header: "centered", hero: "split", card: "minimal", categories: "bento", footer: "minimal", columns: 4, sections: ["hero", "featured", "promo", "categories", "newArrivals", "allProducts", "testimonials", "about"] },
     copy: { ...PERFUME_COPY, heroTitle: "Scent is the memory you leave behind" },
   },
   {
@@ -151,8 +151,8 @@ export const MORE_THEMES: ThemeSeed[] = [
     category: "perfume",
     tagline: "Ivory and bronze — a quiet, editorial boutique for fine fragrance.",
     bestFor: ["Perfume boutiques", "Body care", "Gift shops"],
-    tokens: { accent: "#8a6d3b", bodyFont: "dmsans", headingFont: "playfair", headingStyle: "elegant", radius: "none", density: "airy", mode: "light", background: "#faf7f2", backgroundDark: DARK_BG },
-    layout: { header: "centered", hero: "split", card: "editorial", categories: "pills", footer: "standard", columns: 4, sections: ["hero", "highlights", "featured", "categories", "promo", "allProducts", "testimonials", "ctaBand"] },
+    tokens: { accent: "#8a6d3b", bodyFont: "dmsans", headingFont: "lora", headingStyle: "elegant", radius: "none", density: "airy", mode: "light", background: "#faf7f2", backgroundDark: DARK_BG },
+    layout: { header: "centered", hero: "minimal", card: "editorial", categories: "tiles", footer: "standard", columns: 4, sections: ["hero", "highlights", "featured", "categories", "promo", "allProducts", "testimonials", "ctaBand"] },
     copy: { ...PERFUME_COPY, heroEyebrow: "The fragrance edit" },
   },
   {
@@ -214,7 +214,7 @@ export const MORE_THEMES: ThemeSeed[] = [
     tagline: "Wholesale and bulk — dense grid, department icons and clear unit pricing.",
     bestFor: ["Wholesale", "Bulk foodstuff", "Distributors"],
     tokens: { accent: "#1d4ed8", bodyFont: "manrope", headingFont: "manrope", headingStyle: "bold", radius: "md", density: "compact", mode: "light", background: "#f3f6fb", backgroundDark: DARK_BG },
-    layout: { header: "standard", hero: "split", card: "classic", categories: "circles", footer: "standard", columns: 5, sections: ["hero", "highlights", "categories", "promo", "featured", "categoryRails", "allProducts"] },
+    layout: { header: "standard", hero: "banner", card: "classic", categories: "showcase", footer: "standard", columns: 5, sections: ["hero", "highlights", "categories", "promo", "featured", "categoryRails", "allProducts"] },
     copy: { ...MARKET_COPY, heroEyebrow: "Wholesale prices", heroCta: "Buy in bulk", featuredTitle: "Top wholesale deals" },
   },
   {
@@ -234,7 +234,7 @@ export const MORE_THEMES: ThemeSeed[] = [
     tagline: "Supermarket-style — red and yellow promos, aisles and quick add-to-basket.",
     bestFor: ["Supermarkets", "Provisions", "Mini marts"],
     tokens: { accent: "#dc2626", bodyFont: "inter", headingFont: "inter", headingStyle: "bold", radius: "md", density: "compact", mode: "light", background: "#fffdf5", backgroundDark: DARK_BG },
-    layout: { header: "standard", hero: "banner", card: "classic", categories: "pills", footer: "bold", columns: 5, sections: ["hero", "categories", "featured", "promo", "newArrivals", "categoryRails", "allProducts"] },
+    layout: { header: "standard", hero: "banner", card: "classic", categories: "showcase", footer: "bold", columns: 5, sections: ["hero", "categories", "featured", "promo", "newArrivals", "categoryRails", "allProducts"] },
     copy: { ...MARKET_COPY, heroEyebrow: "Every aisle, online", categoriesTitle: "Aisles", featuredTitle: "Weekly specials" },
   },
 
@@ -266,7 +266,7 @@ export const MORE_THEMES: ThemeSeed[] = [
     tagline: "Fast-moving phone shop — round brand icons, deals rail and a dense grid.",
     bestFor: ["Phones", "UK-used & new", "Chargers & cases"],
     tokens: { accent: "#16a34a", bodyFont: "outfit", headingFont: "outfit", headingStyle: "bold", radius: "xl", density: "compact", mode: "light", background: LIGHT_BG, backgroundDark: DARK_BG },
-    layout: { header: "standard", hero: "banner", card: "classic", categories: "circles", footer: "standard", columns: 5, sections: ["hero", "categories", "featured", "promo", "newArrivals", "allProducts", "testimonials"] },
+    layout: { header: "standard", hero: "split", card: "classic", categories: "showcase", footer: "standard", columns: 5, sections: ["hero", "categories", "featured", "promo", "newArrivals", "allProducts", "testimonials"] },
     copy: { ...GADGETS_COPY, heroEyebrow: "New & UK-used", heroCta: "Shop phones", categoriesTitle: "Shop by brand", featuredTitle: "Deals of the day" },
   },
   {
@@ -276,7 +276,7 @@ export const MORE_THEMES: ThemeSeed[] = [
     tagline: "Dark and expressive — made for headphones, speakers and audio gear.",
     bestFor: ["Audio", "Headphones & speakers", "Creators' gear"],
     tokens: { accent: "#f97316", bodyFont: "inter", headingFont: "syne", headingStyle: "bold", radius: "lg", density: "airy", mode: "dark", background: LIGHT_BG, backgroundDark: "#0a0705" },
-    layout: { header: "minimal", hero: "fullbleed", card: "editorial", categories: "cards", footer: "bold", columns: 3, sections: ["hero", "featured", "promo", "categories", "allProducts", "testimonials", "ctaBand"] },
+    layout: { header: "minimal", hero: "centered", card: "minimal", categories: "bento", footer: "bold", columns: 3, sections: ["hero", "featured", "promo", "categories", "allProducts", "testimonials", "ctaBand"] },
     copy: { ...GADGETS_COPY, heroEyebrow: "Hear everything", heroTitle: "Sound you can feel", heroCta: "Shop audio" },
   },
   {
@@ -308,7 +308,7 @@ export const MORE_THEMES: ThemeSeed[] = [
     tagline: "Soft blush and rounded corners — feminine, friendly and gift-ready.",
     bestFor: ["Bundles", "Ponytails & extensions", "Beginners"],
     tokens: { accent: "#db2777", bodyFont: "poppins", headingFont: "playfair", headingStyle: "elegant", radius: "xl", density: "comfortable", mode: "light", background: "#fff6f9", backgroundDark: "#12070b" },
-    layout: { header: "standard", hero: "centered", card: "classic", categories: "circles", footer: "standard", columns: 4, sections: ["hero", "highlights", "categories", "featured", "newArrivals", "allProducts", "testimonials", "ctaBand"] },
+    layout: { header: "standard", hero: "split", card: "minimal", categories: "showcase", footer: "standard", columns: 4, sections: ["hero", "highlights", "categories", "featured", "newArrivals", "allProducts", "testimonials", "ctaBand"] },
     copy: { ...HAIR_COPY, heroEyebrow: "Soft. Full. Yours.", heroCta: "Shop bundles" },
   },
   {
@@ -318,7 +318,7 @@ export const MORE_THEMES: ThemeSeed[] = [
     tagline: "Bold and dark — condensed headlines and rose accents for statement units.",
     bestFor: ["Statement wigs", "Coloured units", "Drops & restocks"],
     tokens: { accent: "#e11d48", bodyFont: "inter", headingFont: "bebas", headingStyle: "condensed", radius: "sm", density: "comfortable", mode: "dark", background: LIGHT_BG, backgroundDark: "#0b0507" },
-    layout: { header: "minimal", hero: "fullbleed", card: "editorial", categories: "cards", footer: "bold", columns: 4, sections: ["hero", "newArrivals", "featured", "promo", "categories", "allProducts", "testimonials"] },
+    layout: { header: "minimal", hero: "centered", card: "editorial", categories: "showcase", footer: "bold", columns: 4, sections: ["hero", "newArrivals", "featured", "promo", "categories", "allProducts", "testimonials"] },
     copy: { ...HAIR_COPY, heroEyebrow: "New drop", heroTitle: "Units that turn heads", heroCta: "Shop the drop", newArrivalsTitle: "Latest drop" },
   },
   {
@@ -365,7 +365,7 @@ export const MORE_THEMES: ThemeSeed[] = [
     tagline: "Warm neutrals and big imagery — for decor stores and interior studios.",
     bestFor: ["Home decor", "Furniture", "Interior designers"],
     tokens: { accent: "#8b5e3c", bodyFont: "inter", headingFont: "cormorant", headingStyle: "elegant", radius: "none", density: "airy", mode: "light", background: "#f8f4ef", backgroundDark: "#0e0a07" },
-    layout: { header: "centered", hero: "fullbleed", card: "editorial", categories: "cards", footer: "minimal", columns: 3, sections: ["hero", "featured", "categories", "promo", "newArrivals", "allProducts", "testimonials", "about"] },
+    layout: { header: "centered", hero: "split", card: "editorial", categories: "bento", footer: "minimal", columns: 3, sections: ["hero", "featured", "categories", "promo", "newArrivals", "allProducts", "testimonials", "about"] },
     copy: { ...INTERIOR_COPY, heroTitle: "Make your house feel like home" },
   },
   {
@@ -375,7 +375,7 @@ export const MORE_THEMES: ThemeSeed[] = [
     tagline: "Deep green and brass — a dark, opulent showroom for statement pieces.",
     bestFor: ["Luxury furniture", "Lighting", "Bespoke interiors"],
     tokens: { accent: "#ca8a04", bodyFont: "dmsans", headingFont: "fraunces", headingStyle: "elegant", radius: "sm", density: "airy", mode: "dark", background: LIGHT_BG, backgroundDark: "#06100c" },
-    layout: { header: "centered", hero: "split", card: "editorial", categories: "cards", footer: "bold", columns: 3, sections: ["hero", "featured", "promo", "categories", "allProducts", "testimonials", "about", "ctaBand"] },
+    layout: { header: "centered", hero: "fullbleed", card: "editorial", categories: "bento", footer: "bold", columns: 3, sections: ["hero", "featured", "promo", "categories", "allProducts", "testimonials", "about", "ctaBand"] },
     copy: { ...INTERIOR_COPY, heroEyebrow: "The showroom", heroTitle: "Live beautifully", featuredTitle: "Signature pieces" },
   },
   {
@@ -385,7 +385,7 @@ export const MORE_THEMES: ThemeSeed[] = [
     tagline: "Soft terracotta and rounded shapes — candles, vases, prints and room styling.",
     bestFor: ["Decor accessories", "Candles & prints", "Room styling"],
     tokens: { accent: "#c2410c", bodyFont: "outfit", headingFont: "syne", headingStyle: "bold", radius: "xl", density: "comfortable", mode: "light", background: "#fbf6f1", backgroundDark: "#100804" },
-    layout: { header: "standard", hero: "centered", card: "classic", categories: "circles", footer: "standard", columns: 4, sections: ["hero", "highlights", "categories", "featured", "newArrivals", "allProducts", "testimonials", "ctaBand"] },
+    layout: { header: "standard", hero: "banner", card: "classic", categories: "bento", footer: "standard", columns: 4, sections: ["hero", "highlights", "categories", "featured", "newArrivals", "allProducts", "testimonials", "ctaBand"] },
     copy: { ...INTERIOR_COPY, heroEyebrow: "Little things, big mood", heroTitle: "Make it aesthetic", heroCta: "Shop decor" },
   },
 ];

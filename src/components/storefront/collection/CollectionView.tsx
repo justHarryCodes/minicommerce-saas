@@ -7,6 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Check, Minus, Plus, SlidersHorizontal, X } from "lucide-react";
 import ProductCard from "@/components/storefront/ProductCard";
+import HeartButton from "@/components/storefront/HeartButton";
 import { useCart } from "@/components/storefront/CartProvider";
 import { useStore } from "@/lib/store-context";
 import { clCard } from "@/lib/cloudinary";
@@ -100,7 +101,7 @@ function GridView({ list, slug, gridCls }: ViewProps) {
 }
 
 /** Lookbook: big editorial tiles; every fifth spans two columns. */
-function LookbookView({ list }: ViewProps) {
+function LookbookView({ list, slug }: ViewProps) {
   const { storeBase } = useStore();
   return (
     <div className="grid grid-cols-2 gap-x-3 gap-y-10 sm:gap-x-6 lg:grid-cols-3">
@@ -113,6 +114,7 @@ function LookbookView({ list }: ViewProps) {
               <Thumb p={p} large className="absolute inset-0 h-full w-full transition-transform duration-[900ms] group-hover:scale-105" sizes={wide ? "(min-width:1024px) 66vw, 100vw" : "(min-width:1024px) 33vw, 50vw"} />
               {second && <Image src={wide ? second : clCard(second)} alt="" fill sizes={wide ? "66vw" : "33vw"} className="object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100" />}
               {isSale(p) && <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-surface-900">Sale</span>}
+              <HeartButton product={p} storeSlug={slug} className="absolute right-3 top-3" />
             </span>
             <span className={`mt-3 flex items-baseline justify-between gap-3 ${wide ? "sm:mt-4" : ""}`}>
               <span className={`sf-display truncate text-surface-900 dark:text-white ${wide ? "text-xl sm:text-2xl" : "text-base"}`}>{p.name}</span>
@@ -155,7 +157,7 @@ function MenuView({ list }: ViewProps) {
 }
 
 /** Aisle: dense supermarket shelf with steppers right on the card. */
-function AisleView({ list }: ViewProps) {
+function AisleView({ list, slug }: ViewProps) {
   const { storeBase } = useStore();
   return (
     <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
@@ -171,6 +173,7 @@ function AisleView({ list }: ViewProps) {
                     -{Math.round((1 - p.price / f.compare) * 100)}%
                   </span>
                 )}
+                <HeartButton product={p} storeSlug={slug} className="absolute right-1.5 top-1.5 !h-7 !w-7" />
               </span>
               <span className="mt-2 line-clamp-2 block min-h-[2.5rem] text-[13px] font-semibold leading-tight text-surface-800 dark:text-surface-100">{p.name}</span>
             </Link>
@@ -189,7 +192,7 @@ function AisleView({ list }: ViewProps) {
 }
 
 /** Catalog: comparison rows with key specs — gadgets, electronics, bulk goods. */
-function CatalogView({ list }: ViewProps) {
+function CatalogView({ list, slug }: ViewProps) {
   const { storeBase } = useStore();
   return (
     <div className="divide-y divide-surface-100 overflow-hidden rounded-[var(--sf-radius)] border border-surface-100 dark:divide-surface-800 dark:border-surface-800">
@@ -197,8 +200,9 @@ function CatalogView({ list }: ViewProps) {
         const f = cardFacts(p);
         return (
           <div key={p.id} className="flex items-center gap-4 bg-white p-3 transition-colors hover:bg-surface-50 dark:bg-surface-900 dark:hover:bg-surface-800/60 sm:p-4">
-            <Link href={`${storeBase}/products/${p.slug ?? p.id}`} className="shrink-0">
+            <Link href={`${storeBase}/products/${p.slug ?? p.id}`} className="relative shrink-0">
               <Thumb p={p} className="h-20 w-20 rounded-[calc(var(--sf-radius)*.6)] sm:h-28 sm:w-28" sizes="112px" />
+              <HeartButton product={p} storeSlug={slug} className="absolute -right-1.5 -top-1.5 !h-7 !w-7" />
             </Link>
             <div className="min-w-0 flex-1">
               <Link href={`${storeBase}/products/${p.slug ?? p.id}`} className="line-clamp-2 text-sm font-bold text-surface-900 hover:underline dark:text-white sm:text-base">

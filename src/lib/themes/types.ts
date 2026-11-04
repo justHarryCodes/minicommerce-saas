@@ -7,7 +7,8 @@ export type HeroVariant = "split" | "banner" | "fullbleed" | "centered" | "minim
 /** How a single product renders in grids and rails. */
 export type CardVariant = "classic" | "minimal" | "editorial" | "menu" | "service";
 /** How the "shop by category" strip renders. */
-export type CategoryStyle = "tiles" | "circles" | "pills" | "cards";
+/** showcase: big circle grid (marketplace style) · bento: one large tile + mosaic */
+export type CategoryStyle = "tiles" | "circles" | "pills" | "cards" | "showcase" | "bento";
 /** Site header: search-led marketplace bar, centred-logo boutique, or a single slim row. */
 export type HeaderVariant = "standard" | "centered" | "minimal";
 

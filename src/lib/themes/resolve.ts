@@ -54,7 +54,7 @@ export const customizationSchema = z
           .catch(undefined),
         hero: oneOf(["split", "banner", "fullbleed", "centered", "minimal"] as const),
         card: oneOf(["classic", "minimal", "editorial", "menu", "service"] as const),
-        categories: oneOf(["tiles", "circles", "pills", "cards"] as const),
+        categories: oneOf(["tiles", "circles", "pills", "cards", "showcase", "bento"] as const),
         footer: oneOf(["standard", "bold", "minimal"] as const),
         columns: z.union([z.literal(2), z.literal(3), z.literal(4), z.literal(5)]).optional().catch(undefined),
         sections: z

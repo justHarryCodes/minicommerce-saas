@@ -577,6 +577,71 @@ export function CategoryStrip({
     );
   }
 
+  if (style === "showcase") {
+    // Marketplace grid: a promo square, then big circles with bold labels
+    return (
+      <div className="grid grid-cols-3 gap-x-3 gap-y-5 px-4 sm:grid-cols-4 sm:gap-x-5 lg:grid-cols-6 lg:gap-x-6 lg:gap-y-7 lg:px-0">
+        <Link href={shopAllHref} className="group block">
+          <div
+            className="relative grid aspect-square place-items-center overflow-hidden rounded-[calc(var(--sf-radius)*1.2)] transition-transform group-hover:-translate-y-0.5"
+            style={{ background: "linear-gradient(110deg, #0b0b0d 0 64%, var(--sf-accent) 64% 100%)" }}
+          >
+            <span className="justify-self-start pl-[12%] text-left leading-[0.95] text-white">
+              <span className="block text-[11px] font-black uppercase tracking-[0.18em] opacity-80 sm:text-xs">Shop</span>
+              <span className="sf-display block text-2xl font-black uppercase sm:text-3xl lg:text-4xl">All</span>
+              <span className="mt-1 inline-block rounded bg-white px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-black sm:text-[10px]">{tiles.reduce((s, t) => s + t.product_count, 0)} items</span>
+            </span>
+          </div>
+          <span className="mt-2 block text-center text-[13px] font-semibold leading-tight text-surface-900 dark:text-white sm:text-[15px]">
+            {theme.copy.allProductsTitle}
+          </span>
+        </Link>
+        {tiles.slice(0, 11).map((cat) => (
+          <Link key={cat.id} href={hrefFor(cat.slug)} className="group block">
+            <div className="relative aspect-square rounded-full bg-[#0b0b0d] p-[7%] transition-transform duration-300 group-hover:-translate-y-0.5 dark:bg-surface-700">
+              <div className="relative h-full w-full overflow-hidden rounded-full bg-surface-100 dark:bg-surface-800">
+                {cat.cover_image ? (
+                  <Image src={cat.cover_image} unoptimized={isPreOptimized(cat.cover_image)} alt="" fill sizes="(min-width: 1024px) 16vw, 30vw" className="object-cover transition-transform duration-500 group-hover:scale-110" />
+                ) : (
+                  <span className="absolute inset-0 grid place-items-center text-3xl font-black text-surface-400">{cat.name.charAt(0).toUpperCase()}</span>
+                )}
+              </div>
+              <span className="pointer-events-none absolute inset-0 rounded-full ring-0 ring-[color:var(--sf-accent)] transition-all group-hover:ring-4" />
+            </div>
+            <span className="mt-2 line-clamp-2 block text-center text-[13px] font-semibold leading-tight text-surface-900 dark:text-white sm:text-[15px]">{cat.name}</span>
+          </Link>
+        ))}
+      </div>
+    );
+  }
+
+  if (style === "bento") {
+    // One hero category, the rest in a mosaic around it
+    const list = tiles.slice(0, 7);
+    return (
+      <div className="grid auto-rows-[9rem] grid-cols-2 gap-2 px-4 sm:auto-rows-[11rem] sm:gap-3 lg:grid-cols-4 lg:px-0">
+        {list.map((cat, i) => (
+          <Link
+            key={cat.id}
+            href={hrefFor(cat.slug)}
+            className={`group relative overflow-hidden rounded-[var(--sf-radius)] bg-surface-200 dark:bg-surface-800 ${i === 0 ? "col-span-2 row-span-2" : i === 3 && list.length > 5 ? "lg:col-span-2" : ""}`}
+          >
+            {cat.cover_image && (
+              <Image src={cat.cover_image} unoptimized={isPreOptimized(cat.cover_image)} alt="" fill sizes={i === 0 ? "(min-width: 1024px) 50vw, 100vw" : "(min-width: 1024px) 25vw, 50vw"} className="object-cover transition-transform duration-700 group-hover:scale-105" />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-transparent" />
+            <div className={`absolute inset-x-0 bottom-0 text-white ${i === 0 ? "p-5 sm:p-7" : "p-3 sm:p-4"}`}>
+              <p className={`sf-display leading-tight ${i === 0 ? "text-3xl sm:text-5xl" : "text-base sm:text-xl"}`}>{cat.name}</p>
+              <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-white/80">
+                {cat.product_count} items <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-1" />
+              </p>
+            </div>
+          </Link>
+        ))}
+      </div>
+    );
+  }
+
   // tiles / circles share structure; only the image shape differs
   const shape = style === "circles" ? "rounded-full" : "rounded-[var(--sf-radius)]";
   return (

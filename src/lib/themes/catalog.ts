@@ -144,7 +144,7 @@ const SEEDS: ThemeSeed[] = [
     tagline: "Dark, precise and techy — built for phones, laptops and accessories.",
     bestFor: ["Electronics", "Phone accessories", "Gaming"],
     tokens: { accent: "#22d3ee", bodyFont: "spacegrotesk", headingFont: "spacegrotesk", headingStyle: "bold", radius: "sm", density: "comfortable", mode: "dark", background: LIGHT_BG, backgroundDark: "#05070d" },
-    layout: { header: "minimal", hero: "split", card: "minimal", categories: "tiles", footer: "bold", columns: 4, sections: ["hero", "highlights", "featured", "categories", "promo", "newArrivals", "allProducts", "testimonials", "ctaBand"] },
+    layout: { header: "minimal", hero: "banner", card: "minimal", categories: "showcase", footer: "bold", columns: 4, sections: ["hero", "highlights", "featured", "categories", "promo", "newArrivals", "allProducts", "testimonials", "ctaBand"] },
     copy: {
       ...ECOMMERCE_COPY,
       heroEyebrow: "Latest tech",
@@ -289,7 +289,7 @@ const SEEDS: ThemeSeed[] = [
     tagline: "Hype-drop energy — black canvas, condensed type and a neon accent.",
     bestFor: ["Streetwear", "Sneakers", "Merch drops"],
     tokens: { accent: "#a3e635", bodyFont: "spacegrotesk", headingFont: "bebas", headingStyle: "condensed", radius: "none", density: "compact", mode: "dark", background: LIGHT_BG, backgroundDark: "#000000" },
-    layout: { header: "minimal", hero: "fullbleed", card: "editorial", categories: "cards", footer: "bold", columns: 4, sections: ["hero", "newArrivals", "categories", "promo", "featured", "allProducts"] },
+    layout: { header: "minimal", hero: "banner", card: "minimal", categories: "bento", footer: "bold", columns: 4, sections: ["hero", "newArrivals", "categories", "promo", "featured", "allProducts"] },
     copy: {
       ...CLOTHING_COPY,
       heroEyebrow: "Drop 07",
@@ -310,7 +310,7 @@ const SEEDS: ThemeSeed[] = [
     tagline: "Feminine and polished — rose accent, soft corners, elegant serif headlines.",
     bestFor: ["Women's fashion", "Accessories", "Lingerie"],
     tokens: { accent: "#be123c", bodyFont: "poppins", headingFont: "playfair", headingStyle: "elegant", radius: "lg", density: "comfortable", mode: "light", background: LIGHT_BG, backgroundDark: DARK_BG },
-    layout: { header: "centered", hero: "split", card: "editorial", categories: "circles", footer: "standard", columns: 4, sections: ["hero", "highlights", "featured", "categories", "promo", "allProducts", "testimonials", "ctaBand"] },
+    layout: { header: "centered", hero: "centered", card: "editorial", categories: "tiles", footer: "standard", columns: 4, sections: ["hero", "highlights", "featured", "categories", "promo", "allProducts", "testimonials", "ctaBand"] },
     copy: { ...CLOTHING_COPY, heroCta: "Shop the edit" },
   },
   {
@@ -320,7 +320,7 @@ const SEEDS: ThemeSeed[] = [
     tagline: "Proudly African — warm gold, expressive type and big collection cards.",
     bestFor: ["Ankara & aso-ebi", "Native wear", "Made-in-Nigeria"],
     tokens: { accent: "#b45309", bodyFont: "dmsans", headingFont: "syne", headingStyle: "bold", radius: "md", density: "comfortable", mode: "light", background: "#fdf8ef", backgroundDark: "#120c03" },
-    layout: { header: "centered", hero: "centered", card: "editorial", categories: "cards", footer: "bold", columns: 3, sections: ["hero", "categories", "featured", "promo", "newArrivals", "allProducts", "testimonials", "ctaBand"] },
+    layout: { header: "centered", hero: "split", card: "editorial", categories: "showcase", footer: "bold", columns: 3, sections: ["hero", "categories", "featured", "promo", "newArrivals", "allProducts", "testimonials", "ctaBand"] },
     copy: {
       ...CLOTHING_COPY,
       heroEyebrow: "Handmade in Nigeria",
@@ -338,8 +338,8 @@ const SEEDS: ThemeSeed[] = [
     category: "clothing",
     tagline: "Everyday basics — neutral stone palette, a clean grid and zero noise.",
     bestFor: ["Basics & loungewear", "Menswear", "Kids"],
-    tokens: { accent: "#44403c", bodyFont: "manrope", headingFont: "manrope", headingStyle: "elegant", radius: "md", density: "airy", mode: "light", background: "#f5f5f4", backgroundDark: "#0c0a09" },
-    layout: { header: "minimal", hero: "minimal", card: "minimal", categories: "pills", footer: "minimal", columns: 4, sections: ["hero", "highlights", "categories", "newArrivals", "allProducts", "about"] },
+    tokens: { accent: "#44403c", bodyFont: "manrope", headingFont: "dmsans", headingStyle: "elegant", radius: "md", density: "airy", mode: "light", background: "#f5f5f4", backgroundDark: "#0c0a09" },
+    layout: { header: "minimal", hero: "banner", card: "minimal", categories: "circles", footer: "minimal", columns: 4, sections: ["hero", "highlights", "categories", "newArrivals", "allProducts", "about"] },
     copy: { ...CLOTHING_COPY, heroEyebrow: "", heroCta: "Shop essentials" },
   },
 
