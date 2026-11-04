@@ -34,6 +34,7 @@ import Link from "next/link";
 import { deliverySettingsOf, podSettingsOf } from "@/lib/delivery";
 import { CustomerMessagesEditor, DeliveryOptionsEditor, PayOnDeliveryEditor } from "@/components/dashboard/CheckoutSettings";
 import CustomDomainSettings from "@/components/dashboard/CustomDomainSettings";
+import DukaPaySettings from "@/components/dashboard/DukaPaySettings";
 import StoreHoursSettings from "@/components/dashboard/StoreHoursSettings";
 import { parseHours } from "@/lib/hours";
 
@@ -460,7 +461,7 @@ export default function SettingsClient({ store: initial, messaging = { sms: fals
                 }`}
               >
                 {method === "paystack"
-                  ? "Paystack only"
+                  ? "Duka Pay only"
                   : method === "bank_transfer"
                     ? "Bank transfer only"
                     : "Both methods"}
@@ -514,20 +515,13 @@ export default function SettingsClient({ store: initial, messaging = { sms: fals
 
         {(store.paymentPreference === "paystack" ||
           store.paymentPreference === "both") && (
-          <div>
-            <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
-              Paystack public key
-            </label>
-            <input
-              value={store.paystackPublicKey ?? store.paystack_public_key ?? ""}
-              onChange={(e) => change("paystackPublicKey", e.target.value)}
-              placeholder="pk_live_..."
-              className="w-full px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-transparent text-surface-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-400 text-sm font-mono"
-            />
-            <p className="text-xs text-surface-400 mt-1">
-              Found in your Paystack dashboard under Settings → API Keys
-            </p>
-          </div>
+          <DukaPaySettings
+            onAccount={(a) => {
+              change("bankName", a.bankName);
+              change("bankAccountNumber", a.accountNumber);
+              change("bankAccountName", a.accountName);
+            }}
+          />
         )}
       </section>
 

@@ -43,6 +43,10 @@ interface PaystackVerifyResponse {
     amount: number // in kobo
     currency?: string
     customer: { email: string }
+    channel?: string
+    fees?: number | null
+    fees_split?: { paystack?: number; integration?: number; subaccount?: number } | null
+    subaccount?: { subaccount_code?: string } | null
   }
 }
 
@@ -52,6 +56,9 @@ export async function initializeTransaction(opts: {
   reference: string
   callbackUrl: string
   metadata?: Record<string, unknown>
+  /** Duka Pay: send the store's share to its subaccount, Duka keeps transaction_charge (kobo) */
+  split?: { subaccount: string; bearer: 'subaccount' | 'account'; transaction_charge: number }
+  channels?: readonly string[]
 }): Promise<PaystackInitResponse> {
   const res = await fetch(`${PAYSTACK_BASE}/transaction/initialize`, {
     method: 'POST',
@@ -65,6 +72,8 @@ export async function initializeTransaction(opts: {
       reference: opts.reference,
       callback_url: opts.callbackUrl,
       metadata: opts.metadata,
+      ...(opts.split ?? {}),
+      ...(opts.channels ? { channels: opts.channels } : {}),
     }),
   })
   return res.json()

@@ -47,9 +47,12 @@ const db = vi.hoisted(() => {
       return [...attempts.values()].filter((a) => a.kind === p[0] && a.target_id === p[1] && a.status === "success").map((a) => ({ reference: a.reference }));
     }
     if (s.startsWith("SELECT * FROM payment_attempts WHERE kind = $1 AND target_id = $2 AND status = 'pending'")) {
-      const windowSecs = s.includes("make_interval(secs => 60)") ? 60 : Number(p[3]);
+      const short = s.includes("make_interval(secs => 60)");
+      const windowSecs = short ? 60 : Number(p[3]);
+      const sub = (short ? p[3] : p[4]) ?? null;
       return [...attempts.values()]
         .filter((a) => a.kind === p[0] && a.target_id === p[1] && a.status === "pending" && Number(a.amount) === Number(p[2]) && a.authorization_url)
+        .filter((a) => (a.subaccount_code ?? null) === sub)
         .filter((a) => Date.now() - (a.created_at as Date).getTime() < windowSecs * 1000)
         .map((a) => ({ ...a }));
     }
@@ -59,7 +62,7 @@ const db = vi.hoisted(() => {
         .map((a) => ({ reference: a.reference, created_at: a.created_at }));
     }
     if (s.startsWith("INSERT INTO payment_attempts")) {
-      const row = { id: `a${++seq}`, reference: p[0], kind: p[1], store_id: p[2], target_id: p[3], amount: p[4], currency: "NGN", email: p[5], authorization_url: p[6], status: "pending", created_at: new Date() };
+      const row = { id: `a${++seq}`, reference: p[0], kind: p[1], store_id: p[2], target_id: p[3], amount: p[4], currency: "NGN", email: p[5], authorization_url: p[6], subaccount_code: p[7] ?? null, platform_fee: p[8] ?? null, status: "pending", created_at: new Date() };
       attempts.set(row.id, row);
       return [];
     }
@@ -68,6 +71,11 @@ const db = vi.hoisted(() => {
       if (purchases.has(key)) return [];
       purchases.add(key);
       return [{ id: key }];
+    }
+    if (s.startsWith("UPDATE payment_attempts SET paystack_fee")) {
+      const a = [...attempts.values()].find((x) => x.id === p[0]);
+      if (a) Object.assign(a, { paystack_fee: p[1], platform_share: p[2], store_share: p[3], channel: p[4] });
+      return [];
     }
     if (s.startsWith("SELECT pg_advisory_xact_lock")) return [];
     if (s.startsWith("INSERT INTO subscription_payments")) return [];
@@ -241,6 +249,48 @@ describe("startPayment", () => {
     expect(subscriptionTypeOf(targets.plan("s1", "p1"))).toBe("plan");
     expect(subscriptionTypeOf(targets.monthly("s1"))).toBe("monthly");
     expect(subscriptionTypeOf(targets.setupFee("s1"))).toBe("setup_fee");
+  });
+});
+
+describe("Duka Pay (split to the store's subaccount)", () => {
+  const order = { kind: "order" as const, storeId: "store-1", targetId: "order-7", amount: 10_000, email: "a@b.com", referencePrefix: "ORD-7", subaccountCode: "ACCT_store1" };
+
+  it("routes the charge to the store's subaccount and keeps exactly 1% for Duka", async () => {
+    const r = await startPayment(order);
+    expect(r.ok).toBe(true);
+    const init = mockedInit.mock.calls[0][0];
+    expect(init.split).toEqual({ subaccount: "ACCT_store1", bearer: "subaccount", transaction_charge: 10_000 }); // ₦100 of ₦10,000, in kobo
+    expect(init.channels).toEqual(["card", "bank_transfer", "ussd", "bank"]);
+    expect(init.metadata).toMatchObject({ duka_pay: true, store_id: "store-1" });
+    const row = [...db.attempts.values()][0];
+    expect(row).toMatchObject({ subaccount_code: "ACCT_store1", platform_fee: 100 });
+  });
+
+  it("only applies a payment that actually went to that store's subaccount", async () => {
+    const a = db.add({ reference: "DP-1", kind: "order", target_id: "order-7", amount: 10_000, subaccount_code: "ACCT_store1" });
+    const wrong = await settlePayment("DP-1", "webhook", { ...paid("DP-1", 10_000), subaccount: { subaccount_code: "ACCT_other" } });
+    expect(wrong.state).toBe("not_paid");
+    const none = await settlePayment("DP-1", "webhook", paid("DP-1", 10_000)); // not split at all
+    expect(none.state).toBe("not_paid");
+    expect(mockedMarkPaid).not.toHaveBeenCalled();
+
+    const right = await settlePayment("DP-1", "webhook", {
+      ...paid("DP-1", 10_000),
+      channel: "bank_transfer",
+      subaccount: { subaccount_code: "ACCT_store1" },
+      fees_split: { paystack: 16_000, integration: 10_000, subaccount: 974_000 },
+    });
+    expect(right.state).toBe("applied");
+    expect(mockedMarkPaid).toHaveBeenCalledTimes(1);
+    expect(db.attempts.get(a.id as string)).toMatchObject({ paystack_fee: 160, platform_share: 100, store_share: 9740, channel: "bank_transfer" });
+  });
+
+  it("a checkout opened before the store connected Duka Pay is not reused", async () => {
+    verifyAs({ status: "ongoing" });
+    await startPayment({ ...order, subaccountCode: null });
+    const split = await startPayment(order);
+    expect(split).toMatchObject({ ok: true, reused: false });
+    expect(mockedInit).toHaveBeenCalledTimes(2);
   });
 });
 

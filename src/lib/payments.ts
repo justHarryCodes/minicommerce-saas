@@ -21,6 +21,7 @@ import { initializeTransaction, verifyTransaction, getAppUrl } from './paystack'
 import { markOrderPaidOnline } from './order-payments'
 import { fulfillSubscriptionPayment } from './billing-fulfillment'
 import { clearOwnedThemes } from './theme-access'
+import { DUKA_PAY_CHANNELS, feesFromCharge, splitFor } from './duka-pay'
 
 export type PaymentKind = 'order' | 'subscription' | 'theme'
 
@@ -36,6 +37,8 @@ export interface PaymentAttempt {
   authorization_url: string | null
   status: 'pending' | 'success' | 'failed' | 'duplicate'
   created_at: string | Date
+  /** Duka Pay: the store subaccount this checkout pays */
+  subaccount_code?: string | null
 }
 
 /** What Paystack says about a charge (webhook payload or verify response). */
@@ -44,6 +47,10 @@ export interface PaystackCharge {
   reference?: string
   amount?: number // kobo
   currency?: string
+  channel?: string
+  fees?: number | null
+  fees_split?: { paystack?: number; integration?: number; subaccount?: number } | null
+  subaccount?: { subaccount_code?: string } | null
 }
 
 /** A reused checkout must still be open on Paystack's side. */
@@ -54,13 +61,18 @@ export function koboOf(naira: number | string): number {
 }
 
 /** The charge is exactly what we asked for, and it went through. */
-export function chargeMatches(charge: PaystackCharge | null | undefined, attempt: Pick<PaymentAttempt, 'reference' | 'amount' | 'currency'>): boolean {
+export function chargeMatches(
+  charge: PaystackCharge | null | undefined,
+  attempt: Pick<PaymentAttempt, 'reference' | 'amount' | 'currency'> & { subaccount_code?: string | null }
+): boolean {
   return (
     !!charge &&
     charge.status === 'success' &&
     charge.reference === attempt.reference &&
     (charge.currency ?? 'NGN').toUpperCase() === (attempt.currency || 'NGN').toUpperCase() &&
-    Number(charge.amount) === koboOf(attempt.amount)
+    Number(charge.amount) === koboOf(attempt.amount) &&
+    // Duka Pay: the money must have gone to this store's own subaccount
+    (!attempt.subaccount_code || charge.subaccount?.subaccount_code === attempt.subaccount_code)
   )
 }
 
@@ -101,6 +113,8 @@ export async function startPayment(opts: {
   email: string
   referencePrefix: string
   metadata?: Record<string, unknown>
+  /** Duka Pay: the store's Paystack subaccount (its share settles to the store's bank) */
+  subaccountCode?: string | null
   /** Runs inside the lock after a new checkout is created (e.g. a subscription_payments row). */
   onCreated?: (client: PoolClient, reference: string) => Promise<void>
 }): Promise<StartResult> {
@@ -119,8 +133,9 @@ export async function startPayment(opts: {
     `SELECT * FROM payment_attempts
      WHERE kind = $1 AND target_id = $2 AND status = 'pending' AND amount = $3
        AND created_at > NOW() - make_interval(secs => $4) AND authorization_url IS NOT NULL
+       AND subaccount_code IS NOT DISTINCT FROM $5::text
      ORDER BY created_at DESC LIMIT 1`,
-    [opts.kind, opts.targetId, opts.amount, REUSE_WINDOW_MS / 1000]
+    [opts.kind, opts.targetId, opts.amount, REUSE_WINDOW_MS / 1000, opts.subaccountCode ?? null]
   )
   if (open) {
     const settled = await settlePayment(open.reference, 'callback')
@@ -143,28 +158,35 @@ export async function startPayment(opts: {
       `SELECT * FROM payment_attempts
        WHERE kind = $1 AND target_id = $2 AND status = 'pending' AND amount = $3
          AND created_at > NOW() - make_interval(secs => 60) AND authorization_url IS NOT NULL
+         AND subaccount_code IS NOT DISTINCT FROM $4::text
        ORDER BY created_at DESC LIMIT 1`,
-      [opts.kind, opts.targetId, opts.amount]
+      [opts.kind, opts.targetId, opts.amount, opts.subaccountCode ?? null]
     )
     if (raced.rows[0]) {
       return { ok: true as const, authorizationUrl: raced.rows[0].authorization_url!, reference: raced.rows[0].reference, reused: true }
     }
 
     const reference = `${opts.referencePrefix}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`
+    const split = opts.subaccountCode ? splitFor(opts.subaccountCode, koboOf(opts.amount)) : undefined
     const init = await initializeTransaction({
       email: opts.email,
       amount: opts.amount,
       reference,
       callbackUrl: callbackUrlFor(reference),
-      metadata: { ...opts.metadata, kind: opts.kind, target: opts.targetId },
+      metadata: { ...opts.metadata, kind: opts.kind, target: opts.targetId, ...(split ? { duka_pay: true, store_id: opts.storeId } : {}) },
+      split,
+      channels: split ? DUKA_PAY_CHANNELS : undefined,
     })
     if (!init.status || !init.data?.authorization_url) {
       return { ok: false as const, error: init.message || 'Could not start the payment', status: 502 }
     }
     await client.query(
-      `INSERT INTO payment_attempts (reference, kind, store_id, target_id, amount, email, authorization_url)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [reference, opts.kind, opts.storeId, opts.targetId, opts.amount, opts.email, init.data.authorization_url]
+      `INSERT INTO payment_attempts (reference, kind, store_id, target_id, amount, email, authorization_url, subaccount_code, platform_fee)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [
+        reference, opts.kind, opts.storeId, opts.targetId, opts.amount, opts.email, init.data.authorization_url,
+        split?.subaccount ?? null, split ? split.transaction_charge / 100 : null,
+      ]
     )
     if (opts.onCreated) await opts.onCreated(client, reference)
     return { ok: true as const, authorizationUrl: init.data.authorization_url, reference, reused: false }
@@ -207,8 +229,10 @@ export async function settlePayment(
 
   if (!chargeMatches(data, attempt)) {
     if (data?.status === 'success') {
-      // Paid, but not what we asked for (amount/currency/reference) — never apply
-      console.error('[payments] charge mismatch, not applied', { reference, kind: attempt.kind })
+      // Paid, but not what we asked for (amount/currency/reference/store) — never apply
+      console.error('[payments] charge mismatch, not applied', {
+        reference, kind: attempt.kind, expectedSubaccount: attempt.subaccount_code ?? null, paidSubaccount: data.subaccount?.subaccount_code ?? null,
+      })
     }
     return { state: 'not_paid', attempt, paystackStatus: data?.status ?? null }
   }
@@ -220,6 +244,13 @@ export async function settlePayment(
     [attempt.id, via]
   )
   if (!claimed) return { state: 'already_settled', attempt }
+
+  // What Paystack actually split (Duka Pay) — for store payouts and Duka's revenue
+  const fees = feesFromCharge(data!)
+  await query(
+    `UPDATE payment_attempts SET paystack_fee = $2, platform_share = $3, store_share = $4, channel = $5 WHERE id = $1`,
+    [attempt.id, fees.paystackFee, fees.platformShare, fees.storeShare, data!.channel ?? null]
+  ).catch((err) => console.error('[payments] could not record fees', reference, err))
 
   const applied = await applyPayment(attempt)
   if (!applied) {

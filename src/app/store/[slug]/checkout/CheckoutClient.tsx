@@ -827,10 +827,10 @@ export default function CheckoutClient({
                       <CreditCard className="w-5 h-5 text-surface-600 dark:text-surface-300 shrink-0" />
                       <div>
                         <p className="font-semibold text-surface-900 dark:text-white text-sm">
-                          Pay online
+                          Duka Pay
                         </p>
                         <p className="text-xs text-surface-400">
-                          Cards, bank transfer via Paystack
+                          Card, bank transfer or USSD · secured by Paystack
                         </p>
                       </div>
                     </label>

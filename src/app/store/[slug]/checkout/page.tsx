@@ -6,6 +6,7 @@ import CheckoutClient from "./CheckoutClient";
 import { deliverySettingsOf, podSettingsOf } from "@/lib/delivery";
 import { parseHours } from "@/lib/hours";
 import type { Store } from "@/types";
+import { checkoutMethods, dukaPayActive } from "@/lib/duka-pay";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -22,15 +23,13 @@ export default async function CheckoutPage({ params }: Props) {
 
   if (!store) notFound();
 
-  const paymentMethods: string[] = [];
-  if (store.payment_preference === "paystack" || store.payment_preference === "both") {
-    paymentMethods.push("paystack");
-  }
-  if (store.payment_preference === "bank_transfer" || store.payment_preference === "both") {
-    paymentMethods.push("transfer");
-  }
-  const pod = podSettingsOf(store as unknown as Record<string, unknown>);
-  if (pod.enabled) paymentMethods.push("pay_on_delivery");
+  // Duka Pay (card / transfer / USSD) comes first, so it's the default
+  const dukaPayStore = store as unknown as Parameters<typeof checkoutMethods>[0];
+  const online = dukaPayActive(dukaPayStore);
+  const podRaw = podSettingsOf(store as unknown as Record<string, unknown>);
+  // Deposits are paid online, so they need Duka Pay too
+  const pod = online ? podRaw : { ...podRaw, depositPercent: 0 };
+  const paymentMethods: string[] = checkoutMethods(dukaPayStore, pod.enabled);
 
   const features = await getStoreFeatures(store.id);
 

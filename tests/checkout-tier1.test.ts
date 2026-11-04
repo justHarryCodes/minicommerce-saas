@@ -203,6 +203,10 @@ const storeRow = (over: Record<string, unknown> = {}) => ({
   pickup_address: "12 Admiralty Way",
   pod_enabled: true,
   pod_deposit_percent: 20,
+  // Duka Pay connected (online payments + deposits)
+  duka_pay_status: "active",
+  paystack_subaccount_code: "ACCT_bukka",
+  bank_account_number: "0123456789",
   ...over,
 });
 const product = { id: PRODUCT_ID, name: "Burger", price: 5_000, stock_quantity: 10, has_sizes: false, image_url: null, images: [] };
@@ -290,6 +294,21 @@ describe("POST /api/storefront/[slug]/orders — pricing", () => {
     const res = await POST(req({ ...order, paymentMethod: "pay_on_delivery", items: [{ productId: PRODUCT_ID, quantity: 1 }] }), ctx);
     expect(res.status).toBe(400);
     expect(mockedWithTransaction).not.toHaveBeenCalled();
+  });
+
+  it("no Duka Pay payout account: no online payment, and pay-on-delivery takes no deposit", async () => {
+    const { POST } = await import("@/app/api/storefront/[slug]/orders/route");
+    const offline = { duka_pay_status: "not_connected", paystack_subaccount_code: null };
+    mockedQueryOne.mockResolvedValueOnce(storeRow(offline));
+    const online = await POST(req({ ...order, paymentMethod: "paystack", deliveryZoneId: "island", items: [{ productId: PRODUCT_ID, quantity: 1 }] }), ctx);
+    expect(online.status).toBe(400);
+
+    mockedQueryOne.mockResolvedValueOnce(storeRow(offline)).mockResolvedValueOnce(product);
+    const inserted = captureInsert();
+    const pod = await POST(req({ ...order, paymentMethod: "pay_on_delivery", deliveryZoneId: "island", items: [{ productId: PRODUCT_ID, quantity: 1 }] }), ctx);
+    expect(pod.status).toBe(201);
+    expect((await pod.json()).paysOnlineNow).toBe(false);
+    expect(inserted()).toMatchObject({ total: 7_500, deposit: 0, payment: "pay_on_delivery" });
   });
 
   it("rejects delivery without a chosen zone when the store has zones", async () => {

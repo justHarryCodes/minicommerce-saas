@@ -15,6 +15,7 @@ import { alertLowStock, crossedLowStock, effectiveThreshold, recordMovements, ty
 import { checkGiftCard, GiftCardBalanceError, redeemGiftCard } from "@/lib/gift-cards";
 import { loyaltyDiscount, loyaltyFor } from "@/lib/loyalty";
 import { newOrderNumber } from "@/lib/order-number";
+import { checkoutMethods, dukaPayActive } from "@/lib/duka-pay";
 import { z } from "zod";
 
 // Thrown from inside the order transaction when a size's stock was raced
@@ -73,6 +74,9 @@ type StoreRow = {
   minimum_order?: number | null;
   loyalty_every_n?: number | null;
   loyalty_percent?: number | null;
+  duka_pay_status?: string | null;
+  paystack_subaccount_code?: string | null;
+  bank_account_number?: string | null;
   [key: string]: unknown;
 };
 
@@ -90,7 +94,8 @@ export async function POST(
       `SELECT id, is_active, payment_preference, delivery_zones, free_delivery_threshold,
               pickup_enabled, pickup_address, pod_enabled, pod_deposit_percent, low_stock_threshold,
               opening_hours, allow_preorders, minimum_order, booking_slot_minutes, booking_buffer_minutes,
-              booking_window_days, booking_min_notice_minutes, loyalty_every_n, loyalty_percent
+              booking_window_days, booking_min_notice_minutes, loyalty_every_n, loyalty_percent,
+              duka_pay_status, paystack_subaccount_code, bank_account_number
        FROM stores WHERE slug = $1`,
       [slug]
     );
@@ -117,14 +122,12 @@ export async function POST(
     }
 
     // ── Payment method allowed for this store? ─────────────────────────────
-    const pref = store.payment_preference ?? "paystack";
-    const pod = podSettingsOf(store);
-    const allowed =
-      d.paymentMethod === "pay_on_delivery"
-        ? pod.enabled
-        : d.paymentMethod === "paystack"
-          ? pref === "paystack" || pref === "both"
-          : pref === "bank_transfer" || pref === "both";
+    // Same rule as the checkout page. Online payments (and pay-on-delivery
+    // deposits) run on Duka Pay, which needs the store's payout account.
+    const online = dukaPayActive(store);
+    const podRaw = podSettingsOf(store);
+    const pod = online ? podRaw : { ...podRaw, depositPercent: 0 };
+    const allowed = checkoutMethods(store as Parameters<typeof checkoutMethods>[0], pod.enabled).includes(d.paymentMethod);
     if (!allowed) {
       return NextResponse.json({ error: "That payment method isn't available for this store" }, { status: 400 });
     }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { query, queryOne } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { startPayment } from "@/lib/payments";
+import { dukaPayActive } from "@/lib/duka-pay";
 
 export async function POST(req: NextRequest) {
   try {
@@ -40,6 +41,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Nothing to pay online for this order" }, { status: 400 });
     }
 
+    // Duka Pay: the store's share settles to its own bank via its subaccount.
+    // Without a connected payout account there is no online payment at all —
+    // Duka never collects a store's money into its own balance.
+    const store = await queryOne<{ duka_pay_status: string | null; paystack_subaccount_code: string | null }>(
+      "SELECT duka_pay_status, paystack_subaccount_code FROM stores WHERE id = $1",
+      [order.store_id]
+    );
+    if (!dukaPayActive(store)) {
+      return NextResponse.json({ error: "This store can't take online payments yet. Please choose another payment method." }, { status: 409 });
+    }
+
     // One checkout per order: paying again reopens the same Paystack page,
     // and a checkout that was already paid is settled instead of charged twice.
     const started = await startPayment({
@@ -50,6 +62,7 @@ export async function POST(req: NextRequest) {
       email,
       referencePrefix: order.order_number,
       metadata: { orderId: order.id, orderNumber: order.order_number },
+      subaccountCode: store!.paystack_subaccount_code,
     });
 
     if (!started.ok) return NextResponse.json({ error: started.error }, { status: started.status });
