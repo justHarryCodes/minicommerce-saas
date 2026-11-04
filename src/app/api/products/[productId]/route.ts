@@ -126,8 +126,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if (key in body) body[key] = typeof body[key] === 'string' && body[key].trim() ? String(body[key]).trim().slice(0, max) : null
   }
   if ('gtin' in body) {
-    const g = typeof body.gtin === 'string' ? body.gtin.replace(/D/g, '') : ''
-    body.gtin = /^d{8,14}$/.test(g) ? g : null
+    const g = typeof body.gtin === 'string' ? body.gtin.replace(/\D/g, '') : ''
+    body.gtin = /^\d{8,14}$/.test(g) ? g : null
   }
 
   // Stock before the edit, to log what changed in the inventory history

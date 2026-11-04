@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { Loader2, Package } from "lucide-react";
@@ -10,10 +11,12 @@ import { BookableFields, ListingFields, SizeGuideEditor, type ListingInfo } from
 import DetailsEditor from "@/components/dashboard/DetailsEditor";
 import { parseProductDetails, type ProductDetails } from "@/lib/product-details";
 import { parseSizeGuide, type SizeGuide } from "@/lib/size-guide";
-import type { Product } from "@/types";
+import type { Category, Product } from "@/types";
 
 interface Props {
   product: Product;
+  /** This store's categories (top level and subcategories) */
+  categories?: Pick<Category, "id" | "name" | "parent_id">[];
   bookingsEnabled?: boolean;
 }
 
@@ -23,9 +26,19 @@ const inputClass =
 const labelClass =
   "block text-sm font-semibold text-surface-700 dark:text-surface-300 mb-1.5";
 
-export default function EditProductForm({ product, bookingsEnabled = true }: Props) {
+export default function EditProductForm({ product, categories = [], bookingsEnabled = true }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const topCategories = categories.filter((c) => !c.parent_id);
+  const [categoryId, setCategoryId] = useState<string>(() => {
+    // A deleted category reads as "No category" rather than failing on save
+    const id = String(product.category_id ?? product.categoryId ?? "");
+    return topCategories.some((c) => c.id === id) ? id : "";
+  });
+  const [subcategoryId, setSubcategoryId] = useState<string>(
+    String((product as { subcategory_id?: string | null }).subcategory_id ?? product.subcategoryId ?? "")
+  );
+  const subcategories = categories.filter((c) => c.parent_id && c.parent_id === categoryId);
   const [form, setForm] = useState({
     name: product.name ?? "",
     description: product.description ?? "",
@@ -91,6 +104,9 @@ export default function EditProductForm({ product, bookingsEnabled = true }: Pro
         price,
         stockQuantity: stock,
         isActive: form.isActive,
+        categoryId: categoryId || null,
+        // A subcategory only counts if it belongs to the chosen category
+        subcategoryId: subcategoryId && subcategories.some((s) => s.id === subcategoryId) ? subcategoryId : null,
         ...variantPayload(variants),
         lowStockThreshold: lowStockThreshold.trim() === "" ? null : Math.max(0, parseInt(lowStockThreshold, 10) || 0),
         isBookable: service.isBookable,
@@ -98,7 +114,7 @@ export default function EditProductForm({ product, bookingsEnabled = true }: Pro
         sizeGuide,
         details,
         brand: listing.brand.trim() || null,
-        gtin: listing.gtin.replace(/D/g, "") || null,
+        gtin: listing.gtin.replace(/\D/g, "") || null,
         googleCategory: listing.googleCategory.trim() || null,
       };
       const cp = parseFloat(form.comparePrice);
@@ -175,6 +191,43 @@ export default function EditProductForm({ product, bookingsEnabled = true }: Pro
             placeholder="Short product description (optional)"
           />
         </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className={labelClass} htmlFor="edit-category">Category</label>
+            <select
+              id="edit-category"
+              className={inputClass}
+              value={categoryId}
+              onChange={(e) => {
+                setCategoryId(e.target.value);
+                setSubcategoryId("");
+              }}
+            >
+              <option value="">No category</option>
+              {topCategories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="edit-subcategory">Subcategory</label>
+            <select
+              id="edit-subcategory"
+              className={inputClass + (subcategories.length === 0 ? " opacity-60" : "")}
+              value={subcategoryId}
+              onChange={(e) => setSubcategoryId(e.target.value)}
+              disabled={subcategories.length === 0}
+            >
+              <option value="">{!categoryId ? "Pick a category first" : subcategories.length ? "None" : "No subcategories"}</option>
+              {subcategories.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <p className="text-xs text-surface-400 -mt-2">
+          Need a new one? <Link href="/dashboard/categories" className="font-semibold underline underline-offset-2">Manage categories</Link>
+        </p>
       </div>
 
       {/* Pricing */}

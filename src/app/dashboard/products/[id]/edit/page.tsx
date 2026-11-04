@@ -5,7 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { verifySession } from "@/lib/auth";
 import { getPageStore } from "@/lib/access";
 import { queryOne, queryMany } from "@/lib/db";
-import type { Product, ProductSize } from "@/types";
+import type { Category, Product, ProductSize } from "@/types";
 import EditProductForm from "./EditProductForm";
 
 interface Props {
@@ -32,10 +32,17 @@ export default async function EditProductPage({ params }: Props) {
   );
   if (!product) notFound();
 
-  const sizes = await queryMany<ProductSize>(
-    "SELECT * FROM product_sizes WHERE product_id = $1 ORDER BY sort_order, created_at",
-    [id]
-  );
+  const [sizes, categories] = await Promise.all([
+    queryMany<ProductSize>(
+      "SELECT * FROM product_sizes WHERE product_id = $1 ORDER BY sort_order, created_at",
+      [id]
+    ),
+    // Only this store's own categories can be offered
+    queryMany<Category>(
+      "SELECT id, name, parent_id FROM categories WHERE store_id = $1 ORDER BY sort_order, name",
+      [store.id]
+    ),
+  ]);
   product.sizes = sizes;
 
   return (
@@ -55,7 +62,7 @@ export default async function EditProductPage({ params }: Props) {
         </div>
       </div>
 
-      <EditProductForm product={product} bookingsEnabled={await hasFeature(store.id, "bookings")} />
+      <EditProductForm product={product} categories={categories} bookingsEnabled={await hasFeature(store.id, "bookings")} />
     </div>
   );
 }
