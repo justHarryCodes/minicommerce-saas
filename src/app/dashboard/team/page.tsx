@@ -18,10 +18,9 @@ export default async function TeamPage() {
   const members = await listTeam(store.id);
 
   return (
-    <div className="max-w-3xl mx-auto space-y-5 pt-4 lg:pt-0">
+    <div className="space-y-3 pt-1 lg:pt-0">
       <div>
-        <h1 className="text-xl font-bold text-surface-900 dark:text-white">Team</h1>
-        <p className="text-sm text-surface-500 dark:text-surface-400">
+        <p className="text-[13px] text-surface-500 dark:text-surface-400">
           Give your staff their own login. They only see what their role allows — never your settings, payouts or billing.
         </p>
       </div>

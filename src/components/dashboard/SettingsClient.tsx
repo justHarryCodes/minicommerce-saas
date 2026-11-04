@@ -246,34 +246,23 @@ export default function SettingsClient({ store: initial, messaging = { sms: fals
   }
 
   return (
-    <div className="max-w-2xl space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-black text-surface-900 dark:text-white">
-            Settings
-          </h1>
-          <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
-            Manage your store details and storefront appearance
-          </p>
-        </div>
+    <div className="pt-1 lg:pt-0 xl:grid xl:grid-cols-[180px_minmax(0,1fr)] xl:items-start xl:gap-5">
+      <SettingsNav />
+      <div className="min-w-0">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[13px] text-surface-500 dark:text-surface-400">Store details, payments, delivery and your account.</p>
         <a
           href={`/store/${store.slug}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1.5 text-sm text-surface-500 hover:text-surface-900 dark:hover:text-white transition-colors"
+          className="flex items-center gap-1.5 text-[13px] font-semibold text-surface-500 hover:text-surface-900 dark:hover:text-white"
         >
-          <ExternalLink className="w-4 h-4" />
-          View storefront
+          <ExternalLink className="w-3.5 h-3.5" /> View storefront
         </a>
       </div>
-
-      <Tip id="settings-guide" variant="tip">
-        <strong>Tips:</strong> Add a WhatsApp number to get an order button in your cart. Set your bank details so customers know how to pay. Use the Themes page to choose your storefront design and brand colours.
-      </Tip>
-
+      <div className="grid grid-cols-1 items-start gap-3 2xl:grid-cols-2">
       {/* Store Info */}
-      <section className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-6 space-y-5">
+      <section id="store" className="scroll-mt-28 xl:scroll-mt-16 bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-6 space-y-5 2xl:col-span-2">
         <h2 className="font-bold text-surface-900 dark:text-white flex items-center gap-2">
           <Store className="w-4 h-4" />
           Store information
@@ -391,10 +380,10 @@ export default function SettingsClient({ store: initial, messaging = { sms: fals
         </div>
       </section>
 
-      <CustomDomainSettings freeAddress={`${store.slug}.${(process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "dukanigeria.com").replace(/^www\./, "")}`} />
+      <div id="domain" className="scroll-mt-28 xl:scroll-mt-16 min-w-0"><CustomDomainSettings freeAddress={`${store.slug}.${(process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "dukanigeria.com").replace(/^www\./, "")}`} /></div>
 
       {/* Storefront Theme */}
-      <section className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-6 space-y-5">
+      <section id="appearance" className="scroll-mt-28 xl:scroll-mt-16 bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-6 space-y-5 ">
         <h2 className="font-bold text-surface-900 dark:text-white flex items-center gap-2">
           <Palette className="w-4 h-4" />
           Storefront theme
@@ -439,7 +428,7 @@ export default function SettingsClient({ store: initial, messaging = { sms: fals
       </section>
 
       {/* Payment settings */}
-      <section className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-6 space-y-5">
+      <section id="payments" className="scroll-mt-28 xl:scroll-mt-16 bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-6 space-y-5 2xl:col-span-2">
         <h2 className="font-bold text-surface-900 dark:text-white flex items-center gap-2">
           <CreditCard className="w-4 h-4" />
           Payment settings
@@ -526,7 +515,7 @@ export default function SettingsClient({ store: initial, messaging = { sms: fals
       </section>
 
       {/* Delivery */}
-      <section className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-6 space-y-5">
+      <section id="delivery" className="scroll-mt-28 xl:scroll-mt-16 bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-6 space-y-5 ">
         <h2 className="font-bold text-surface-900 dark:text-white flex items-center gap-2">
           <Truck className="w-4 h-4" />
           Delivery
@@ -577,6 +566,7 @@ export default function SettingsClient({ store: initial, messaging = { sms: fals
         </div>
       </section>
 
+      <div id="hours" className="scroll-mt-28 xl:scroll-mt-16 min-w-0">
       <StoreHoursSettings
         hours={store.openingHours}
         allowPreorders={store.allowPreorders}
@@ -584,21 +574,26 @@ export default function SettingsClient({ store: initial, messaging = { sms: fals
         prepTimeMinutes={store.prepTimeMinutes}
         onChange={(key, value) => setStore((s) => ({ ...s, [key]: value }) as typeof s)}
       />
+      </div>
 
+      <div id="pod" className="scroll-mt-28 xl:scroll-mt-16 min-w-0">
       <PayOnDeliveryEditor
         enabled={store.podEnabled}
         depositPercent={store.podDepositPercent}
         onChange={(key, value) => setStore((s) => ({ ...s, [key]: value }) as typeof s)}
       />
+      </div>
 
+      <div id="messages" className="scroll-mt-28 xl:scroll-mt-16 min-w-0">
       <CustomerMessagesEditor
         enabled={store.customerNotificationsEnabled}
         messaging={messaging}
         onChange={(key, value) => setStore((s) => ({ ...s, [key]: value }) as typeof s)}
       />
+      </div>
 
       {/* Return & Refund Policy */}
-      <section className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-6 space-y-5">
+      <section id="policies" className="scroll-mt-28 xl:scroll-mt-16 bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-6 space-y-5 ">
         <h2 className="font-bold text-surface-900 dark:text-white flex items-center gap-2">
           Return &amp; Refund Policy
         </h2>
@@ -618,7 +613,7 @@ export default function SettingsClient({ store: initial, messaging = { sms: fals
       </section>
 
       {/* Account security — email change */}
-      <section className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-6 space-y-5">
+      <section id="account" className="scroll-mt-28 xl:scroll-mt-16 bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-6 space-y-5 ">
         <h2 className="font-bold text-surface-900 dark:text-white flex items-center gap-2">
           <Mail className="w-4 h-4" />
           Account email
@@ -707,12 +702,14 @@ export default function SettingsClient({ store: initial, messaging = { sms: fals
         )}
       </section>
 
-      {/* Save button */}
-      <div className="flex justify-end">
+      {/* Save bar — stays in reach while scrolling */}
+      <div className="sticky bottom-[4.5rem] z-10 lg:bottom-3 2xl:col-span-2">
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-surface-200 bg-white/95 px-3 py-2 shadow-lg backdrop-blur dark:border-surface-700 dark:bg-surface-900/95">
+        <p className="text-[12px] text-surface-500 dark:text-surface-400">Store info, payments, delivery and policy changes go live when you save.</p>
         <button
           onClick={handleSave}
           disabled={saving}
-          className="flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-sm bg-accent-400 hover:bg-accent-500 text-black transition-all disabled:opacity-60"
+          className="flex shrink-0 items-center gap-2 px-5 py-2 rounded-lg font-bold text-sm bg-accent-400 hover:bg-accent-500 text-black transition-all disabled:opacity-60"
         >
           {saving ? (
             <Loader2 className="w-4 h-4 animate-spin" />
@@ -721,10 +718,11 @@ export default function SettingsClient({ store: initial, messaging = { sms: fals
           )}
           Save settings
         </button>
+        </div>
       </div>
 
       {/* Danger zone */}
-      <section className="bg-white dark:bg-surface-900 rounded-2xl border border-red-200 dark:border-red-900/50 p-6 space-y-5 mb-8">
+      <section id="danger" className="scroll-mt-28 xl:scroll-mt-16 bg-white dark:bg-surface-900 rounded-2xl border border-red-200 dark:border-red-900/50 p-6 space-y-5 2xl:col-span-2">
         <h2 className="font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
           <AlertTriangle className="w-4 h-4" />
           Danger zone
@@ -763,6 +761,8 @@ export default function SettingsClient({ store: initial, messaging = { sms: fals
           </button>
         </div>
       </section>
+      </div>
+      </div>
 
       <Modal
         isOpen={showDeleteModal}
@@ -804,5 +804,64 @@ export default function SettingsClient({ store: initial, messaging = { sms: fals
         </div>
       </Modal>
     </div>
+  );
+}
+
+const SETTINGS_SECTIONS: { id: string; label: string }[] = [
+  { id: "store", label: "Store info" },
+  { id: "domain", label: "Domain" },
+  { id: "appearance", label: "Appearance" },
+  { id: "payments", label: "Payments" },
+  { id: "delivery", label: "Delivery" },
+  { id: "hours", label: "Opening hours" },
+  { id: "pod", label: "Pay on delivery" },
+  { id: "messages", label: "Customer messages" },
+  { id: "policies", label: "Returns policy" },
+  { id: "account", label: "Account" },
+  { id: "danger", label: "Danger zone" },
+];
+
+/** Jump list: a sticky column on desktop, a scrolling chip row on smaller screens. */
+function SettingsNav() {
+  const [active, setActive] = useState("store");
+  useEffect(() => {
+    const els = SETTINGS_SECTIONS.map((x) => document.getElementById(x.id)).filter(Boolean) as HTMLElement[];
+    const io = new IntersectionObserver(
+      (entries) => {
+        const top = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        if (top) setActive(top.target.id);
+      },
+      { rootMargin: "-80px 0px -60% 0px" }
+    );
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
+  const go = (id: string) => {
+    setActive(id);
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  return (
+    <nav aria-label="Settings sections" className="sticky top-12 z-20 -mx-3 mb-3 border-b border-surface-100 bg-zinc-50/95 px-3 py-2 backdrop-blur dark:border-surface-800 dark:bg-zinc-950/95 sm:-mx-4 sm:px-4 lg:top-12 xl:top-16 xl:mx-0 xl:mb-0 xl:border-0 xl:bg-transparent xl:p-0 xl:backdrop-blur-none">
+      <ul className="no-scrollbar flex gap-1 overflow-x-auto xl:flex-col xl:overflow-visible">
+        {SETTINGS_SECTIONS.map((x) => (
+          <li key={x.id} className="shrink-0">
+            <button
+              type="button"
+              onClick={() => go(x.id)}
+              aria-current={active === x.id ? "true" : undefined}
+              className={`w-full rounded-md px-2.5 py-1.5 text-left text-[13px] font-medium transition-colors ${
+                active === x.id
+                  ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                  : x.id === "danger"
+                    ? "text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                    : "text-surface-600 hover:bg-zinc-100 dark:text-surface-300 dark:hover:bg-zinc-800"
+              }`}
+            >
+              {x.label}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </nav>
   );
 }

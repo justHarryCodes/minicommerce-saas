@@ -1,4 +1,5 @@
 "use client";
+import { Select } from "@/components/ui/Select";
 
 // Category / search-result pages. One toolbar (sort + filters, kept in the
 // URL so links and the back button work) and five looks a theme picks from.
@@ -309,21 +310,16 @@ export default function CollectionView({
               </button>
             )}
           </div>
-          <label className="relative shrink-0">
-            <span className="sr-only">Sort by</span>
-            <select
+          <div className="shrink-0">
+            <Select
+              size="sm"
+              className="!w-auto min-w-[170px] !rounded-full"
+              aria-label="Sort by"
               value={f.sort}
-              onChange={(e) => update({ sort: e.target.value as SortKey })}
-              className="appearance-none rounded-full border border-surface-200 bg-transparent py-1.5 pl-3.5 pr-8 text-xs font-semibold text-surface-700 focus:outline-none focus:ring-2 focus:ring-[color:var(--sf-accent)] dark:border-surface-700 dark:text-surface-200 [&>option]:text-black"
-            >
-              {SORTS.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-surface-400">▼</span>
-          </label>
+              onChange={(v) => update({ sort: v })}
+              options={SORTS.map((s) => ({ value: s.id, label: s.label }))}
+            />
+          </div>
         </div>
       )}
       {list.length === 0 ? (

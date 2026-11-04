@@ -1,4 +1,5 @@
 "use client";
+import { Select } from "@/components/ui/Select";
 
 // Products: search, quick filters, category and sort over a dense table.
 import { useMemo, useState } from "react";
@@ -82,7 +83,6 @@ export default function ProductsTable({ products, categories, atLimit }: { produ
     );
   }
 
-  const select = "h-8 rounded-md border border-zinc-200 bg-white py-0 pl-2 pr-7 text-[12px] leading-8 text-zinc-700 focus:ring-accent-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200";
   return (
     <section className="overflow-hidden rounded-lg border border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-900">
       {/* Toolbar */}
@@ -117,21 +117,26 @@ export default function ProductsTable({ products, categories, atLimit }: { produ
           )}
         </label>
         {categories.length > 0 && (
-          <select value={cat} onChange={(e) => setCat(e.target.value)} aria-label="Category" className={select}>
-            <option value="">All categories</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
+          <Select
+            size="sm"
+            className="!w-auto min-w-[150px]"
+            aria-label="Category"
+            value={cat}
+            onChange={setCat}
+            options={[{ value: "", label: "All categories" }, ...categories.map((c) => ({ value: c.id, label: c.name }))]}
+          />
         )}
-        <label className="relative flex items-center">
-          <ArrowUpDown className="pointer-events-none absolute left-2 h-3 w-3 text-zinc-400" />
-          <select value={sort} onChange={(e) => setSort(e.target.value as SortId)} aria-label="Sort" className={select + " !pl-6"}>
-            {Object.entries(SORTS).map(([id, s]) => (
-              <option key={id} value={id}>{s.label}</option>
-            ))}
-          </select>
-        </label>
+        <div className="flex items-center">
+          <Select
+            size="sm"
+            className="!w-auto min-w-[170px]"
+            aria-label="Sort"
+            icon={<ArrowUpDown className="h-3 w-3" />}
+            value={sort}
+            onChange={setSort}
+            options={(Object.keys(SORTS) as SortId[]).map((id) => ({ value: id, label: SORTS[id].label }))}
+          />
+        </div>
       </div>
 
       {rows.length === 0 ? (

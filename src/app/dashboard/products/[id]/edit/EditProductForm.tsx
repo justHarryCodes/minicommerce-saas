@@ -1,4 +1,5 @@
 "use client";
+import { Select } from "@/components/ui/Select";
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
@@ -143,31 +144,8 @@ export default function EditProductForm({ product, categories = [], bookingsEnab
     : (parseInt(form.stockQuantity, 10) || 0);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-
-      {/* Image — read-only */}
-      <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-4 flex items-center gap-4">
-        {product.image_url ?? product.imageUrl ? (
-          <Image
-            src={(product.image_url ?? product.imageUrl)!}
-            alt={product.name}
-            width={64}
-            height={64}
-            className="w-16 h-16 rounded-xl object-cover border border-surface-100 dark:border-surface-700 shrink-0"
-          />
-        ) : (
-          <div className="w-16 h-16 rounded-xl bg-surface-100 dark:bg-surface-700 flex items-center justify-center shrink-0">
-            <Package className="w-7 h-7 text-surface-400" />
-          </div>
-        )}
-        <div>
-          <p className="text-sm font-semibold text-surface-900 dark:text-white leading-tight">
-            {product.name}
-          </p>
-          <p className="text-xs text-surface-400 mt-1">Product image cannot be changed here</p>
-        </div>
-      </div>
-
+    <form onSubmit={handleSubmit} className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="min-w-0 space-y-3">
       {/* Details */}
       <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-5 space-y-4">
         <h2 className="text-sm font-bold text-surface-900 dark:text-white">Details</h2>
@@ -194,35 +172,26 @@ export default function EditProductForm({ product, categories = [], bookingsEnab
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className={labelClass} htmlFor="edit-category">Category</label>
-            <select
+            <Select
               id="edit-category"
-              className={inputClass}
               value={categoryId}
-              onChange={(e) => {
-                setCategoryId(e.target.value);
+              onChange={(v) => {
+                setCategoryId(v);
                 setSubcategoryId("");
               }}
-            >
-              <option value="">No category</option>
-              {topCategories.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+              options={[{ value: "", label: "No category" }, ...topCategories.map((c) => ({ value: c.id, label: c.name }))]}
+            />
           </div>
           <div>
             <label className={labelClass} htmlFor="edit-subcategory">Subcategory</label>
-            <select
+            <Select
               id="edit-subcategory"
-              className={inputClass + (subcategories.length === 0 ? " opacity-60" : "")}
               value={subcategoryId}
-              onChange={(e) => setSubcategoryId(e.target.value)}
+              onChange={setSubcategoryId}
               disabled={subcategories.length === 0}
-            >
-              <option value="">{!categoryId ? "Pick a category first" : subcategories.length ? "None" : "No subcategories"}</option>
-              {subcategories.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
+              placeholder={!categoryId ? "Pick a category first" : "No subcategories"}
+              options={subcategories.length ? [{ value: "", label: "None" }, ...subcategories.map((s) => ({ value: s.id, label: s.name }))] : []}
+            />
           </div>
         </div>
         <p className="text-xs text-surface-400 -mt-2">
@@ -263,11 +232,6 @@ export default function EditProductForm({ product, categories = [], bookingsEnab
         <p className="text-xs text-surface-400">
           Set a compare price to show a crossed-out &ldquo;was ₦X&rdquo; on your storefront.
         </p>
-      </div>
-
-      {/* Service (bookable) */}
-      <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-5">
-        <BookableFields isBookable={service.isBookable} durationMinutes={service.durationMinutes} onChange={setService} locked={!bookingsEnabled} />
       </div>
 
       {/* Stock */}
@@ -340,6 +304,33 @@ export default function EditProductForm({ product, categories = [], bookingsEnab
       </div>
       </>)}
 
+      </div>
+
+      {/* Side column: photo, visibility, service, save — stays in view */}
+      <aside className="space-y-3 xl:sticky xl:top-16">
+      {/* Image — read-only */}
+      <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-4 flex items-center gap-4">
+        {product.image_url ?? product.imageUrl ? (
+          <Image
+            src={(product.image_url ?? product.imageUrl)!}
+            alt={product.name}
+            width={64}
+            height={64}
+            className="w-16 h-16 rounded-xl object-cover border border-surface-100 dark:border-surface-700 shrink-0"
+          />
+        ) : (
+          <div className="w-16 h-16 rounded-xl bg-surface-100 dark:bg-surface-700 flex items-center justify-center shrink-0">
+            <Package className="w-7 h-7 text-surface-400" />
+          </div>
+        )}
+        <div>
+          <p className="text-sm font-semibold text-surface-900 dark:text-white leading-tight">
+            {product.name}
+          </p>
+          <p className="text-xs text-surface-400 mt-1">Product image cannot be changed here</p>
+        </div>
+      </div>
+
       {/* Visibility */}
       <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-5">
         <div className="flex items-center justify-between">
@@ -367,8 +358,13 @@ export default function EditProductForm({ product, categories = [], bookingsEnab
         </div>
       </div>
 
+      {/* Service (bookable) */}
+      <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-5">
+        <BookableFields isBookable={service.isBookable} durationMinutes={service.durationMinutes} onChange={setService} locked={!bookingsEnabled} />
+      </div>
+
       {/* Actions */}
-      <div className="flex items-center gap-3 pt-1 pb-6">
+      <div className="flex items-center gap-3 pb-6 xl:pb-0">
         <button
           type="submit"
           disabled={loading}
@@ -384,6 +380,7 @@ export default function EditProductForm({ product, categories = [], bookingsEnab
           Cancel
         </button>
       </div>
+      </aside>
     </form>
   );
 }

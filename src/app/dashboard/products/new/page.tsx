@@ -17,7 +17,7 @@ export default async function NewProductPage() {
   );
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 pt-4 lg:pt-0">
+    <div className="mx-auto max-w-[1280px] space-y-4 pt-1 lg:pt-0">
       <div className="flex items-center gap-3">
         <Link
           href="/dashboard/products"

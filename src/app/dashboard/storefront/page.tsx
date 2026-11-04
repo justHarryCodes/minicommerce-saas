@@ -26,14 +26,8 @@ export default async function StorefrontPage() {
   );
 
   return (
-    <div className="max-w-3xl mx-auto space-y-4 pt-4 lg:pt-0">
-      <div>
-        <h1 className="text-xl font-bold text-surface-900 dark:text-white">Store Page</h1>
-        <p className="text-sm text-surface-500 dark:text-surface-400">
-          Customise your store homepage — hero banner and featured products.
-        </p>
-      </div>
-
+    <div className="pt-1 lg:pt-0">
+      <p className="mb-3 text-[13px] text-zinc-500 dark:text-zinc-400">Your homepage banner and the products featured right under it. Changes go live when you save.</p>
       <StorefrontPageClient
         initialBanners={storeRow.banner_images ?? []}
         initialFeatured={storeRow.featured_product_ids ?? []}

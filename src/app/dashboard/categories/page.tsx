@@ -20,7 +20,7 @@ export default async function CategoriesPage() {
   }));
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 pt-4 lg:pt-0">
+    <div className="mx-auto max-w-5xl space-y-4 pt-1 lg:pt-0">
       <div>
         <h1 className="text-xl font-bold text-surface-900 dark:text-white">Categories</h1>
         <p className="text-sm text-surface-500 dark:text-surface-400">

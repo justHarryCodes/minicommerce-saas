@@ -1,8 +1,9 @@
 "use client";
+import { Select } from "@/components/ui/Select";
 
 // Duka Pay payout account: shoppers pay by card, transfer or USSD and
 // Paystack settles the store's share straight to this bank account.
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { BadgeCheck, Loader2, Pause, ShieldCheck, Zap } from "lucide-react";
 
@@ -35,7 +36,6 @@ export default function DukaPaySettings({
   const [loadError, setLoadError] = useState("");
   const [editing, setEditing] = useState(false);
   const [bankCode, setBankCode] = useState("");
-  const [bankFilter, setBankFilter] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [lookup, setLookup] = useState<{ accountName: string; bankName: string } | null>(null);
   const [busy, setBusy] = useState<"lookup" | "connect" | "pause" | null>(null);
@@ -52,13 +52,6 @@ export default function DukaPaySettings({
       .catch((e) => setLoadError(e.message));
   }, []);
 
-  const shownBanks = useMemo(() => {
-    const q = bankFilter.trim().toLowerCase();
-    const list = q ? banks.filter((b) => b.name.toLowerCase().includes(q)) : banks;
-    // Keep the chosen bank selectable while filtering
-    const chosen = banks.find((b) => b.code === bankCode);
-    return chosen && !list.includes(chosen) ? [chosen, ...list] : list;
-  }, [banks, bankFilter, bankCode]);
 
   // Any edit invalidates a previous lookup
   useEffect(() => setLookup(null), [bankCode, accountNumber]);
@@ -160,19 +153,15 @@ export default function DukaPaySettings({
         <div className="mt-5 space-y-3">
           <div>
             <label className="mb-1.5 block text-sm font-medium text-surface-700 dark:text-surface-300" htmlFor="dp-bank">Bank</label>
-            <input
-              value={bankFilter}
-              onChange={(e) => setBankFilter(e.target.value)}
-              placeholder="Search banks (e.g. GTBank, OPay, Moniepoint)"
-              aria-label="Search banks"
-              className={input + " mb-2"}
+            <Select
+              id="dp-bank"
+              value={bankCode}
+              onChange={setBankCode}
+              placeholder="Choose your bank…"
+              searchable
+              searchPlaceholder="Search banks (GTBank, OPay, Moniepoint…)"
+              options={banks.map((b) => ({ value: b.code, label: b.name }))}
             />
-            <select id="dp-bank" value={bankCode} onChange={(e) => setBankCode(e.target.value)} className={input}>
-              <option value="">Choose your bank…</option>
-              {shownBanks.map((b) => (
-                <option key={b.code} value={b.code}>{b.name}</option>
-              ))}
-            </select>
           </div>
           <div>
             <label className="mb-1.5 block text-sm font-medium text-surface-700 dark:text-surface-300" htmlFor="dp-acct">Account number</label>

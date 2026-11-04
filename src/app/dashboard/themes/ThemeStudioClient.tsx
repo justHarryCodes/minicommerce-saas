@@ -1,4 +1,5 @@
 "use client";
+import { Select } from "@/components/ui/Select";
 
 import { useEffect, useMemo, useState } from "react";
 import { FREE_THEME_IDS } from "@/lib/features-shared";
@@ -175,6 +176,13 @@ const COPY_FIELDS: { key: Exclude<keyof ThemeCopy, "highlights">; label: string;
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
+/** Rough CSS families so the font pickers preview each font (when loaded) */
+const FONT_STACK_HINT: Record<string, string> = {
+  inter: "Inter, sans-serif", poppins: "Poppins, sans-serif", playfair: "'Playfair Display', serif", spacegrotesk: "'Space Grotesk', sans-serif",
+  dmsans: "'DM Sans', sans-serif", manrope: "Manrope, sans-serif", outfit: "Outfit, sans-serif", cormorant: "'Cormorant Garamond', serif",
+  bebas: "'Bebas Neue', sans-serif", fraunces: "Fraunces, serif", lora: "Lora, serif", syne: "Syne, sans-serif",
+};
+
 /* ───────────────────────────── Small controls ───────────────────────────── */
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
@@ -328,11 +336,14 @@ function HighlightsEditor({ value, onChange }: { value: Highlight[]; onChange: (
       {value.map((h, i) => (
         <div key={i} className="space-y-1.5 rounded-lg border border-surface-200 p-2.5 dark:border-surface-700">
           <div className="flex gap-1.5">
-            <select value={h.icon} onChange={(e) => update(i, { icon: e.target.value as Highlight["icon"] })} className={`${selectCls} !w-28 !py-1.5`}>
-              {HIGHLIGHT_ICONS.map((ic) => (
-                <option key={ic} value={ic}>{ICON_LABELS[ic]}</option>
-              ))}
-            </select>
+            <Select
+              size="sm"
+              className="!w-28 shrink-0"
+              aria-label="Icon"
+              value={h.icon}
+              onChange={(v) => update(i, { icon: v })}
+              options={HIGHLIGHT_ICONS.map((ic) => ({ value: ic, label: ICON_LABELS[ic] }))}
+            />
             <input value={h.title} maxLength={40} placeholder="Title" onChange={(e) => update(i, { title: e.target.value })} className={inputCls} />
             <button type="button" onClick={() => onChange(value.filter((_, j) => j !== i))} aria-label="Remove highlight" className="shrink-0 rounded p-1.5 text-surface-400 hover:text-red-500">
               <Trash2 className="h-4 w-4" />
@@ -758,18 +769,20 @@ export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, save
               {!caps.style ? <TierNote tier="starter" what="Fonts and corner styles" /> : <>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Headings">
-                  <select value={resolved.tokens.headingFont} onChange={(e) => setToken("headingFont", e.target.value as ThemeTokens["headingFont"])} className={selectCls}>
-                    {FONT_KEYS.map((f) => (
-                      <option key={f} value={f}>{FONT_LABELS[f]}</option>
-                    ))}
-                  </select>
+                  <Select
+                    aria-label="Heading font"
+                    value={resolved.tokens.headingFont}
+                    onChange={(v) => setToken("headingFont", v)}
+                    options={FONT_KEYS.map((k) => ({ value: k, label: <span style={{ fontFamily: FONT_STACK_HINT[k] }}>{FONT_LABELS[k]}</span>, text: FONT_LABELS[k] }))}
+                  />
                 </Field>
                 <Field label="Body text">
-                  <select value={resolved.tokens.bodyFont} onChange={(e) => setToken("bodyFont", e.target.value as ThemeTokens["bodyFont"])} className={selectCls}>
-                    {FONT_KEYS.map((f) => (
-                      <option key={f} value={f}>{FONT_LABELS[f]}</option>
-                    ))}
-                  </select>
+                  <Select
+                    aria-label="Body font"
+                    value={resolved.tokens.bodyFont}
+                    onChange={(v) => setToken("bodyFont", v)}
+                    options={FONT_KEYS.map((k) => ({ value: k, label: <span style={{ fontFamily: FONT_STACK_HINT[k] }}>{FONT_LABELS[k]}</span>, text: FONT_LABELS[k] }))}
+                  />
                 </Field>
               </div>
               <Field label="Heading style">
@@ -950,12 +963,19 @@ export default function ThemeStudioClient({ storeSlug, storeName, storeUrl, save
                 ))}
               </div>
               {content === "store" && (
-                <select value={previewPage} onChange={(e) => setPreviewPage(e.target.value as PreviewPage)} aria-label="Page to preview" className="rounded-xl border border-surface-200 bg-transparent px-2.5 py-1.5 text-xs font-semibold text-surface-600 dark:border-surface-700 dark:text-surface-300">
-                  <option value="home">Home</option>
-                  <option value="category" disabled={!previewTargets.category}>Category page</option>
-                  <option value="product" disabled={!previewTargets.product}>Product page</option>
-                  <option value="search">Search results</option>
-                </select>
+                <Select
+                  size="sm"
+                  className="!w-auto min-w-[150px]"
+                  aria-label="Page to preview"
+                  value={previewPage}
+                  onChange={setPreviewPage}
+                  options={[
+                    { value: "home" as PreviewPage, label: "Home" },
+                    { value: "category" as PreviewPage, label: "Category page", disabled: !previewTargets.category },
+                    { value: "product" as PreviewPage, label: "Product page", disabled: !previewTargets.product },
+                    { value: "search" as PreviewPage, label: "Search results" },
+                  ]}
+                />
               )}
               <span className="hidden text-xs text-surface-400 xl:inline">{dirty ? "Unsaved — only you can see this" : "Matches your live store"}</span>
               {previewSrc && (

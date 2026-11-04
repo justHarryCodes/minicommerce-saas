@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import toast from "react-hot-toast";
-import { Upload, X, GripVertical, Star, Loader2, ImagePlus } from "lucide-react";
-import { Tip } from "@/components/dashboard/Tip";
+import { ArrowDown, ArrowUp, Check, ImagePlus, Loader2, Search, Star, Upload, X } from "lucide-react";
 import { clBanner, clThumb } from "@/lib/cloudinary";
 import type { Product } from "@/types";
 
@@ -21,6 +20,20 @@ export default function StorefrontPageClient({ initialBanners, initialFeatured, 
   const [savingBanners, setSavingBanners] = useState(false);
   const [savingFeatured, setSavingFeatured] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [query, setQuery] = useState("");
+  const byId = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
+  const found = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return q ? products.filter((p) => p.name.toLowerCase().includes(q)) : products;
+  }, [products, query]);
+  const moveFeatured = (i: number, dir: -1 | 1) =>
+    setFeatured((prev) => {
+      const j = i + dir;
+      if (j < 0 || j >= prev.length) return prev;
+      const next = [...prev];
+      [next[i], next[j]] = [next[j], next[i]];
+      return next;
+    });
 
   // ── Banner upload ──────────────────────────────────────
   async function uploadBanner(file: File) {
@@ -89,154 +102,150 @@ export default function StorefrontPageClient({ initialBanners, initialFeatured, 
     }
   }
 
+  const panel = "overflow-hidden rounded-lg border border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-900";
+  const head = "flex h-11 items-center justify-between gap-2 border-b border-zinc-100 px-3 dark:border-zinc-800";
+  const saveBtn =
+    "flex h-8 items-center gap-1.5 rounded-md bg-accent-400 px-3 text-[13px] font-bold text-black hover:bg-accent-500 disabled:opacity-60";
+
   return (
-    <div className="max-w-3xl space-y-10">
-      <Tip id="storefront-guide" variant="tip">
-        <strong>Customise your storefront:</strong> Banners appear as a full-width slideshow at the top of your store. Featured products appear right below the banner — great for showcasing your best sellers. Changes go live as soon as you save.
-      </Tip>
-
-      {/* ── Banner images ─────────────────────────────────── */}
-      <section>
-        <div className="mb-4">
-          <h2 className="text-lg font-bold text-surface-900 dark:text-white">Hero Banner</h2>
-          <p className="text-sm text-surface-500 dark:text-surface-400 mt-0.5">
-            Upload up to 5 images that slide on your store homepage. Best size: 1400 × 600 px, JPG or PNG.
-          </p>
-        </div>
-
-        {/* Thumbnails */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
-          {banners.map((url, i) => (
-            <div key={url} className="relative group rounded-xl overflow-hidden border border-surface-200 dark:border-surface-700 aspect-video bg-surface-50 dark:bg-surface-800">
-              <Image src={clBanner(url)} alt={`Banner ${i + 1}`} fill sizes="(min-width: 640px) 33vw, 50vw" className="object-cover" />
-              <button
-                onClick={() => setBanners((prev) => prev.filter((_, j) => j !== i))}
-                className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white hover:bg-red-500"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-              <div className="absolute bottom-2 left-2 text-xs font-bold text-white bg-black/50 px-2 py-0.5 rounded-full">
-                {i + 1}
-              </div>
+    <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+      {/* ── Left: what shoppers see first ── */}
+      <div className="min-w-0 space-y-3">
+        <section className={panel}>
+          <header className={head}>
+            <div className="min-w-0">
+              <h2 className="text-[13px] font-semibold text-zinc-900 dark:text-white">Hero banner</h2>
+              <p className="truncate text-[11px] text-zinc-500">Up to 5 slides · best 1400 × 600 px</p>
             </div>
-          ))}
-
-          {banners.length < 5 && (
-            <button
-              onClick={() => fileRef.current?.click()}
-              disabled={uploadingBanner}
-              className="aspect-video rounded-xl border-2 border-dashed border-surface-300 dark:border-surface-600 flex flex-col items-center justify-center gap-2 hover:border-surface-400 dark:hover:border-surface-500 transition-colors disabled:opacity-50"
-            >
-              {uploadingBanner ? (
-                <Loader2 className="w-6 h-6 animate-spin text-surface-400" />
-              ) : (
-                <>
-                  <ImagePlus className="w-6 h-6 text-surface-400" />
-                  <span className="text-xs text-surface-400 font-medium">Add image</span>
-                </>
-              )}
+            <button onClick={saveBanners} disabled={savingBanners} className={saveBtn}>
+              {savingBanners ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+              {savingBanners ? "Saving…" : "Save banners"}
             </button>
-          )}
-        </div>
+          </header>
+          <div className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3">
+            {banners.map((url, i) => (
+              <div key={url} className="group relative aspect-video overflow-hidden rounded-md border border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800">
+                <Image src={clBanner(url)} alt={`Banner ${i + 1}`} fill sizes="(min-width: 1280px) 15vw, 33vw" className="object-cover" />
+                <button
+                  onClick={() => setBanners((prev) => prev.filter((_, j) => j !== i))}
+                  aria-label={`Remove banner ${i + 1}`}
+                  className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity hover:bg-red-500 focus:opacity-100 group-hover:opacity-100"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+                <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/55 px-1.5 text-[10px] font-bold text-white">{i + 1}</span>
+              </div>
+            ))}
+            {banners.length < 5 && (
+              <button
+                onClick={() => fileRef.current?.click()}
+                disabled={uploadingBanner}
+                className="flex aspect-video flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed border-zinc-300 text-zinc-400 transition-colors hover:border-zinc-400 disabled:opacity-50 dark:border-zinc-600"
+              >
+                {uploadingBanner ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImagePlus className="h-5 w-5" />}
+                <span className="text-[11px] font-medium">{uploadingBanner ? "Uploading…" : "Add slide"}</span>
+              </button>
+            )}
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+        </section>
 
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-
-        <div className="flex items-center gap-3">
-          <button
-            onClick={saveBanners}
-            disabled={savingBanners}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-black transition-all disabled:opacity-60 hover:opacity-90"
-            style={{ background: "var(--accent)" }}
-          >
-            {savingBanners ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-            {savingBanners ? "Saving…" : "Save Banners"}
-          </button>
-          <p className="text-xs text-surface-400">{banners.length}/5 images</p>
-        </div>
-      </section>
-
-      {/* ── Featured products ──────────────────────────────── */}
-      <section>
-        <div className="mb-4">
-          <h2 className="text-lg font-bold text-surface-900 dark:text-white">Featured Products</h2>
-          <p className="text-sm text-surface-500 dark:text-surface-400 mt-0.5">
-            Select up to 10 products to highlight in a slider on your store homepage. The order you check them is the order they appear.
-          </p>
-        </div>
-
-        {products.length === 0 ? (
-          <p className="text-sm text-surface-400 py-8 text-center">
-            Add products first before selecting featured ones.
-          </p>
-        ) : (
-          <>
-            <div className="rounded-2xl border border-surface-200 dark:border-surface-700 overflow-hidden divide-y divide-surface-100 dark:divide-surface-800">
-              {products.map((p) => {
-                const selected = featured.includes(p.id);
-                const imageUrl = p.images?.[0] ?? p.image_url ?? null;
+        <section className={panel}>
+          <header className={head}>
+            <div className="min-w-0">
+              <h2 className="text-[13px] font-semibold text-zinc-900 dark:text-white">
+                Featured on your homepage <span className="font-normal text-zinc-400">· {featured.length}/10</span>
+              </h2>
+              <p className="truncate text-[11px] text-zinc-500">Shown in this order, right under the banner</p>
+            </div>
+            <button onClick={saveFeatured} disabled={savingFeatured} className={saveBtn}>
+              {savingFeatured ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Star className="h-3.5 w-3.5" />}
+              {savingFeatured ? "Saving…" : "Save featured"}
+            </button>
+          </header>
+          {featured.length === 0 ? (
+            <p className="px-3 py-8 text-center text-[13px] text-zinc-500">Pick products on the {products.length ? "right" : "Products page first"} to feature them here.</p>
+          ) : (
+            <ol className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              {featured.map((id, i) => {
+                const p = byId.get(id);
+                const img = p ? p.images?.[0] ?? p.image_url ?? null : null;
                 return (
-                  <label
-                    key={p.id}
-                    className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${
-                      selected
-                        ? "bg-amber-50 dark:bg-amber-900/10"
-                        : "hover:bg-surface-50 dark:hover:bg-surface-800/50"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selected}
-                      onChange={() => toggleFeatured(p.id)}
-                      className="hidden"
-                    />
-                    {/* Custom checkbox */}
-                    <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${
-                      selected ? "border-amber-400 bg-amber-400" : "border-surface-300 dark:border-surface-600"
-                    }`}>
-                      {selected && <Star className="w-3 h-3 text-black fill-black" />}
-                    </div>
-
-                    {/* Product image */}
-                    <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-surface-100 dark:bg-surface-800 shrink-0">
-                      {imageUrl ? (
-                        <Image src={clThumb(imageUrl)} alt={p.name} fill sizes="40px" className="object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-lg">🛍️</div>
-                      )}
-                    </div>
-
-                    {/* Name + price */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-surface-900 dark:text-white truncate">{p.name}</p>
-                      <p className="text-xs text-surface-400">
-                        ₦{Number(p.price).toLocaleString()}
-                        {p.stock_quantity === 0 && " · Out of stock"}
-                      </p>
-                    </div>
-
-                    {selected && (
-                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 shrink-0">
-                        #{featured.indexOf(p.id) + 1}
-                      </span>
-                    )}
-                  </label>
+                  <li key={id} className="flex items-center gap-2.5 px-3 py-1.5">
+                    <span className="w-5 text-right text-[11px] font-bold tabular-nums text-zinc-400">{i + 1}</span>
+                    <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded bg-zinc-100 dark:bg-zinc-800">
+                      {img && <Image src={clThumb(img)} alt="" fill sizes="32px" className="object-cover" />}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-[13px] text-zinc-900 dark:text-white">{p?.name ?? "Product no longer available"}</span>
+                    <span className="flex shrink-0 items-center">
+                      <button onClick={() => moveFeatured(i, -1)} disabled={i === 0} aria-label="Move up" className="rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-800 disabled:opacity-30 dark:hover:bg-zinc-800">
+                        <ArrowUp className="h-3.5 w-3.5" />
+                      </button>
+                      <button onClick={() => moveFeatured(i, 1)} disabled={i === featured.length - 1} aria-label="Move down" className="rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-800 disabled:opacity-30 dark:hover:bg-zinc-800">
+                        <ArrowDown className="h-3.5 w-3.5" />
+                      </button>
+                      <button onClick={() => toggleFeatured(id)} aria-label="Remove from featured" className="rounded p-1 text-zinc-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30">
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </span>
+                  </li>
                 );
               })}
-            </div>
+            </ol>
+          )}
+        </section>
+      </div>
 
-            <div className="flex items-center gap-3 mt-4">
-              <button
-                onClick={saveFeatured}
-                disabled={savingFeatured}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-black transition-all disabled:opacity-60 hover:opacity-90"
-                style={{ background: "var(--accent)" }}
-              >
-                {savingFeatured ? <Loader2 className="w-4 h-4 animate-spin" /> : <Star className="w-4 h-4" />}
-                {savingFeatured ? "Saving…" : "Save Featured"}
-              </button>
-              <p className="text-xs text-surface-400">{featured.length}/10 selected</p>
-            </div>
-          </>
+      {/* ── Right: pick products ── */}
+      <section className={`${panel} xl:sticky xl:top-16`}>
+        <header className={head}>
+          <h2 className="text-[13px] font-semibold text-zinc-900 dark:text-white">Your products</h2>
+          <label className="flex h-8 w-full max-w-[220px] items-center gap-2 rounded-md border border-zinc-200 px-2 focus-within:ring-2 focus-within:ring-accent-400 dark:border-zinc-700">
+            <Search className="h-3.5 w-3.5 text-zinc-400" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search"
+              aria-label="Search products"
+              className="min-w-0 flex-1 border-0 bg-transparent p-0 text-[13px] text-zinc-900 shadow-none outline-none placeholder:text-zinc-400 focus:ring-0 dark:text-white"
+            />
+          </label>
+        </header>
+        {products.length === 0 ? (
+          <p className="px-3 py-8 text-center text-[13px] text-zinc-500">Add products first, then feature your best ones here.</p>
+        ) : (
+          <ul className="max-h-[calc(100vh-11rem)] divide-y divide-zinc-100 overflow-y-auto dark:divide-zinc-800">
+            {found.length === 0 && <li className="px-3 py-6 text-center text-[13px] text-zinc-500">No products match.</li>}
+            {found.map((p) => {
+              const on = featured.includes(p.id);
+              const img = p.images?.[0] ?? p.image_url ?? null;
+              return (
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    onClick={() => toggleFeatured(p.id)}
+                    aria-pressed={on}
+                    className={`flex w-full items-center gap-2.5 px-3 py-1.5 text-left transition-colors ${on ? "bg-amber-50 dark:bg-amber-900/10" : "hover:bg-zinc-50 dark:hover:bg-zinc-800/50"}`}
+                  >
+                    <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border-2 ${on ? "border-amber-400 bg-amber-400 text-black" : "border-zinc-300 dark:border-zinc-600"}`}>
+                      {on && <Check className="h-2.5 w-2.5" strokeWidth={4} />}
+                    </span>
+                    <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded bg-zinc-100 dark:bg-zinc-800">
+                      {img ? <Image src={clThumb(img)} alt="" fill sizes="32px" className="object-cover" /> : <span className="grid h-full place-items-center text-sm">🛍️</span>}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[13px] font-medium text-zinc-900 dark:text-white">{p.name}</span>
+                      <span className="block text-[11px] text-zinc-500">
+                        ₦{Number(p.price).toLocaleString("en-NG")}
+                        {Number(p.stock_quantity) === 0 && <span className="text-red-500"> · Out of stock</span>}
+                      </span>
+                    </span>
+                    {on && <span className="shrink-0 rounded-full bg-amber-100 px-1.5 text-[11px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">#{featured.indexOf(p.id) + 1}</span>}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </section>
     </div>

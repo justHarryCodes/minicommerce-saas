@@ -1,4 +1,5 @@
 "use client";
+import { Select } from "@/components/ui/Select";
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -82,11 +83,17 @@ export default function GiftCardsClient({
 
       <div className="flex flex-wrap items-center gap-2">
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search code, name or phone" className={`${input} max-w-xs`} />
-        <select value={filter} onChange={(e) => setFilter(e.target.value as typeof filter)} className="rounded-xl border border-surface-200 bg-white px-3 py-2.5 text-sm text-surface-900 dark:border-surface-700 dark:bg-surface-900 dark:text-white">
-          <option value="all">All</option>
-          <option value="gift_card">Gift cards</option>
-          <option value="store_credit">Store credit</option>
-        </select>
+        <Select
+          className="!w-auto min-w-[150px]"
+          aria-label="Show"
+          value={filter}
+          onChange={setFilter}
+          options={[
+            { value: "all" as const, label: "All" },
+            { value: "gift_card" as const, label: "Gift cards" },
+            { value: "store_credit" as const, label: "Store credit" },
+          ]}
+        />
         <button
           type="button"
           onClick={() => setCreating(true)}

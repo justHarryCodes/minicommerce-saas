@@ -1,4 +1,5 @@
 "use client";
+import { Select } from "@/components/ui/Select";
 
 // Product-editor extras for Tier 3 verticals: bookable services (salons,
 // consultants, studios) and size guides (clothing).
@@ -47,15 +48,13 @@ export function BookableFields({
       {isBookable && (
         <div className="pl-7">
           <label className="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1.5">How long does it take?</label>
-          <select
+          <Select
+            className="max-w-[200px]"
+            aria-label="Duration"
             value={durationMinutes ?? 60}
-            onChange={(e) => onChange({ isBookable: true, durationMinutes: Number(e.target.value) })}
-            className={`${input} max-w-[200px]`}
-          >
-            {DURATIONS.map((m) => (
-              <option key={m} value={m}>{label(m)}</option>
-            ))}
-          </select>
+            onChange={(v) => onChange({ isBookable: true, durationMinutes: v })}
+            options={DURATIONS.map((m) => ({ value: m, label: label(m) }))}
+          />
         </div>
       )}
     </div>

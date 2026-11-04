@@ -165,9 +165,17 @@ html {
 .dash .rounded-3xl { border-radius: 1rem; }
 /* Wide work pages use the screen; form pages (max-w-3xl and narrower) stay readable */
 .dash .max-w-5xl, .dash .max-w-6xl, .dash .max-w-7xl { max-width: none; }
-.dash .max-w-4xl { max-width: 64rem; }
+.dash .max-w-4xl { max-width: none; }
 @media (min-width: 1024px) {
   .dash .lg\:p-8 { padding: 1.25rem; }
   .dash .lg\:p-6 { padding: 1rem; }
   .dash .lg\:pt-0 { padding-top: 0; }
 }
+
+/* ─── Native form controls follow the theme ────────────────────────────────
+   Any browser <select>/date picker left in the app gets a dark popup in dark
+   mode (light text on a white list was unreadable). Duka's own dropdown is
+   components/ui/Select. */
+:root { color-scheme: light; }
+.dark { color-scheme: dark; }
+.dark select option { background-color: #18181b; color: #fafafa; }

@@ -1,4 +1,5 @@
 "use client";
+import { Select } from "@/components/ui/Select";
 
 import {
   useState,
@@ -795,45 +796,36 @@ export default function DiscoverClient({
                 Clear all
               </button>
             )}
-            <label className="relative flex items-center">
-              <SlidersHorizontal
-                className="pointer-events-none absolute left-3 h-3.5 w-3.5"
-                style={{ color: "var(--text-muted)" }}
-              />
-              <span className="sr-only">Sort</span>
+            <div className="flex items-center">
               {tab === "stores" ? (
-                <select
+                <Select
+                  size="sm"
+                  className="!w-auto min-w-[130px] !rounded-full"
+                  aria-label="Sort stores"
+                  icon={<SlidersHorizontal className="h-3.5 w-3.5" />}
                   value={storeSort}
-                  onChange={(e) => setStoreSort(e.target.value as StoreSort)}
-                  className="cursor-pointer appearance-none rounded-full border py-2 pl-8 pr-4 text-xs font-semibold outline-none"
-                  style={{
-                    background: "var(--bg)",
-                    borderColor: "var(--border)",
-                    color: "var(--text-primary)",
-                  }}
-                >
-                  <option value="newest">Newest</option>
-                  <option value="name">A – Z</option>
-                </select>
+                  onChange={setStoreSort}
+                  options={[
+                    { value: "newest" as StoreSort, label: "Newest" },
+                    { value: "name" as StoreSort, label: "A – Z" },
+                  ]}
+                />
               ) : (
-                <select
+                <Select
+                  size="sm"
+                  className="!w-auto min-w-[170px] !rounded-full"
+                  aria-label="Sort products"
+                  icon={<SlidersHorizontal className="h-3.5 w-3.5" />}
                   value={productSort}
-                  onChange={(e) =>
-                    setProductSort(e.target.value as ProductSort)
-                  }
-                  className="cursor-pointer appearance-none rounded-full border py-2 pl-8 pr-4 text-xs font-semibold outline-none"
-                  style={{
-                    background: "var(--bg)",
-                    borderColor: "var(--border)",
-                    color: "var(--text-primary)",
-                  }}
-                >
-                  <option value="relevance">Featured</option>
-                  <option value="price-asc">Price: low to high</option>
-                  <option value="price-desc">Price: high to low</option>
-                </select>
+                  onChange={setProductSort}
+                  options={[
+                    { value: "relevance" as ProductSort, label: "Featured" },
+                    { value: "price-asc" as ProductSort, label: "Price: low to high" },
+                    { value: "price-desc" as ProductSort, label: "Price: high to low" },
+                  ]}
+                />
               )}
-            </label>
+            </div>
           </div>
         </div>
 

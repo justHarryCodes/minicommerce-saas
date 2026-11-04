@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import toast from "react-hot-toast";
-import { Gift, Copy, Check, Users, Award, ChevronRight } from "lucide-react";
+import { Award, Check, Copy, Share2, Users } from "lucide-react";
+import { EmptyState, Kpi, Panel } from "@/components/dashboard/ui";
 
 interface Referral {
   status: string;
@@ -16,210 +17,144 @@ interface Props {
   referrals: Referral[];
 }
 
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("en-NG", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
+const formatDate = (d: string) => new Date(d).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" });
+
+const STEPS = [
+  { icon: Share2, title: "Share your link", desc: "Send it to friends who want to sell online." },
+  { icon: Users, title: "They open a store", desc: "They sign up with your link and create their store." },
+  { icon: Award, title: "You get a free month", desc: "When they pay for a plan, you get 1 month of Pro — automatically." },
+];
 
 export default function ReferralClient({ referralCode, referralCredits, referrals }: Props) {
   const [copied, setCopied] = useState(false);
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : process.env.NEXT_PUBLIC_APP_URL ?? "https://dukanigeria.com";
+  const referralLink = referralCode ? `${baseUrl}/onboarding?ref=${referralCode}` : "";
+  const rewarded = referrals.filter((r) => r.status === "rewarded").length;
+  const shareText = `I sell online with Duka — set up your own store in minutes: ${referralLink}`;
 
-  const baseUrl =
-    typeof window !== "undefined"
-      ? window.location.origin
-      : process.env.NEXT_PUBLIC_APP_URL ?? "https://dukanigeria.com";
-
-  const referralLink = referralCode
-    ? `${baseUrl}/onboarding?ref=${referralCode}`
-    : "";
-
-  const totalReferrals = referrals.length;
-  const rewardedCount = referrals.filter((r) => r.status === "rewarded").length;
-
-  async function handleCopy() {
+  async function copy() {
     if (!referralLink) return;
     try {
       await navigator.clipboard.writeText(referralLink);
       setCopied(true);
-      toast.success("Referral link copied!");
+      toast.success("Referral link copied");
       setTimeout(() => setCopied(false), 2500);
     } catch {
-      toast.error("Failed to copy link");
+      toast.error("Couldn't copy the link");
+    }
+  }
+  async function share() {
+    try {
+      if (navigator.share) await navigator.share({ title: "Start your store on Duka", text: shareText, url: referralLink });
+      else await copy();
+    } catch {
+      /* cancelled */
     }
   }
 
   return (
-    <div className="max-w-3xl space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-black text-surface-900 dark:text-white flex items-center gap-2">
-          <Gift className="w-6 h-6" />
-          Refer &amp; Earn
-        </h1>
-        <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
-          Share your referral link — earn 1 free month of Pro when a friend subscribes to a paid plan
-        </p>
-      </div>
-
-      {/* Stats cards */}
-      <div className="grid sm:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-surface-400 dark:text-surface-500 mb-1">
-            Total referred
-          </p>
-          <p className="text-3xl font-black text-surface-900 dark:text-white">{totalReferrals}</p>
-        </div>
-        <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-surface-400 dark:text-surface-500 mb-1">
-            Successful rewards
-          </p>
-          <p className="text-3xl font-black text-green-600 dark:text-green-400">{rewardedCount}</p>
-        </div>
-        <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-surface-400 dark:text-surface-500 mb-1">
-            Months earned
-          </p>
-          <p className="text-3xl font-black text-accent-600 dark:text-accent-400">{referralCredits}</p>
-        </div>
-      </div>
-
-      {/* Referral link */}
-      <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-6 space-y-4">
-        <h2 className="font-bold text-surface-900 dark:text-white">Your referral link</h2>
-        {referralCode ? (
-          <>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                readOnly
-                value={referralLink}
-                className="flex-1 px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-surface-800 text-surface-700 dark:text-surface-300 text-sm font-mono select-all focus:outline-none focus:ring-2 focus:ring-accent-400"
-                onFocus={(e) => e.target.select()}
-              />
-              <button
-                onClick={handleCopy}
-                className="flex items-center gap-2 px-4 py-3 rounded-xl bg-accent-400 hover:bg-accent-500 text-black font-bold text-sm transition-all shrink-0"
-              >
-                {copied ? (
-                  <>
-                    <Check className="w-4 h-4" />
-                    Copied!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4" />
-                    Copy
-                  </>
-                )}
-              </button>
-            </div>
-            <p className="text-xs text-surface-400">
-              Your referral code: <strong className="font-mono text-surface-700 dark:text-surface-300">{referralCode}</strong>
-            </p>
-          </>
-        ) : (
-          <p className="text-sm text-surface-400">
-            Your referral code is being generated. Check back shortly.
-          </p>
-        )}
-      </div>
-
-      {/* How it works */}
-      <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-6">
-        <h2 className="font-bold text-surface-900 dark:text-white mb-5">How it works</h2>
-        <div className="space-y-4">
-          {[
-            {
-              icon: <Copy className="w-5 h-5" />,
-              title: "Share your link",
-              desc: "Send your referral link to friends who want to start an online store on Duka.",
-            },
-            {
-              icon: <Users className="w-5 h-5" />,
-              title: "Friend registers",
-              desc: "They sign up using your link and create their store.",
-            },
-            {
-              icon: <Award className="w-5 h-5" />,
-              title: "You both benefit",
-              desc: "When they subscribe to a paid plan, you automatically get 1 free month of Pro.",
-            },
-          ].map((step, i) => (
-            <div key={i} className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-accent-50 dark:bg-accent-900/20 flex items-center justify-center text-accent-600 dark:text-accent-400 shrink-0">
-                {step.icon}
+    <div className="space-y-3 pt-1 lg:pt-0">
+      {/* Share + stats */}
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        <section className="rounded-lg border border-zinc-200/80 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+          <p className="text-[13px] font-semibold text-zinc-900 dark:text-white">Your referral link</p>
+          <p className="mb-2 text-[12px] text-zinc-500">Earn 1 free month of Pro each time a friend you invite pays for a plan.</p>
+          {referralCode ? (
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={referralLink}
+                  onFocus={(e) => e.target.select()}
+                  aria-label="Referral link"
+                  className="h-9 min-w-0 flex-1 rounded-md border border-zinc-200 bg-zinc-50 px-2.5 font-mono text-[12px] text-zinc-700 focus:outline-none focus:ring-2 focus:ring-accent-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                />
+                <button onClick={copy} className="flex h-9 shrink-0 items-center gap-1.5 rounded-md bg-accent-400 px-3 text-[13px] font-bold text-black hover:bg-accent-500">
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />} {copied ? "Copied" : "Copy"}
+                </button>
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-9 shrink-0 items-center gap-1.5 rounded-md px-3 text-[13px] font-bold text-white"
+                  style={{ background: "#25D366" }}
+                >
+                  WhatsApp
+                </a>
+                <button onClick={share} aria-label="Share" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-zinc-200 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800">
+                  <Share2 className="h-4 w-4" />
+                </button>
               </div>
-              <div>
-                <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-xs font-bold text-accent-600 dark:text-accent-400 uppercase tracking-wide">
-                    Step {i + 1}
-                  </span>
-                  <ChevronRight className="w-3 h-3 text-surface-300" />
-                  <span className="font-bold text-surface-900 dark:text-white text-sm">{step.title}</span>
-                </div>
-                <p className="text-sm text-surface-500 dark:text-surface-400">{step.desc}</p>
-              </div>
-            </div>
-          ))}
+              <p className="mt-1.5 text-[11px] text-zinc-400">
+                Code: <strong className="font-mono text-zinc-700 dark:text-zinc-300">{referralCode}</strong>
+              </p>
+            </>
+          ) : (
+            <p className="text-[13px] text-zinc-500">Your referral code is being created — check back shortly.</p>
+          )}
+        </section>
+        <div className="grid grid-cols-3 gap-2">
+          <Kpi label="Referred" value={String(referrals.length)} hint="stores signed up" />
+          <Kpi label="Rewarded" value={String(rewarded)} hint="paid for a plan" />
+          <Kpi label="Months earned" value={String(referralCredits)} hint="free Pro months" />
         </div>
       </div>
 
-      {/* Referrals table */}
-      <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 overflow-hidden">
-        <div className="p-5 border-b border-surface-100 dark:border-surface-800">
-          <h2 className="font-bold text-surface-900 dark:text-white">Referral history</h2>
-        </div>
-        {referrals.length === 0 ? (
-          <div className="p-12 text-center">
-            <Users className="w-8 h-8 text-surface-300 dark:text-surface-600 mx-auto mb-2" />
-            <p className="text-sm font-semibold text-surface-900 dark:text-white mb-1">No referrals yet</p>
-            <p className="text-sm text-surface-400">Share your link to start earning free months.</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-surface-50 dark:bg-surface-800/50">
-                <tr>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wide">
-                    Store
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wide">
-                    Status
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wide">
-                    Date
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-surface-100 dark:divide-surface-800">
-                {referrals.map((ref, i) => (
-                  <tr key={i} className="hover:bg-surface-50 dark:hover:bg-surface-800/40 transition-colors">
-                    <td className="px-5 py-4 font-medium text-surface-900 dark:text-white">
-                      {ref.store_name ?? <span className="text-surface-400 italic">Unnamed store</span>}
-                    </td>
-                    <td className="px-5 py-4">
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
-                          ref.status === "rewarded"
-                            ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
-                            : "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"
-                        }`}
-                      >
-                        {ref.status === "rewarded" ? "Rewarded" : "Signed up"}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-surface-500 dark:text-surface-400">
-                      {formatDate(ref.created_at)}
-                    </td>
+      {/* History + how it works */}
+      <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <Panel title={`Referral history · ${referrals.length}`}>
+          {referrals.length === 0 ? (
+            <EmptyState icon={Users} title="No referrals yet" text="Share your link to start earning free months." />
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-[13px]">
+                <thead>
+                  <tr className="text-left text-[11px] uppercase tracking-wide text-zinc-400">
+                    <th className="px-3 py-1.5 font-medium">Store</th>
+                    <th className="px-3 py-1.5 font-medium">Status</th>
+                    <th className="px-3 py-1.5 text-right font-medium">Joined</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                  {referrals.map((r, i) => (
+                    <tr key={i} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40">
+                      <td className="px-3 py-1.5 font-medium text-zinc-900 dark:text-white">{r.store_name ?? <span className="italic text-zinc-400">Unnamed store</span>}</td>
+                      <td className="px-3 py-1.5">
+                        <span
+                          className={`rounded px-1.5 py-px text-[11px] font-semibold ${
+                            r.status === "rewarded" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300" : "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300"
+                          }`}
+                        >
+                          {r.status === "rewarded" ? "Rewarded" : "Signed up"}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-1.5 text-right text-zinc-500">{formatDate(r.created_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Panel>
+
+        <Panel title="How it works">
+          <ol className="space-y-2.5 p-3">
+            {STEPS.map((s, i) => (
+              <li key={s.title} className="flex gap-2.5">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-accent-50 text-accent-600 dark:bg-accent-900/20 dark:text-accent-400">
+                  <s.icon className="h-3.5 w-3.5" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[13px] font-semibold text-zinc-900 dark:text-white">
+                    <span className="text-zinc-400">{i + 1}.</span> {s.title}
+                  </span>
+                  <span className="block text-[12px] text-zinc-500">{s.desc}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </Panel>
       </div>
     </div>
   );

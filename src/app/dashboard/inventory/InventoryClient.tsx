@@ -1,4 +1,5 @@
 "use client";
+import { Select } from "@/components/ui/Select";
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
@@ -197,17 +198,19 @@ export default function InventoryClient({
               placeholder="Search product or order number"
               className="min-w-[200px] flex-1 rounded-xl border border-surface-200 bg-white px-3.5 py-2 text-sm text-surface-900 focus:outline-none focus:ring-2 focus:ring-accent-400 dark:border-surface-700 dark:bg-surface-900 dark:text-white"
             />
-            <select
+            <Select
+              className="!w-auto min-w-[160px]"
+              aria-label="Kind of change"
               value={reason}
-              onChange={(e) => setReason(e.target.value as typeof reason)}
-              className="rounded-xl border border-surface-200 bg-white px-3 py-2 text-sm text-surface-900 dark:border-surface-700 dark:bg-surface-900 dark:text-white"
-            >
-              <option value="all">All changes</option>
-              <option value="order">Sold</option>
-              <option value="order_cancelled">Cancelled orders</option>
-              <option value="manual">Edited by you</option>
-              <option value="created">Opening stock</option>
-            </select>
+              onChange={setReason}
+              options={[
+                { value: "all" as const, label: "All changes" },
+                { value: "order" as const, label: "Sold" },
+                { value: "order_cancelled" as const, label: "Cancelled orders" },
+                { value: "manual" as const, label: "Edited by you" },
+                { value: "created" as const, label: "Opening stock" },
+              ]}
+            />
           </div>
 
           {shown.length === 0 ? (

@@ -1,4 +1,5 @@
 "use client";
+import { Select } from "@/components/ui/Select";
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
@@ -149,7 +150,9 @@ export default function ProductForm({ categories, product, bookingsEnabled = tru
   const compareTooLow =
     compareVal > 0 && priceVal > 0 && compareVal <= priceVal;
 
-  const categoryReg = register("categoryId");
+  // Both dropdowns write through setValue; registering keeps them in the form data
+  register("categoryId");
+  register("subcategoryId");
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -617,24 +620,18 @@ export default function ProductForm({ categories, product, bookingsEnabled = tru
                 <label className={labelClass} htmlFor="pf-cat">
                   Category
                 </label>
-                <select
+                <Select
                   id="pf-cat"
-                  {...categoryReg}
-                  className={inputClass}
-                  onChange={(e) => {
-                    categoryReg.onChange(e);
-                    setSelectedCatId(e.target.value);
+                  value={selectedCatId}
+                  placeholder="Select category"
+                  onChange={(v) => {
+                    setValue("categoryId", v, { shouldDirty: true });
+                    setSelectedCatId(v);
                     setValue("subcategoryId", "");
                     setCategorySuggestion(null);
                   }}
-                >
-                  <option value="">Select category</option>
-                  {topCats.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                  options={[{ value: "", label: "No category" }, ...topCats.map((c) => ({ value: c.id, label: c.name }))]}
+                />
                 {categorySuggestion &&
                   categorySuggestion.id !== selectedCatId && (
                     <button
@@ -655,23 +652,14 @@ export default function ProductForm({ categories, product, bookingsEnabled = tru
                 <label className={labelClass} htmlFor="pf-sub">
                   Subcategory
                 </label>
-                <select
+                <Select
                   id="pf-sub"
-                  {...register("subcategoryId")}
-                  className={inputClass}
+                  value={watch("subcategoryId") ?? ""}
+                  placeholder={selectedCatId && subCats.length === 0 ? "No subcategories" : "Select subcategory"}
+                  onChange={(v) => setValue("subcategoryId", v, { shouldDirty: true })}
                   disabled={!selectedCatId || subCats.length === 0}
-                >
-                  <option value="">
-                    {selectedCatId && subCats.length === 0
-                      ? "No subcategories"
-                      : "Select subcategory"}
-                  </option>
-                  {subCats.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                  options={[{ value: "", label: "None" }, ...subCats.map((c) => ({ value: c.id, label: c.name }))]}
+                />
               </div>
 
               {topCats.length === 0 && (

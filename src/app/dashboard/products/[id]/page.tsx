@@ -42,7 +42,7 @@ export default async function EditProductPage({ params }: Props) {
   }));
 
   return (
-    <div className="max-w-2xl">
+    <div className="mx-auto max-w-[1280px] pt-1 lg:pt-0">
       <div className="mb-8">
         <h1 className="text-2xl font-black text-surface-900 dark:text-white">Edit product</h1>
         <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">{product.name}</p>

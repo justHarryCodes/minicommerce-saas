@@ -46,17 +46,16 @@ export default async function EditProductPage({ params }: Props) {
   product.sizes = sizes;
 
   return (
-    <div className="max-w-xl">
-      <div className="flex items-center gap-3 mb-8">
+    <div className="mx-auto max-w-[1280px] pt-1 lg:pt-0">
+      <div className="mb-3 flex items-center gap-2">
         <Link
           href="/dashboard/products"
           className="p-2 rounded-xl hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors text-surface-500"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeft className="w-4 h-4" />
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-surface-900 dark:text-white">Edit product</h1>
-          <p className="text-sm text-surface-500 dark:text-surface-400 mt-0.5 truncate max-w-xs">
+          <p className="text-sm font-semibold text-surface-900 dark:text-white truncate max-w-md">
             {product.name}
           </p>
         </div>

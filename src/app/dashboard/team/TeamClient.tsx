@@ -1,4 +1,5 @@
 "use client";
+import { Select } from "@/components/ui/Select";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -73,7 +74,73 @@ export default function TeamClient({ ownerEmail, members }: { ownerEmail: string
   }
 
   return (
-    <div className="space-y-5">
+    <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="min-w-0 space-y-3 xl:order-1">
+      <ul className="divide-y divide-surface-100 overflow-hidden rounded-2xl border border-surface-100 bg-white dark:divide-surface-800 dark:border-surface-800 dark:bg-surface-900">
+        <li className="flex items-center gap-3 px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-surface-900 dark:text-white">You</p>
+            <p className="truncate text-xs text-surface-500 dark:text-surface-400">{ownerEmail}</p>
+          </div>
+          <span className="rounded-full bg-surface-900 px-2.5 py-1 text-xs font-semibold text-white dark:bg-white dark:text-black">Owner</span>
+        </li>
+        {members.map((m) => (
+          <li key={m.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-surface-900 dark:text-white">{m.name || m.email}</p>
+              <p className="truncate text-xs text-surface-500 dark:text-surface-400">
+                {m.name ? `${m.email} · ` : ""}
+                {m.status === "invited"
+                  ? `Invited ${formatDistanceToNow(new Date(m.invited_at), { addSuffix: true })}`
+                  : m.last_seen_at
+                    ? `Active ${formatDistanceToNow(new Date(m.last_seen_at), { addSuffix: true })}`
+                    : "Joined"}
+              </p>
+            </div>
+            {m.status === "invited" && (
+              <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">Pending</span>
+            )}
+            <Select
+              size="sm"
+              className="!w-[120px]"
+              value={m.role}
+              disabled={busy === m.id}
+              onChange={(v) => patch(m.id, { role: v }, "Role updated")}
+              aria-label={`Role for ${m.email}`}
+              options={[
+                { value: "staff", label: "Staff", hint: "Orders, bookings, POS" },
+                { value: "manager", label: "Manager", hint: "Everything but settings & billing" },
+              ]}
+              menuWidth={240}
+            />
+            {m.status === "invited" && (
+              <button
+                type="button"
+                disabled={busy === m.id}
+                onClick={() => patch(m.id, { resend: true }, "New invitation sent")}
+                title="Send a fresh link"
+                className="rounded-lg p-2 text-surface-400 hover:bg-surface-100 hover:text-surface-700 dark:hover:bg-surface-800"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={busy === m.id}
+              onClick={() => remove(m)}
+              title={m.status === "active" ? "Remove from team" : "Cancel invitation"}
+              className="rounded-lg p-2 text-surface-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30"
+            >
+              {busy === m.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            </button>
+          </li>
+        ))}
+      </ul>
+      {members.length === 0 && (
+        <p className="text-center text-sm text-surface-500 dark:text-surface-400">No team members yet. Invite a packer, cashier or manager above.</p>
+      )}
+      </div>
+      <aside className="space-y-3 xl:sticky xl:top-16 xl:order-2">
       <form onSubmit={invite} className="space-y-3 rounded-2xl border border-surface-100 bg-white p-5 dark:border-surface-800 dark:bg-surface-900">
         <p className="flex items-center gap-2 font-semibold text-surface-900 dark:text-white">
           <UserPlus className="h-4 w-4" /> Invite someone
@@ -130,66 +197,7 @@ export default function TeamClient({ ownerEmail, members }: { ownerEmail: string
         </div>
       )}
 
-      <ul className="divide-y divide-surface-100 overflow-hidden rounded-2xl border border-surface-100 bg-white dark:divide-surface-800 dark:border-surface-800 dark:bg-surface-900">
-        <li className="flex items-center gap-3 px-4 py-3">
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-surface-900 dark:text-white">You</p>
-            <p className="truncate text-xs text-surface-500 dark:text-surface-400">{ownerEmail}</p>
-          </div>
-          <span className="rounded-full bg-surface-900 px-2.5 py-1 text-xs font-semibold text-white dark:bg-white dark:text-black">Owner</span>
-        </li>
-        {members.map((m) => (
-          <li key={m.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-surface-900 dark:text-white">{m.name || m.email}</p>
-              <p className="truncate text-xs text-surface-500 dark:text-surface-400">
-                {m.name ? `${m.email} · ` : ""}
-                {m.status === "invited"
-                  ? `Invited ${formatDistanceToNow(new Date(m.invited_at), { addSuffix: true })}`
-                  : m.last_seen_at
-                    ? `Active ${formatDistanceToNow(new Date(m.last_seen_at), { addSuffix: true })}`
-                    : "Joined"}
-              </p>
-            </div>
-            {m.status === "invited" && (
-              <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">Pending</span>
-            )}
-            <select
-              value={m.role}
-              disabled={busy === m.id}
-              onChange={(e) => patch(m.id, { role: e.target.value }, "Role updated")}
-              className="rounded-lg border border-surface-200 bg-white px-2 py-1.5 text-xs font-semibold text-surface-800 dark:border-surface-700 dark:bg-surface-900 dark:text-surface-200"
-              aria-label={`Role for ${m.email}`}
-            >
-              <option value="staff">Staff</option>
-              <option value="manager">Manager</option>
-            </select>
-            {m.status === "invited" && (
-              <button
-                type="button"
-                disabled={busy === m.id}
-                onClick={() => patch(m.id, { resend: true }, "New invitation sent")}
-                title="Send a fresh link"
-                className="rounded-lg p-2 text-surface-400 hover:bg-surface-100 hover:text-surface-700 dark:hover:bg-surface-800"
-              >
-                <RefreshCw className="h-4 w-4" />
-              </button>
-            )}
-            <button
-              type="button"
-              disabled={busy === m.id}
-              onClick={() => remove(m)}
-              title={m.status === "active" ? "Remove from team" : "Cancel invitation"}
-              className="rounded-lg p-2 text-surface-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30"
-            >
-              {busy === m.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-            </button>
-          </li>
-        ))}
-      </ul>
-      {members.length === 0 && (
-        <p className="text-center text-sm text-surface-500 dark:text-surface-400">No team members yet. Invite a packer, cashier or manager above.</p>
-      )}
+      </aside>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 "use client";
+import { Select } from "@/components/ui/Select";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -172,16 +173,14 @@ export default function BookingsClient({
               {day === today ? "Today" : dayLabel(day)} · {dayBookings.filter((b) => b.status === "confirmed").length} appointment{dayBookings.filter((b) => b.status === "confirmed").length === 1 ? "" : "s"}
             </p>
             {staff.length > 0 && (
-              <select
+              <Select
+                size="sm"
+                className="!w-auto min-w-[140px]"
+                aria-label="Staff"
                 value={staffFilter}
-                onChange={(e) => setStaffFilter(e.target.value)}
-                className="rounded-xl border border-surface-200 bg-white px-3 py-1.5 text-sm text-surface-900 dark:border-surface-700 dark:bg-surface-900 dark:text-white"
-              >
-                <option value="all">Everyone</option>
-                {staff.map((m) => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
-                ))}
-              </select>
+                onChange={setStaffFilter}
+                options={[{ value: "all", label: "Everyone" }, ...staff.map((m) => ({ value: m.id, label: m.name }))]}
+              />
             )}
           </div>
 
@@ -369,27 +368,23 @@ function RulesTab({ storeId, initial }: { storeId: string; initial: Settings }) 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="space-y-1.5">
           <span className="block text-sm font-medium text-surface-700 dark:text-surface-300">Start times every</span>
-          <select value={s.slotMinutes} onChange={(e) => setS({ ...s, slotMinutes: Number(e.target.value) })} className={field}>
-            {[15, 30, 60].map((n) => <option key={n} value={n}>{n} minutes</option>)}
-          </select>
+          <Select value={s.slotMinutes} onChange={(v) => setS({ ...s, slotMinutes: v })} options={[15, 30, 60].map((n) => ({ value: n, label: `${n} minutes` }))} />
         </label>
         <label className="space-y-1.5">
           <span className="block text-sm font-medium text-surface-700 dark:text-surface-300">Break between appointments</span>
-          <select value={s.bufferMinutes} onChange={(e) => setS({ ...s, bufferMinutes: Number(e.target.value) })} className={field}>
-            {[0, 5, 10, 15, 30, 60].map((n) => <option key={n} value={n}>{n === 0 ? "None" : `${n} minutes`}</option>)}
-          </select>
+          <Select value={s.bufferMinutes} onChange={(v) => setS({ ...s, bufferMinutes: v })} options={[0, 5, 10, 15, 30, 60].map((n) => ({ value: n, label: n === 0 ? "None" : `${n} minutes` }))} />
         </label>
         <label className="space-y-1.5">
           <span className="block text-sm font-medium text-surface-700 dark:text-surface-300">Minimum notice</span>
-          <select value={s.minNoticeMinutes} onChange={(e) => setS({ ...s, minNoticeMinutes: Number(e.target.value) })} className={field}>
-            {[[0, "None"], [30, "30 minutes"], [60, "1 hour"], [120, "2 hours"], [240, "4 hours"], [1440, "1 day"], [2880, "2 days"]].map(([n, l]) => <option key={n} value={n}>{l}</option>)}
-          </select>
+          <Select
+            value={s.minNoticeMinutes}
+            onChange={(v) => setS({ ...s, minNoticeMinutes: v })}
+            options={([[0, "None"], [30, "30 minutes"], [60, "1 hour"], [120, "2 hours"], [240, "4 hours"], [1440, "1 day"], [2880, "2 days"]] as const).map(([n, l]) => ({ value: n as number, label: l }))}
+          />
         </label>
         <label className="space-y-1.5">
           <span className="block text-sm font-medium text-surface-700 dark:text-surface-300">Customers can book up to</span>
-          <select value={s.windowDays} onChange={(e) => setS({ ...s, windowDays: Number(e.target.value) })} className={field}>
-            {[7, 14, 30, 60, 90].map((n) => <option key={n} value={n}>{n} days ahead</option>)}
-          </select>
+          <Select value={s.windowDays} onChange={(v) => setS({ ...s, windowDays: v })} options={[7, 14, 30, 60, 90].map((n) => ({ value: n, label: `${n} days ahead` }))} />
         </label>
       </div>
       <button onClick={save} disabled={saving} className="flex items-center gap-1.5 rounded-xl bg-accent-400 px-4 py-2 text-sm font-bold text-black disabled:opacity-50">
