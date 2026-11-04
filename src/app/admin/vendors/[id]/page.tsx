@@ -5,6 +5,7 @@ import { queryOne, query } from '@/lib/db'
 import { adminAuth } from '@/lib/firebase-admin'
 import { ArrowLeft, CheckCircle, XCircle, Clock } from 'lucide-react'
 import VendorActions from './VendorActions'
+import GiftPlan from './GiftPlan'
 
 interface RouteParams { params: Promise<{ id: string }> }
 
@@ -45,13 +46,21 @@ export default async function VendorDetailPage({ params }: RouteParams) {
     nin_number: string | null; nin_verified: boolean
     nin_verified_at: string | null; nin_verified_by: string | null
     created_at: string; is_active: boolean
+    current_plan_id: string | null; plan_expires_at: string | null
   }>(`SELECT id, name, slug, description, owner_id, owner_email, primary_category,
              status, subscription_status, setup_fee_paid_at, subscription_expires_at,
              nin_number, nin_verified, nin_verified_at, nin_verified_by,
-             created_at, is_active
+             created_at, is_active, current_plan_id, plan_expires_at
       FROM stores WHERE id = $1`, [id])
 
   if (!store) notFound()
+
+  // Plans an admin can gift (paid, active), plus the store's current plan name
+  const plans = await query<{ id: string; name: string; price_monthly: number }>(
+    'SELECT id, name, price_monthly FROM plans WHERE is_active = true ORDER BY sort_order, price_monthly'
+  )
+  const paidPlans = plans.filter((p) => Number(p.price_monthly) > 0)
+  const currentPlanName = plans.find((p) => p.id === store.current_plan_id)?.name ?? 'Free'
 
   // Try to get owner's email from Firebase
   let ownerEmail = store.owner_email
@@ -160,6 +169,14 @@ export default async function VendorDetailPage({ params }: RouteParams) {
         {/* Right column — actions */}
         <div className="space-y-6">
           <VendorActions storeId={store.id} currentStatus={store.status} />
+
+          <GiftPlan
+            storeId={store.id}
+            plans={paidPlans}
+            currentPlanId={store.current_plan_id}
+            currentPlanName={currentPlanName}
+            expiresAt={store.plan_expires_at ? new Date(store.plan_expires_at).toISOString() : null}
+          />
 
           {/* Subscription info */}
           <div className="rounded-2xl border p-5" style={{ background: 'var(--bg)', borderColor: 'var(--border)' }}>
