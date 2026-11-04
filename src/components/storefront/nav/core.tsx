@@ -115,8 +115,9 @@ export const barClass = "bg-[color:var(--nav-bg)] text-[color:var(--nav-fg)] bac
 
 /* ───────────────────────────── Pieces ───────────────────────────── */
 
-const LOGO_H = { sm: "h-7", md: "h-9", lg: "h-11" } as const;
-const WORD_SIZE = { sm: "text-lg", md: "text-xl", lg: "text-2xl" } as const;
+// Logos are often square badges with padding baked in, so they need real height to read
+const LOGO_H = { sm: "h-11", md: "h-11 lg:h-14", lg: "h-11 lg:h-[60px]" } as const;
+const WORD_SIZE = { sm: "text-xl", md: "text-xl sm:text-2xl", lg: "text-2xl sm:text-3xl" } as const;
 
 export function Logo({ size, className = "" }: { size?: NavOptions["logoSize"]; className?: string }) {
   const { store, homeHref, opts } = useNav();
@@ -124,9 +125,9 @@ export function Logo({ size, className = "" }: { size?: NavOptions["logoSize"]; 
   return (
     <Link href={homeHref} className={`flex shrink-0 items-center ${className}`} aria-label={`${store.name} home`}>
       {store.logo_url ? (
-        <Image src={store.logo_url} alt={store.name} width={180} height={56} priority className={`${LOGO_H[s]} w-auto object-contain`} />
+        <Image src={store.logo_url} alt={store.name} width={280} height={96} priority className={`${LOGO_H[s]} w-auto max-w-[42vw] object-contain sm:max-w-[220px] lg:max-w-[260px]`} />
       ) : (
-        <span className={`sf-display whitespace-nowrap ${WORD_SIZE[s]}`}>{store.name}</span>
+        <span className={`sf-display max-w-[46vw] truncate whitespace-nowrap sm:max-w-none ${WORD_SIZE[s]}`}>{store.name}</span>
       )}
     </Link>
   );
@@ -142,7 +143,7 @@ export function CountBadge({ n }: { n: number }) {
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.4, opacity: 0 }}
           transition={{ type: "spring", stiffness: 500, damping: 22 }}
-          className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold"
+          className="absolute -right-2 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold"
           style={{ backgroundColor: "var(--sf-accent)", color: "var(--sf-on-accent)" }}
         >
           {n > 9 ? "9+" : n}
@@ -165,12 +166,18 @@ export function MenuButton({ label }: { label?: string }) {
   );
 }
 
+/** Header action: icon with a short label (under it on phones, beside it from sm). */
+export const actionBtn =
+  "relative inline-flex min-w-[44px] flex-col items-center justify-center gap-0.5 rounded-xl px-1.5 py-0.5 transition-colors hover:bg-[color-mix(in_srgb,currentColor_9%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--sf-accent)] sm:flex-row sm:gap-2 sm:px-3 sm:py-2";
+const actionLabel = "text-[10px] font-semibold leading-none sm:text-sm sm:leading-normal";
+
 export function SearchIcon() {
   const { openSearch, opts } = useNav();
   if (opts.search === "hidden") return null;
   return (
-    <button onClick={openSearch} className={iconBtn} aria-label="Search">
+    <button onClick={openSearch} className={actionBtn} aria-label="Search">
       <Search className="h-5 w-5" />
+      <span className={actionLabel}>Search</span>
     </button>
   );
 }
@@ -189,43 +196,47 @@ export function SearchBar({ className = "", placeholder }: { className?: string;
   );
 }
 
-export function SavedButton({ withLabel = false }: { withLabel?: boolean }) {
+export function SavedButton(_: { withLabel?: boolean } = {}) {
   const { homeHref, bookmarkCount } = useNav();
   return (
-    <a href={`${homeHref}#saved-items`} className={iconBtn} aria-label="Saved items">
-      <Heart className="h-5 w-5" />
-      {withLabel && <span className="hidden text-sm font-semibold xl:inline">Saved</span>}
-      <CountBadge n={bookmarkCount} />
+    <a href={`${homeHref}#saved-items`} className={actionBtn} aria-label={`Saved items, ${bookmarkCount}`}>
+      <span className="relative">
+        <Heart className="h-5 w-5" />
+        <CountBadge n={bookmarkCount} />
+      </span>
+      <span className={actionLabel}>Saved</span>
     </a>
   );
 }
 
-export function CartButton({ withLabel = false, bag = false }: { withLabel?: boolean; bag?: boolean }) {
+export function CartButton({ bag = false }: { withLabel?: boolean; bag?: boolean }) {
   const { openCart, totalItems } = useNav();
   const Icon = bag ? ShoppingBag : ShoppingCart;
   return (
-    <button onClick={openCart} className={iconBtn} aria-label={`Open cart, ${totalItems} item${totalItems === 1 ? "" : "s"}`}>
-      <Icon className="h-5 w-5" />
-      {withLabel && <span className="hidden text-sm font-semibold xl:inline">Cart</span>}
-      <CountBadge n={totalItems} />
+    <button onClick={openCart} className={actionBtn} aria-label={`Open cart, ${totalItems} item${totalItems === 1 ? "" : "s"}`}>
+      <span className="relative">
+        <Icon className="h-5 w-5" />
+        <CountBadge n={totalItems} />
+      </span>
+      <span className={actionLabel}>Cart</span>
     </button>
   );
 }
 
 /** Desktop category links with animated sub-category dropdowns. */
-export function CategoryLinks({ max = 7, className = "", linkClass = "" }: { max?: number; className?: string; linkClass?: string }) {
+export function CategoryLinks({ max = 6, className = "", linkClass = "" }: { max?: number; className?: string; linkClass?: string }) {
   const { categories, homeHref, activeCategory, opts } = useNav();
   const [open, setOpen] = useState<string | null>(null);
   if (!opts.categories || !categories.length) return null;
   const shown = categories.slice(0, max);
   return (
-    <ul className={`flex items-center ${className}`} onMouseLeave={() => setOpen(null)}>
+    <ul className={`flex min-w-0 items-center overflow-hidden [mask-image:linear-gradient(to_right,black_92%,transparent)] ${className}`} onMouseLeave={() => setOpen(null)}>
       {shown.map((cat) => (
         <li key={cat.id} className="relative" onMouseEnter={() => setOpen(cat.id)}>
           <Link
             href={`${homeHref}?category=${cat.slug}`}
             onFocus={() => setOpen(cat.id)}
-            className={`relative flex items-center gap-1 px-3 py-2 text-sm font-semibold opacity-80 transition-opacity hover:opacity-100 ${activeCategory === cat.slug ? "!opacity-100" : ""} ${linkClass}`}
+            className={`relative flex items-center gap-1 whitespace-nowrap px-3 py-2 text-sm font-semibold opacity-80 transition-opacity hover:opacity-100 ${activeCategory === cat.slug ? "!opacity-100" : ""} ${linkClass}`}
           >
             {cat.name}
             {cat.subcategories.length > 0 && <ChevronDown className="h-3.5 w-3.5 opacity-50" />}
