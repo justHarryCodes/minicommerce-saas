@@ -1,293 +1,267 @@
+import Link from "next/link";
+import Image from "next/image";
+import { AlertTriangle, ArrowRight, CalendarDays, Clock, CreditCard, Lock, PackageX, ShoppingBag, ShoppingCart, TrendingDown } from "lucide-react";
 import { verifySession } from "@/lib/auth";
 import { getPageStore } from "@/lib/access";
-import { queryOne, queryMany } from "@/lib/db";
+import { queryMany, queryOne } from "@/lib/db";
 import { getEffectivePlan } from "@/lib/plan";
-import { formatCurrency, formatDate, getStoreUrl } from "@/lib/utils";
+import { formatCurrency, getStoreUrl } from "@/lib/utils";
+import { clThumb } from "@/lib/cloudinary";
 import OnboardingChecklist, { type ChecklistItem } from "@/components/dashboard/OnboardingChecklist";
-import Link from "next/link";
-import {
-  ShoppingBag,
-  Package,
-  TrendingUp,
-  Clock,
-  ArrowRight,
-  ExternalLink,
-  Eye,
-} from "lucide-react";
-import type { Order } from "@/types";
-import { Tip } from "@/components/dashboard/Tip";
+import { ColumnChart } from "@/components/dashboard/charts";
+import { EmptyState, Kpi, Panel, PanelLink, PaymentText, StatusPill, pctChange, timeAgo } from "@/components/dashboard/ui";
 
 export const dynamic = "force-dynamic";
 
-async function getDashboardStats(storeId: string) {
-  const [stats, visitors, recentOrders] = await Promise.all([
-    queryOne<{
-      total_orders: string;
-      pending_orders: string;
-      total_revenue: string;
-      total_products: string;
-    }>(
+const TODAY = "(NOW() AT TIME ZONE 'Africa/Lagos')::date";
+const DAY = "(o.created_at AT TIME ZONE 'Africa/Lagos')::date";
+
+async function loadOverview(storeId: string) {
+  const [k, series, attention, visitors, recent, top] = await Promise.all([
+    // Headline numbers: today, last 7 days vs the 7 before, last 30 days
+    queryOne<Record<string, string>>(
       `SELECT
-         COUNT(DISTINCT o.id) AS total_orders,
-         COUNT(DISTINCT o.id) FILTER (WHERE o.order_status = 'pending') AS pending_orders,
-         COALESCE(SUM(o.total) FILTER (WHERE o.payment_status = 'paid'), 0) AS total_revenue,
-         (SELECT COUNT(*) FROM products WHERE store_id = $1 AND is_active = true) AS total_products
+         COALESCE(SUM(o.total) FILTER (WHERE o.payment_status = 'paid' AND ${DAY} = ${TODAY}), 0) AS rev_today,
+         COUNT(*) FILTER (WHERE o.order_status <> 'cancelled' AND ${DAY} = ${TODAY}) AS orders_today,
+         COALESCE(SUM(o.total) FILTER (WHERE o.payment_status = 'paid' AND ${DAY} > ${TODAY} - 7), 0) AS rev_7,
+         COALESCE(SUM(o.total) FILTER (WHERE o.payment_status = 'paid' AND ${DAY} <= ${TODAY} - 7 AND ${DAY} > ${TODAY} - 14), 0) AS rev_prev7,
+         COUNT(*) FILTER (WHERE o.order_status <> 'cancelled' AND ${DAY} > ${TODAY} - 7) AS orders_7,
+         COUNT(*) FILTER (WHERE o.order_status <> 'cancelled' AND ${DAY} <= ${TODAY} - 7 AND ${DAY} > ${TODAY} - 14) AS orders_prev7,
+         COALESCE(SUM(o.total) FILTER (WHERE o.payment_status = 'paid' AND ${DAY} > ${TODAY} - 30), 0) AS rev_30,
+         COUNT(*) FILTER (WHERE o.payment_status = 'paid' AND ${DAY} > ${TODAY} - 30) AS paid_30,
+         (SELECT COUNT(*) FROM products WHERE store_id = $1 AND is_active = true) AS products
        FROM orders o
-       WHERE o.store_id = $1`,
-      [storeId],
+       WHERE o.store_id = $1 AND o.created_at > NOW() - INTERVAL '31 days'`,
+      [storeId]
     ),
-    queryOne<{ total_visitors: string; today_visitors: string }>(
+    // Paid sales per day, last 14 days (zero-filled)
+    queryMany<{ date: string; value: string }>(
+      `SELECT to_char(d, 'YYYY-MM-DD') AS date, COALESCE(SUM(o.total) FILTER (WHERE o.payment_status = 'paid'), 0) AS value
+       FROM generate_series(${TODAY} - 13, ${TODAY}, INTERVAL '1 day') AS d
+       LEFT JOIN orders o ON o.store_id = $1 AND ${DAY} = d::date
+       GROUP BY d ORDER BY d`,
+      [storeId]
+    ),
+    // Things waiting on the store
+    queryOne<Record<string, string>>(
       `SELECT
-         COUNT(DISTINCT visitor_id) AS total_visitors,
-         COUNT(DISTINCT visitor_id) FILTER (WHERE visited_at = CURRENT_DATE) AS today_visitors
-       FROM store_visits
-       WHERE store_id = $1`,
-      [storeId],
+         (SELECT COUNT(*) FROM orders WHERE store_id = $1 AND order_status = 'pending') AS new_orders,
+         (SELECT COUNT(*) FROM orders WHERE store_id = $1 AND payment_status = 'pending_confirmation') AS transfers,
+         (SELECT COUNT(*) FROM products WHERE store_id = $1 AND is_active AND NOT COALESCE(is_bookable, false) AND stock_quantity <= 0) AS out_of_stock,
+         (SELECT COUNT(*) FROM products p WHERE p.store_id = $1 AND p.is_active AND NOT COALESCE(p.is_bookable, false) AND p.stock_quantity > 0
+            AND p.stock_quantity <= COALESCE(p.low_stock_threshold, (SELECT low_stock_threshold FROM stores WHERE id = $1), 5)) AS low_stock,
+         (SELECT COUNT(*) FROM bookings WHERE store_id = $1 AND status <> 'cancelled' AND (starts_at AT TIME ZONE 'Africa/Lagos')::date = ${TODAY}) AS bookings_today,
+         (SELECT COUNT(*) FROM checkout_sessions WHERE store_id = $1 AND status = 'open' AND created_at > NOW() - INTERVAL '7 days') AS abandoned`,
+      [storeId]
     ).catch(() => null),
-    queryMany<Order>(
-      `SELECT * FROM orders WHERE store_id = $1 ORDER BY created_at DESC LIMIT 5`,
-      [storeId],
+    queryOne<{ v7: string; prev7: string; today: string }>(
+      `SELECT
+         COUNT(DISTINCT visitor_id) FILTER (WHERE visited_at > ${TODAY} - 7) AS v7,
+         COUNT(DISTINCT visitor_id) FILTER (WHERE visited_at <= ${TODAY} - 7 AND visited_at > ${TODAY} - 14) AS prev7,
+         COUNT(DISTINCT visitor_id) FILTER (WHERE visited_at = ${TODAY}) AS today
+       FROM store_visits WHERE store_id = $1 AND visited_at > ${TODAY} - 14`,
+      [storeId]
+    ).catch(() => null),
+    queryMany<{
+      id: string; order_number: string; customer_name: string; total: string; order_status: string;
+      payment_status: string; created_at: string; items: string; channel: string | null;
+    }>(
+      `SELECT o.id, o.order_number, o.customer_name, o.total, o.order_status, o.payment_status, o.created_at, o.channel,
+              (SELECT COALESCE(SUM(quantity), 0) FROM order_items WHERE order_id = o.id) AS items
+       FROM orders o WHERE o.store_id = $1 ORDER BY o.created_at DESC LIMIT 8`,
+      [storeId]
+    ),
+    queryMany<{ name: string; image: string | null; qty: string; revenue: string }>(
+      `SELECT oi.product_name AS name, MAX(oi.product_image) AS image, SUM(oi.quantity) AS qty, SUM(oi.subtotal) AS revenue
+       FROM order_items oi JOIN orders o ON o.id = oi.order_id
+       WHERE o.store_id = $1 AND o.order_status <> 'cancelled' AND o.created_at > NOW() - INTERVAL '30 days'
+       GROUP BY oi.product_name ORDER BY SUM(oi.subtotal) DESC LIMIT 6`,
+      [storeId]
     ),
   ]);
-
+  const n = (v: unknown) => Number(v ?? 0);
   return {
-    stats: {
-      total_orders: parseInt(stats?.total_orders ?? "0"),
-      pending_orders: parseInt(stats?.pending_orders ?? "0"),
-      total_revenue: parseFloat(stats?.total_revenue ?? "0"),
-      total_products: parseInt(stats?.total_products ?? "0"),
-      total_visitors: parseInt(visitors?.total_visitors ?? "0"),
-      today_visitors: parseInt(visitors?.today_visitors ?? "0"),
+    k: {
+      revToday: n(k?.rev_today), ordersToday: n(k?.orders_today), rev7: n(k?.rev_7), revPrev7: n(k?.rev_prev7),
+      orders7: n(k?.orders_7), ordersPrev7: n(k?.orders_prev7), rev30: n(k?.rev_30), paid30: n(k?.paid_30), products: n(k?.products),
     },
-    recentOrders,
+    series: series.map((s) => ({ date: s.date, value: n(s.value) })),
+    attention: {
+      newOrders: n(attention?.new_orders), transfers: n(attention?.transfers), outOfStock: n(attention?.out_of_stock),
+      lowStock: n(attention?.low_stock), bookingsToday: n(attention?.bookings_today), abandoned: n(attention?.abandoned),
+    },
+    visitors: { v7: n(visitors?.v7), prev7: n(visitors?.prev7), today: n(visitors?.today) },
+    recent,
+    top,
   };
 }
-
-const STATUS_STYLES: Record<string, string> = {
-  pending: "bg-yellow-50 text-yellow-700 border-yellow-200",
-  confirmed: "bg-blue-50 text-blue-700 border-blue-200",
-  processing: "bg-purple-50 text-purple-700 border-purple-200",
-  shipped: "bg-indigo-50 text-indigo-700 border-indigo-200",
-  delivered: "bg-green-50 text-green-700 border-green-200",
-  cancelled: "bg-red-50 text-red-700 border-red-200",
-};
 
 export default async function DashboardPage() {
   const user = await verifySession();
   const store = await getPageStore(user!, "overview");
-  const [{ stats, recentOrders }, effectivePlan] = await Promise.all([
-    getDashboardStats(store!.id),
-    getEffectivePlan(store!.id),
-  ]);
+  const [d, plan] = await Promise.all([loadOverview(store.id), getEffectivePlan(store.id)]);
+  const { k, attention: a } = d;
+  const pro = plan.isPro;
+  const s = store as typeof store & { duka_pay_status?: string; dukaPayStatus?: string };
 
-  const hasPaymentSetUp = !!(store!.paystackPublicKey || store!.bankAccountNumber);
-  const hasCustomTheme =
-    (store!.storefrontAccentColor ?? "#f59e0b") !== "#f59e0b" ||
-    (store!.storefrontFont ?? "inter") !== "inter" ||
-    (store!.storefrontCardStyle ?? "rounded") !== "rounded";
-
-  const checklistItems: ChecklistItem[] = [
-    { id: "product", label: "Add your first product", done: stats.total_products > 0, href: "/dashboard/products/new", cta: "Add" },
-    { id: "payment", label: "Set up a payment method", done: hasPaymentSetUp, href: "/dashboard/settings", cta: "Set up" },
-    { id: "logo", label: "Upload a store logo", done: !!store!.logoUrl, href: "/dashboard/settings", cta: "Upload" },
-    { id: "theme", label: "Customize your storefront theme", done: hasCustomTheme, href: "/dashboard/settings", cta: "Customize" },
-    { id: "share", label: "Share your store link", done: stats.total_visitors > 0, href: "", cta: "Copy link" },
+  const checklist: ChecklistItem[] = [
+    { id: "product", label: "Add your first product", done: k.products > 0, href: "/dashboard/products/new", cta: "Add" },
+    {
+      id: "payment",
+      label: "Turn on Duka Pay or add bank details",
+      done: (s.duka_pay_status ?? s.dukaPayStatus) === "active" || !!(store.bankAccountNumber ?? store.bank_account_number),
+      href: "/dashboard/settings",
+      cta: "Set up",
+    },
+    { id: "logo", label: "Upload a store logo", done: !!(store.logoUrl ?? store.logo_url), href: "/dashboard/settings", cta: "Upload" },
+    { id: "theme", label: "Pick a theme for your store", done: !!((store as { storefrontThemeId?: string }).storefrontThemeId ?? (store as { storefront_theme_id?: string }).storefront_theme_id), href: "/dashboard/themes", cta: "Choose" },
+    { id: "share", label: "Share your store link", done: d.visitors.v7 + d.visitors.prev7 > 0, href: "", cta: "Copy link" },
   ];
 
-  const statCards = [
-    {
-      label: "Total orders",
-      value: stats.total_orders,
-      icon: ShoppingBag,
-      color: "bg-blue-50 dark:bg-blue-950/30 text-blue-600",
-    },
-    {
-      label: "Pending orders",
-      value: stats.pending_orders,
-      icon: Clock,
-      color: "bg-yellow-50 dark:bg-yellow-950/30 text-yellow-600",
-    },
-    ...(effectivePlan.isPro
-      ? [
-          {
-            label: "Total revenue",
-            value: formatCurrency(stats.total_revenue),
-            icon: TrendingUp,
-            color: "bg-green-50 dark:bg-green-950/30 text-green-600",
-          },
-        ]
-      : []),
-    {
-      label: "Active products",
-      value: stats.total_products,
-      icon: Package,
-      color: "bg-purple-50 dark:bg-purple-950/30 text-purple-600",
-    },
-    ...(effectivePlan.isPro
-      ? [
-          {
-            label: "Unique visitors",
-            value: stats.total_visitors,
-            icon: Eye,
-            color: "bg-cyan-50 dark:bg-cyan-950/30 text-cyan-600",
-            sub: stats.today_visitors > 0 ? `${stats.today_visitors} today` : undefined,
-          },
-        ]
-      : []),
-  ];
+  const tasks = [
+    { n: a.newOrders, label: "new order", plural: "new orders", href: "/dashboard/orders?view=new", icon: ShoppingBag, tone: "text-amber-600" },
+    { n: a.transfers, label: "transfer to confirm", plural: "transfers to confirm", href: "/dashboard/orders?view=payment", icon: CreditCard, tone: "text-orange-600" },
+    { n: a.bookingsToday, label: "booking today", plural: "bookings today", href: "/dashboard/bookings", icon: CalendarDays, tone: "text-blue-600" },
+    { n: a.outOfStock, label: "product out of stock", plural: "products out of stock", href: "/dashboard/products?filter=out", icon: PackageX, tone: "text-red-600" },
+    { n: a.lowStock, label: "product running low", plural: "products running low", href: "/dashboard/products?filter=low", icon: TrendingDown, tone: "text-amber-600" },
+    { n: a.abandoned, label: "abandoned cart this week", plural: "abandoned carts this week", href: "/dashboard/abandoned", icon: ShoppingCart, tone: "text-zinc-500" },
+  ].filter((t) => t.n > 0);
+
+  const aov = k.paid30 ? k.rev30 / k.paid30 : 0;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pt-4 lg:pt-0">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-surface-900 dark:text-white">
-            Overview
-          </h1>
-          <p className="text-sm text-surface-500 dark:text-surface-400">
-            Welcome back! Here&apos;s what&apos;s happening with your store.
-          </p>
-        </div>
-        <a
-          href={
-            process.env.NEXT_PUBLIC_ROOT_DOMAIN
-              ? `https://${store!.slug}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`
-              : `/store/${store!.slug}`
-          }
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hidden sm:flex items-center gap-2 text-sm font-medium text-accent-600 dark:text-accent-400 hover:underline"
-        >
-          View storefront <ExternalLink className="w-3.5 h-3.5" />
-        </a>
-      </div>
+    <div className="space-y-3 pt-1 lg:pt-0">
+      <OnboardingChecklist items={checklist} storeUrl={getStoreUrl(store.slug, store.customDomain ?? store.custom_domain)} />
 
-      {/* Getting-started guide — dismissable */}
-      <Tip id="dash-start" variant="info">
-        <strong>How your dashboard works:</strong> Revenue counts only paid orders. Unique visitors are tracked per day (not page views). To go fully live: add products → set up your Store Page (banner + featured) → complete Billing if required.
-      </Tip>
-
-      {/* Getting-started checklist — one first-run nudge, derived from real data, auto-hides at 100% */}
-      <OnboardingChecklist items={checklistItems} storeUrl={getStoreUrl(store!.slug, store!.customDomain ?? store!.custom_domain)} />
-
-      {/* Stat cards */}
-      <div className={`grid grid-cols-2 gap-4 ${effectivePlan.isPro ? "lg:grid-cols-5" : "lg:grid-cols-3"}`}>
-        {statCards.map((card) => {
-          const Icon = card.icon;
-          return (
-            <div
-              key={card.label}
-              className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-5"
-            >
-              <div
-                className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${card.color}`}
-              >
-                <Icon className="w-5 h-5" />
-              </div>
-              <div className="text-2xl font-black text-surface-900 dark:text-white mb-1">
-                {card.value}
-              </div>
-              <div className="text-xs text-surface-500 dark:text-surface-400 font-medium">
-                {card.label}
-              </div>
-              {"sub" in card && card.sub && (
-                <div className="text-xs text-cyan-500 font-semibold mt-0.5">{card.sub}</div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Quick actions */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {[
-          {
-            href: "/dashboard/products/new",
-            label: "Add product",
-            emoji: "📦",
-          },
-          {
-            href: "/dashboard/categories",
-            label: "Manage categories",
-            emoji: "🗂️",
-          },
-          { href: "/dashboard/orders", label: "View all orders", emoji: "📋" },
-        ].map((action) => (
-          <Link
-            key={action.href}
-            href={action.href}
-            className="flex items-center gap-3 p-4 bg-white dark:bg-surface-900 rounded-xl border border-surface-100 dark:border-surface-800 hover:border-accent-300 dark:hover:border-accent-700 transition-all group"
-          >
-            <span className="text-2xl">{action.emoji}</span>
-            <span className="font-medium text-sm text-surface-900 dark:text-white">
-              {action.label}
-            </span>
-            <ArrowRight className="w-4 h-4 ml-auto text-surface-300 group-hover:text-accent-500 group-hover:translate-x-1 transition-all" />
-          </Link>
-        ))}
-      </div>
-
-      {/* Recent orders */}
-      <div className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800">
-        <div className="flex items-center justify-between p-6 border-b border-surface-100 dark:border-surface-800">
-          <h2 className="font-semibold text-surface-900 dark:text-white">
-            Recent orders
-          </h2>
-          <Link
-            href="/dashboard/orders"
-            className="text-sm text-accent-600 dark:text-accent-400 hover:underline font-medium"
-          >
-            View all
-          </Link>
-        </div>
-
-        {recentOrders.length === 0 ? (
-          <div className="p-12 text-center">
-            <ShoppingBag className="w-10 h-10 text-surface-200 dark:text-surface-700 mx-auto mb-3" />
-            <p className="text-surface-400 text-sm">No orders yet</p>
-            <p className="text-surface-300 dark:text-surface-600 text-xs mt-1">
-              Orders will appear here once customers start buying
-            </p>
-          </div>
+      {/* KPIs */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+        {pro ? (
+          <>
+            <Kpi label="Sales today" value={formatCurrency(k.revToday)} hint={`${k.ordersToday} order${k.ordersToday === 1 ? "" : "s"}`} href="/dashboard/analytics" />
+            <Kpi label="Sales · 7 days" value={formatCurrency(k.rev7)} delta={pctChange(k.rev7, k.revPrev7)} hint="vs previous 7" href="/dashboard/analytics" />
+          </>
         ) : (
-          <div className="divide-y divide-surface-50 dark:divide-surface-800">
-            {recentOrders.map((order) => (
-              <Link
-                key={order.id}
-                href={`/dashboard/orders?id=${order.id}`}
-                className="flex items-center justify-between p-4 hover:bg-surface-50 dark:hover:bg-surface-800/50 transition-colors group"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-full bg-surface-100 dark:bg-surface-800 flex items-center justify-center text-xs font-bold text-surface-600 dark:text-surface-400 shrink-0">
-                    {order.customer_name?.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium text-surface-900 dark:text-white truncate">
-                      {order.customer_name}
-                    </div>
-                    <div className="text-xs text-surface-400">
-                      {order.order_number}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <span
-                    className={`text-xs px-2 py-1 rounded-full border font-medium ${
-                      STATUS_STYLES[order.order_status ?? "pending"] ??
-                      STATUS_STYLES.pending
-                    }`}
-                  >
-                    {order.order_status}
-                  </span>
-                  <span className="text-sm font-semibold text-surface-900 dark:text-white">
-                    {formatCurrency(order.total ?? order.total_amount ?? 0)}
-                  </span>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <Link href="/dashboard/billing" className="col-span-2 flex items-center gap-3 rounded-lg border border-dashed border-zinc-300 bg-white px-3 py-2.5 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900">
+            <Lock className="h-4 w-4 shrink-0 text-zinc-400" />
+            <span className="min-w-0 text-[13px] text-zinc-600 dark:text-zinc-300">
+              <strong className="text-zinc-900 dark:text-white">Sales, visitors &amp; trends</strong> come with Pro. <span className="font-semibold underline underline-offset-2">Upgrade</span>
+            </span>
+          </Link>
         )}
+        <Kpi label="Orders · 7 days" value={String(k.orders7)} delta={pctChange(k.orders7, k.ordersPrev7)} hint="vs previous 7" href="/dashboard/orders" />
+        {pro && <Kpi label="Avg. order · 30d" value={formatCurrency(aov)} hint={`${k.paid30} paid`} />}
+        {pro && <Kpi label="Visitors · 7 days" value={String(d.visitors.v7)} delta={pctChange(d.visitors.v7, d.visitors.prev7)} hint={`${d.visitors.today} today`} href="/dashboard/analytics" />}
+        <Kpi label="Live products" value={String(k.products)} hint={`of ${plan.max_products} on ${plan.name}`} href="/dashboard/products" />
+        {!pro && <Kpi label="Waiting on you" value={String(a.newOrders + a.transfers)} hint="new orders & transfers" href="/dashboard/orders?view=new" />}
       </div>
+
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
+        {/* Sales chart */}
+        <div className="min-w-0 xl:col-span-2">
+          {pro ? (
+            <ColumnChart title="Paid sales · last 14 days" data={d.series} format="naira" />
+          ) : (
+            <Panel title="Recent orders" action={<PanelLink href="/dashboard/orders">All orders →</PanelLink>}>
+              <RecentOrders rows={d.recent} />
+            </Panel>
+          )}
+        </div>
+
+        {/* Needs attention */}
+        <Panel title="Needs your attention" action={tasks.length ? <span className="text-[11px] font-semibold text-zinc-400">{tasks.length}</span> : undefined}>
+          {tasks.length === 0 ? (
+            <div className="flex items-center gap-2 px-3 py-6 text-[13px] text-zinc-500">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400">✓</span>
+              All caught up — nothing waiting on you.
+            </div>
+          ) : (
+            <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              {tasks.map((t) => (
+                <li key={t.href}>
+                  <Link href={t.href} className="group flex items-center gap-2.5 px-3 py-2 hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
+                    <t.icon className={`h-4 w-4 shrink-0 ${t.tone}`} />
+                    <span className="flex-1 text-[13px] text-zinc-700 dark:text-zinc-200">
+                      <strong className="tabular-nums text-zinc-900 dark:text-white">{t.n}</strong> {t.n === 1 ? t.label : t.plural}
+                    </span>
+                    <ArrowRight className="h-3.5 w-3.5 text-zinc-300 transition-transform group-hover:translate-x-0.5 group-hover:text-zinc-500" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
+        {pro && (
+          <Panel className="xl:col-span-2" title="Recent orders" action={<PanelLink href="/dashboard/orders">All orders →</PanelLink>}>
+            <RecentOrders rows={d.recent} />
+          </Panel>
+        )}
+        <Panel className={pro ? "" : "xl:col-span-3"} title="Best sellers · 30 days" action={<PanelLink href="/dashboard/products">Products →</PanelLink>}>
+          {d.top.length === 0 ? (
+            <EmptyState icon={AlertTriangle} title="No sales in the last 30 days" text="Your best sellers will show here." />
+          ) : (
+            <ol className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              {d.top.map((p, i) => (
+                <li key={p.name} className="flex items-center gap-2.5 px-3 py-1.5">
+                  <span className="w-4 text-right text-[11px] font-semibold tabular-nums text-zinc-400">{i + 1}</span>
+                  {p.image ? (
+                    <Image src={clThumb(p.image)} alt="" width={28} height={28} className="h-7 w-7 shrink-0 rounded object-cover" />
+                  ) : (
+                    <span className="h-7 w-7 shrink-0 rounded bg-zinc-100 dark:bg-zinc-800" />
+                  )}
+                  <span className="min-w-0 flex-1 truncate text-[13px] text-zinc-800 dark:text-zinc-100">{p.name}</span>
+                  <span className="shrink-0 text-[11px] tabular-nums text-zinc-500">×{Number(p.qty)}</span>
+                  {pro && <span className="w-20 shrink-0 text-right text-[13px] font-semibold tabular-nums text-zinc-900 dark:text-white">{formatCurrency(Number(p.revenue))}</span>}
+                </li>
+              ))}
+            </ol>
+          )}
+        </Panel>
+      </div>
+    </div>
+  );
+}
+
+function RecentOrders({ rows }: { rows: Awaited<ReturnType<typeof loadOverview>>["recent"] }) {
+  if (!rows.length) return <EmptyState icon={ShoppingBag} title="No orders yet" text="Orders will appear here as soon as customers buy." />;
+  const now = new Date();
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-[13px]">
+        <thead>
+          <tr className="text-left text-[11px] uppercase tracking-wide text-zinc-400">
+            <th className="px-3 py-1.5 font-medium">Order</th>
+            <th className="px-3 py-1.5 font-medium">Customer</th>
+            <th className="hidden px-3 py-1.5 font-medium sm:table-cell">Payment</th>
+            <th className="px-3 py-1.5 font-medium">Status</th>
+            <th className="px-3 py-1.5 text-right font-medium">Total</th>
+            <th className="hidden px-3 py-1.5 text-right font-medium md:table-cell">
+              <Clock className="ml-auto h-3 w-3" />
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+          {rows.map((o) => (
+            <tr key={o.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40">
+              <td className="whitespace-nowrap px-3 py-1.5">
+                <Link href={`/dashboard/orders?id=${o.id}`} className="font-semibold text-zinc-900 hover:underline dark:text-white">
+                  {o.order_number}
+                </Link>
+                {o.channel === "pos" && <span className="ml-1 text-[10px] font-semibold text-zinc-400">POS</span>}
+              </td>
+              <td className="max-w-[160px] truncate px-3 py-1.5 text-zinc-700 dark:text-zinc-300">
+                {o.customer_name} <span className="text-zinc-400">· {Number(o.items)} item{Number(o.items) === 1 ? "" : "s"}</span>
+              </td>
+              <td className="hidden whitespace-nowrap px-3 py-1.5 sm:table-cell"><PaymentText status={o.payment_status} /></td>
+              <td className="px-3 py-1.5"><StatusPill status={o.order_status} /></td>
+              <td className="whitespace-nowrap px-3 py-1.5 text-right font-semibold tabular-nums text-zinc-900 dark:text-white">{formatCurrency(Number(o.total))}</td>
+              <td className="hidden whitespace-nowrap px-3 py-1.5 text-right text-[12px] text-zinc-400 md:table-cell">{timeAgo(o.created_at, now)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

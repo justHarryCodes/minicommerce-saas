@@ -1,67 +1,17 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { signOut } from "firebase/auth";
+import { ChevronsLeft, ChevronsRight, ExternalLink, LogOut, X } from "lucide-react";
 import { useDashboardDrawer } from "@/lib/dashboard-drawer-store";
 import { cn } from "@/lib/utils";
-import {
-  LayoutDashboard,
-  Package,
-  FolderTree,
-  ShoppingBag,
-  Settings,
-  LogOut,
-  ChevronRight,
-  X,
-  ExternalLink,
-  CreditCard,
-  Layout,
-  Tag,
-  Star,
-  Gift,
-  Film,
-  Palette,
-  ShoppingCart,
-  BarChart3,
-  CalendarDays,
-  Boxes,
-  Users,
-  ScanBarcode,
-  Ticket,
-  FileText,
-  Share2,
-  UserCog,
-} from "lucide-react";
 import { allowedPath, type Role } from "@/lib/access-shared";
 import { featureForPath, type Feature } from "@/lib/features-shared";
 import { auth } from "@/lib/firebase-client";
-import { signOut } from "firebase/auth";
-import { useRouter } from "next/navigation";
-
-const navItems = [
-  { href: "/dashboard", label: "Overview", icon: LayoutDashboard, pro: false },
-  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3, pro: false },
-  { href: "/dashboard/products", label: "Products", icon: Package, pro: false },
-  { href: "/dashboard/inventory", label: "Inventory", icon: Boxes, pro: false },
-  { href: "/dashboard/categories", label: "Categories", icon: FolderTree, pro: false },
-  { href: "/dashboard/orders", label: "Orders", icon: ShoppingBag, pro: false },
-  { href: "/dashboard/pos", label: "Point of sale", icon: ScanBarcode, pro: false },
-  { href: "/dashboard/customers", label: "Customers", icon: Users, pro: false },
-  { href: "/dashboard/bookings", label: "Bookings", icon: CalendarDays, pro: false },
-  { href: "/dashboard/abandoned", label: "Abandoned carts", icon: ShoppingCart, pro: false },
-  { href: "/dashboard/gift-cards", label: "Gift cards & loyalty", icon: Ticket, pro: false },
-  { href: "/dashboard/pages", label: "Pages & blog", icon: FileText, pro: false },
-  { href: "/dashboard/channels", label: "Sales channels", icon: Share2, pro: false },
-  { href: "/dashboard/storefront", label: "Store Page", icon: Layout, pro: false },
-  { href: "/dashboard/themes", label: "Themes", icon: Palette, pro: false },
-  { href: "/dashboard/reels", label: "Reels", icon: Film, pro: true },
-  { href: "/dashboard/billing", label: "Billing", icon: CreditCard, pro: false },
-  { href: "/dashboard/coupons", label: "Coupons", icon: Tag, pro: true },
-  { href: "/dashboard/reviews", label: "Reviews", icon: Star, pro: false },
-  { href: "/dashboard/referral", label: "Refer & Earn", icon: Gift, pro: false },
-  { href: "/dashboard/team", label: "Team", icon: UserCog, pro: false },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings, pro: false },
-];
+import { clLogo } from "@/lib/cloudinary";
+import { NAV_GROUPS, isActiveHref } from "./nav-config";
+import { useRail } from "./DashboardFrame";
 
 interface SidebarProps {
   store?: { name: string; slug: string; logoUrl?: string; customDomain?: string | null };
@@ -69,23 +19,24 @@ interface SidebarProps {
   role?: Role;
   /** Paid features the store's plan includes (drives the lock badges) */
   features?: Feature[];
+  /** Counts shown next to nav items, e.g. { "/dashboard/orders": 3 } */
+  badges?: Record<string, number>;
 }
+
+const ROOT = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "dukanigeria.com").replace(/^www\./, "");
 
 function SidebarContent({
   store,
   isPro,
   role = "owner",
   features,
+  badges = {},
+  rail = false,
   onClose,
-}: {
-  store?: SidebarProps["store"];
-  isPro?: boolean;
-  role?: Role;
-  features?: Feature[];
-  onClose?: () => void;
-}) {
+}: SidebarProps & { rail?: boolean; onClose?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { setCollapsed } = useDashboardDrawer();
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -93,145 +44,143 @@ function SidebarContent({
     router.push("/auth/login");
   };
 
-const ROOT = (process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "dukanigeria.com")
-  .replace(/^www\./, "");
-
-const storeUrl = store
-  ? store.customDomain ? `https://${store.customDomain}` : `https://${store.slug}.${ROOT}`
-  : null;
-
-const storeDisplayUrl = store
-  ? store.customDomain ?? `${store.slug}.${ROOT}`
-  : null;
+  const storeUrl = store ? (store.customDomain ? `https://${store.customDomain}` : `https://${store.slug}.${ROOT}`) : null;
+  const storeHost = store ? store.customDomain ?? `${store.slug}.${ROOT}` : null;
 
   return (
     <div className="flex h-full flex-col">
-      {/* Brand */}
-      <div className="flex items-center justify-between px-6 py-5 border-b border-zinc-100 dark:border-zinc-800">
-        <Image src="/logo.png" alt="Duka" width={96} height={32} style={{ height: 32, width: "auto" }} priority />
+      {/* Store */}
+      <div className={cn("flex h-12 shrink-0 items-center gap-2 border-b border-zinc-100 dark:border-zinc-800", rail ? "justify-center px-2" : "px-3")}>
+        {store?.logoUrl ? (
+          <Image src={clLogo(store.logoUrl)} alt="" width={28} height={28} className="h-7 w-7 shrink-0 rounded-md border border-zinc-200 object-contain bg-white dark:border-zinc-700" />
+        ) : (
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-accent-400 text-xs font-black text-black">
+            {(store?.name ?? "D").charAt(0).toUpperCase()}
+          </span>
+        )}
+        {!rail && (
+          <div className="min-w-0 flex-1 leading-tight">
+            <p className="truncate text-[13px] font-bold text-zinc-900 dark:text-zinc-100">{store?.name ?? "Duka"}</p>
+            {storeUrl && (
+              <a href={storeUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 truncate text-[11px] text-zinc-400 hover:text-accent-600">
+                <span className="truncate">{storeHost}</span> <ExternalLink className="h-2.5 w-2.5 shrink-0" />
+              </a>
+            )}
+          </div>
+        )}
         {onClose && (
-          <button
-            onClick={onClose}
-            className="lg:hidden p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-          >
-            <X className="h-5 w-5" />
+          <button onClick={onClose} className="rounded-md p-1 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Close menu">
+            <X className="h-4 w-4" />
           </button>
         )}
       </div>
 
-      {/* Store card */}
-      {store && storeUrl && (
-        <div className="mx-4 mt-5 mb-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 px-4 py-3 border border-zinc-200 dark:border-zinc-700">
-          <p className="text-xs font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">
-            Your store
-          </p>
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-base font-bold text-zinc-900 dark:text-zinc-100 truncate">
-                {store.name}
-              </p>
-              <p className="text-xs text-zinc-400 dark:text-zinc-500 truncate mt-0.5">
-                {storeDisplayUrl}
-              </p>
-            </div>
-            <a
-              href={storeUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-xs font-semibold text-accent-600 dark:text-accent-400 hover:underline shrink-0 mt-0.5"
-            >
-              View <ExternalLink className="h-3 w-3" />
-            </a>
-          </div>
-        </div>
-      )}
-
-      {/* Nav label */}
-      <p className="px-6 pt-4 pb-1 text-xs font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-        Menu
-      </p>
-
-      {/* Nav links */}
-      <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
-        {navItems.filter(({ href }) => allowedPath(role, href)).map(({ href, label, icon: Icon, pro }) => {
-          const active =
-            pathname === href ||
-            (href !== "/dashboard" && pathname.startsWith(href));
-          const needs = featureForPath(href);
-          const locked = features ? !!needs && !features.includes(needs) : pro && !isPro;
+      {/* Nav */}
+      <nav className="no-scrollbar flex-1 overflow-y-auto px-2 py-2">
+        {NAV_GROUPS.map((group) => {
+          const items = group.items.filter(({ href }) => allowedPath(role, href));
+          if (!items.length) return null;
           return (
-            <Link
-              key={href}
-              href={href}
-              onClick={onClose}
-              className={cn(
-                "relative flex items-center gap-3.5 px-4 py-3 rounded-xl text-base font-medium transition-all duration-150",
-                active
-                  ? "bg-accent-50 dark:bg-accent-900/20 text-accent-700 dark:text-accent-300 font-semibold"
-                  : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100",
+            <div key={group.label} className="mb-2">
+              {rail ? (
+                <div className="mx-2 my-1.5 border-t border-zinc-100 first:hidden dark:border-zinc-800" />
+              ) : (
+                <p className="px-2 pb-0.5 pt-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400 dark:text-zinc-500">{group.label}</p>
               )}
-            >
-              {/* Active left bar */}
-              {active && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-accent-500 dark:bg-accent-400" />
-              )}
-              <Icon
-                className={cn(
-                  "h-5 w-5 shrink-0",
-                  active ? "text-accent-600 dark:text-accent-400" : "",
-                )}
-              />
-              {label}
-              {locked && (
-                <span className="ml-auto text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
-                  Pro
-                </span>
-              )}
-            </Link>
+              {items.map(({ href, label, icon: Icon, pro }) => {
+                const active = isActiveHref(pathname, href) || (href !== "/dashboard" && pathname.startsWith(href));
+                const needs = featureForPath(href);
+                const locked = features ? !!needs && !features.includes(needs) : pro && !isPro;
+                const badge = badges[href] ?? 0;
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    onClick={onClose}
+                    title={rail ? label : undefined}
+                    aria-current={active ? "page" : undefined}
+                    className={cn(
+                      "relative flex h-8 items-center gap-2.5 rounded-md text-[13px] font-medium transition-colors",
+                      rail ? "justify-center px-0" : "px-2",
+                      active
+                        ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
+                        : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100",
+                    )}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    {!rail && <span className="truncate">{label}</span>}
+                    {!rail && locked && (
+                      <span className="ml-auto rounded px-1 py-px text-[9px] font-bold uppercase tracking-wide text-amber-700 ring-1 ring-amber-300 dark:text-amber-400 dark:ring-amber-700">Pro</span>
+                    )}
+                    {badge > 0 &&
+                      (rail ? (
+                        <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-accent-500" />
+                      ) : (
+                        <span className={cn("ml-auto min-w-[18px] rounded-full px-1.5 text-center text-[10px] font-bold leading-[18px]", active ? "bg-white/20" : "bg-accent-400 text-black")}>
+                          {badge > 99 ? "99+" : badge}
+                        </span>
+                      ))}
+                  </Link>
+                );
+              })}
+            </div>
           );
         })}
       </nav>
 
-      {/* Sign out */}
-      <div className="p-4 border-t border-zinc-100 dark:border-zinc-800">
+      {/* Footer */}
+      <div className={cn("flex shrink-0 items-center gap-1 border-t border-zinc-100 p-2 dark:border-zinc-800", rail && "flex-col")}>
         <button
           onClick={handleLogout}
-          className="flex w-full items-center gap-3.5 px-4 py-3 rounded-xl text-base font-medium text-zinc-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400 transition-colors"
+          title="Sign out"
+          className={cn(
+            "flex h-8 items-center gap-2.5 rounded-md text-[13px] font-medium text-zinc-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400",
+            rail ? "w-8 justify-center" : "flex-1 px-2",
+          )}
         >
-          <LogOut className="h-5 w-5" />
-          Sign out
+          <LogOut className="h-4 w-4" />
+          {!rail && "Sign out"}
         </button>
+        {!onClose && (
+          <button
+            onClick={() => setCollapsed(!rail)}
+            title={rail ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={rail ? "Expand sidebar" : "Collapse sidebar"}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800"
+          >
+            {rail ? <ChevronsRight className="h-4 w-4" /> : <ChevronsLeft className="h-4 w-4" />}
+          </button>
+        )}
       </div>
     </div>
   );
 }
 
-export function Sidebar({ store, isPro, role, features }: SidebarProps) {
+export function Sidebar(props: SidebarProps) {
   const { open, setOpen } = useDashboardDrawer();
+  const collapsed = useRail();
 
   return (
     <>
-      {/* Mobile overlay */}
-      {open && (
-        <div
-          className="lg:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
-          onClick={() => setOpen(false)}
-        />
-      )}
-
       {/* Mobile drawer */}
+      {open && <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden" onClick={() => setOpen(false)} />}
       <aside
         className={cn(
-          "lg:hidden fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-zinc-950 border-r border-zinc-100 dark:border-zinc-800 shadow-xl transition-transform duration-300",
+          "fixed inset-y-0 left-0 z-50 w-64 border-r border-zinc-100 bg-white shadow-xl transition-transform duration-300 dark:border-zinc-800 dark:bg-zinc-950 lg:hidden",
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <SidebarContent store={store} isPro={isPro} role={role} features={features} onClose={() => setOpen(false)} />
+        <SidebarContent {...props} onClose={() => setOpen(false)} />
       </aside>
 
-      {/* Desktop fixed sidebar */}
-      <aside className="hidden lg:flex flex-col fixed inset-y-0 left-0 z-30 w-64 bg-white dark:bg-zinc-950 border-r border-zinc-100 dark:border-zinc-800">
-        <SidebarContent store={store} isPro={isPro} role={role} features={features} />
+      {/* Desktop: full sidebar or icon rail */}
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-zinc-100 bg-white transition-[width] duration-200 dark:border-zinc-800 dark:bg-zinc-950 lg:flex",
+          collapsed ? "w-14" : "w-56",
+        )}
+      >
+        <SidebarContent {...props} rail={collapsed} />
       </aside>
     </>
   );

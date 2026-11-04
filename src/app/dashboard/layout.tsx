@@ -11,6 +11,8 @@ import DashboardBottomNav from "@/components/dashboard/DashboardBottomNav";
 import { SubscriptionGuard } from "@/components/dashboard/SubscriptionGuard";
 import TutorialBanner from "@/components/dashboard/TutorialBanner";
 import TawkChat from "@/components/dashboard/TawkChat";
+import DashboardFrame from "@/components/dashboard/DashboardFrame";
+import { queryOne } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -46,7 +48,16 @@ export default async function DashboardLayout({
     store.subscriptionStatus === "subscribed";
   if (!onBillingPage && !paid && role === "owner") redirect("/dashboard/billing");
 
-  const [effectivePlan, features] = await Promise.all([getEffectivePlan(store.id), getStoreFeatures(store.id)]);
+  const [effectivePlan, features, attention] = await Promise.all([
+    getEffectivePlan(store.id),
+    getStoreFeatures(store.id),
+    // Sidebar badge: orders waiting on the store (new, or a transfer to confirm)
+    queryOne<{ n: number }>(
+      `SELECT COUNT(*)::int AS n FROM orders
+       WHERE store_id = $1 AND (order_status = 'pending' OR payment_status = 'pending_confirmation')`,
+      [store.id]
+    ).catch(() => null),
+  ]);
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
@@ -60,13 +71,14 @@ export default async function DashboardLayout({
         isPro={effectivePlan.isPro}
         role={role}
         features={[...features]}
+        badges={{ "/dashboard/orders": attention?.n ?? 0 }}
       />
 
-      {/* Main — offset by sidebar width on desktop, full width on mobile */}
-      <div className="lg:pl-64 flex flex-col min-h-screen">
-        <Topbar user={user} store={store} />
-        {/* pt-14 = mobile header height; pb-16 = mobile bottom nav height */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 pt-14 lg:pt-6 pb-20 lg:pb-8">
+      {/* Main — offset by the sidebar (full or icon rail) on desktop */}
+      <DashboardFrame>
+        <Topbar user={user} store={store} role={role} />
+        {/* pt-14 clears the 48px mobile header; pb-20 the mobile bottom nav */}
+        <main className="mx-auto w-full max-w-[1600px] flex-1 px-3 pb-20 pt-14 sm:px-4 lg:px-5 lg:pb-6 lg:pt-4">
           {role === "owner" ? (
             <>
               <SubscriptionGuard />
@@ -89,7 +101,7 @@ export default async function DashboardLayout({
           )}
           <TawkChat />
         </main>
-      </div>
+      </DashboardFrame>
 
       {/* Mobile bottom nav + FAB */}
       <DashboardBottomNav role={role} />
