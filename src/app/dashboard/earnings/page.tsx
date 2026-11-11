@@ -7,6 +7,8 @@ import { formatCurrency } from "@/lib/utils";
 import { platformFeePercent } from "@/lib/duka-pay";
 import { EARNINGS_RANGES, parseRange, storeEarnings, type EarningsRange } from "@/lib/duka-pay-earnings";
 import { EmptyState, Kpi, PageHeader, Panel } from "@/components/dashboard/ui";
+import PayoutTimingNote from "@/components/dashboard/PayoutTimingNote";
+import { expectedPayoutDate, lagosDate, shortDay } from "@/lib/payout-timing";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +29,7 @@ export default async function EarningsPage({ searchParams }: { searchParams: Pro
   ]);
   const connected = payout?.duka_pay_status === "active";
   const fee = platformFeePercent();
+  const today = lagosDate(new Date());
 
   return (
     <div className="space-y-3 pt-1 lg:pt-0">
@@ -77,8 +80,10 @@ export default async function EarningsPage({ searchParams }: { searchParams: Pro
             <Kpi label="Received online" value={formatCurrency(totals.gross)} hint={`${totals.payments} payment${totals.payments === 1 ? "" : "s"}`} />
             <Kpi label="Paystack fees" value={formatCurrency(totals.paystackFees)} hint="card / transfer processing" />
             <Kpi label={`Duka fee · ${fee}%`} value={formatCurrency(totals.dukaFees)} hint="of each successful payment" />
-            <Kpi label="Paid to you" value={formatCurrency(totals.toStores)} hint="settled to your bank" />
+            <Kpi label="Paid to you" value={formatCurrency(totals.toStores)} hint="reaches your bank the next working day" />
           </div>
+
+          <PayoutTimingNote />
 
           <Panel title={`Payments · ${RANGE_LABEL[range]}`}>
             {rows.length === 0 ? (
@@ -117,7 +122,16 @@ export default async function EarningsPage({ searchParams }: { searchParams: Pro
                         <td className="whitespace-nowrap px-3 py-1.5 text-right text-zinc-900 dark:text-white">{formatCurrency(r.amount)}</td>
                         <td className="hidden whitespace-nowrap px-3 py-1.5 text-right text-zinc-500 sm:table-cell">−{formatCurrency(r.paystackFee)}</td>
                         <td className="hidden whitespace-nowrap px-3 py-1.5 text-right text-zinc-500 sm:table-cell">−{formatCurrency(r.dukaFee)}</td>
-                        <td className="whitespace-nowrap px-3 py-1.5 text-right font-semibold text-emerald-700 dark:text-emerald-400">{formatCurrency(r.storeShare)}</td>
+                        <td className="whitespace-nowrap px-3 py-1.5 text-right font-semibold text-emerald-700 dark:text-emerald-400">
+                          {formatCurrency(r.storeShare)}
+                          {(() => {
+                            // Not in the bank yet: say when it's due
+                            const due = expectedPayoutDate(new Date(r.settledAt));
+                            return due >= today ? (
+                              <span className="block text-[11px] font-medium text-sky-600 dark:text-sky-400">Arriving {shortDay(due)}</span>
+                            ) : null;
+                          })()}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

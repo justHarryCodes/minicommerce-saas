@@ -6,6 +6,7 @@ import { Select } from "@/components/ui/Select";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { BadgeCheck, Loader2, Pause, ShieldCheck, Zap } from "lucide-react";
+import PayoutTimingNote from "./PayoutTimingNote";
 
 type Status = "active" | "disabled" | "not_connected";
 interface Payout {
@@ -131,6 +132,8 @@ export default function DukaPaySettings({
         <li className="flex items-center gap-2"><ShieldCheck className="h-3.5 w-3.5 text-emerald-500" /> Payments are confirmed automatically — no screenshots to check</li>
         <li className="flex items-center gap-2"><BadgeCheck className="h-3.5 w-3.5 text-emerald-500" /> Fee: {payout.feePercent}% Duka + Paystack&apos;s standard fee, taken from each successful payment</li>
       </ul>
+
+      <PayoutTimingNote className="mt-4" />
 
       {active && !editing && (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-surface-50 px-4 py-3 dark:bg-surface-800/60">
