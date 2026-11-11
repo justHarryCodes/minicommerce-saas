@@ -86,6 +86,21 @@ export default async function StorefrontLayout({ params, children }: Props) {
 
   const theme = await getRequestTheme(store);
 
+  // Star ratings on product cards: one summary per store, [average, count]
+  const ratings = await storeCached(store.id, "ratings", async () =>
+    Object.fromEntries(
+      (
+        await query<{ product_id: string; avg: string; n: string }>(
+          `SELECT product_id, ROUND(AVG(rating)::numeric, 1) AS avg, COUNT(*) AS n
+           FROM reviews
+           WHERE store_id = $1 AND is_approved = true AND product_id IS NOT NULL
+           GROUP BY product_id`,
+          [store.id]
+        ).catch(() => [])
+      ).map((r) => [r.product_id, [Number(r.avg), Number(r.n)]])
+    ) as Record<string, [number, number]>
+  );
+
   // AI assistant only ever renders when the merchant opted in AND the store's
   // effective plan is Pro AND a provider key is actually configured —
   // resolved once here so the widget itself doesn't need to re-check any of it.
@@ -100,6 +115,7 @@ export default async function StorefrontLayout({ params, children }: Props) {
       storeSlug={slug}
       storeBase={storeBase}
       aiAssistantEnabled={showAssistant}
+      ratings={ratings}
       extras={
         <>
           <VisitTracker storeSlug={slug} storeId={store.id} />

@@ -10,7 +10,7 @@ import { AnimatePresence, m } from "framer-motion";
 import dynamic from "next/dynamic";
 import { ArrowRight, ChevronDown, Grid2X2, Heart, Home, Search, ShoppingBag, X } from "lucide-react";
 import {
-  Bar, CartButton, CategoryLinks, CountBadge, Logo, MenuButton, SavedButton, SearchBar, SearchIcon, iconBtn, toneStyle, useNav,
+  Bar, CartButton, CategoryLinks, CategoryRail, CountBadge, Logo, MenuButton, SavedButton, SearchBar, SearchIcon, iconBtn, toneStyle, useNav,
 } from "../core";
 import { MobileRow } from "./basic";
 
@@ -43,6 +43,15 @@ export function FloatingNav() {
           </div>
         </div>
       </m.div>
+      {/* Phones: categories in a second pill under the bar */}
+      {opts.categories && (
+        <div
+          className="mx-auto mt-2 overflow-hidden rounded-full border border-[color:var(--nav-line)] shadow-sm lg:hidden"
+          style={{ ...toneStyle(opts.tone), background: opts.tone === "page" ? "color-mix(in srgb, var(--sf-page) 82%, transparent)" : "var(--nav-bg)", color: "var(--nav-fg)", backdropFilter: "blur(18px)" }}
+        >
+          <CategoryRail plain className="px-3" />
+        </div>
+      )}
     </header>
   );
 }
@@ -158,6 +167,7 @@ export function DrawerNav() {
             <CartButton bag />
           </div>
         </div>
+        <CategoryRail className="lg:hidden" />
       </Bar>
       <AnimatePresence>
         {open && (
@@ -247,6 +257,7 @@ export function AppNav() {
             <CartButton />
           </div>
         </div>
+        <CategoryRail className="lg:hidden" />
       </Bar>
 
       {showTabs && (
@@ -314,6 +325,7 @@ export function OverlayNav() {
           <CartButton bag />
         </div>
       </div>
+      <CategoryRail className="lg:hidden" />
     </header>
   );
 }

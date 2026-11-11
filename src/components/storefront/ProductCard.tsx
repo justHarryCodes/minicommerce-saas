@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingCart, Check, Heart, Plus, ShoppingBag, ArrowRight } from "lucide-react";
+import { ShoppingCart, Check, Heart, Plus, ShoppingBag, ArrowRight, Star } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "./CartProvider";
 import { useBookmarks } from "@/hooks/useBookmarks";
@@ -25,7 +25,7 @@ function plainText(html?: string): string {
 export default function ProductCard({ product, storeSlug }: Props) {
   const { addItem } = useCart();
   const { isBookmarked, toggleBookmark } = useBookmarks(storeSlug);
-  const { storeBase, theme } = useStore();
+  const { storeBase, theme, ratings } = useStore();
   const [added, setAdded] = useState(false);
 
   const images = product.images ?? [];
@@ -94,11 +94,53 @@ export default function ProductCard({ product, storeSlug }: Props) {
     </p>
   ) : null;
 
+  // Stars from approved reviews (only when the product has any)
+  const rating = ratings[product.id];
+  const ratingRow = rating ? (
+    <div className="flex items-center gap-1 text-[11px]" aria-label={`Rated ${rating[0]} out of 5 from ${rating[1]} review${rating[1] === 1 ? "" : "s"}`}>
+      <span className="flex" aria-hidden>
+        {[1, 2, 3, 4, 5].map((i) => (
+          <Star
+            key={i}
+            className={`h-3 w-3 ${i <= Math.round(rating[0]) ? "fill-amber-400 text-amber-400" : "fill-surface-200 text-surface-200 dark:fill-surface-700 dark:text-surface-700"}`}
+          />
+        ))}
+      </span>
+      <span className="font-semibold text-surface-700 dark:text-surface-300">{rating[0].toFixed(1)}</span>
+      <span className="text-surface-400">({rating[1]})</span>
+    </div>
+  ) : null;
+
+  // Low stock nudge
+  const lowStock = !outOfStock && !isBookable && stockQty > 0 && stockQty <= 5 ? (
+    <p className="text-[11px] font-semibold text-orange-600 dark:text-orange-400">Only {stockQty} left</p>
+  ) : null;
+
+  const blurbLine = blurb ? (
+    <p className="line-clamp-1 text-[11px] leading-snug text-surface-500 dark:text-surface-400">{blurb}</p>
+  ) : null;
+
   const discountBadge = hasDiscount && (
-    <div className="absolute top-2.5 left-2.5 z-[2] px-2 py-0.5 rounded-full text-[11px] font-black tracking-wide" style={onAccent}>
+    <div className="absolute top-2.5 left-2.5 z-[2] px-1.5 py-0.5 text-[11px] font-black tracking-wide" style={onAccent}>
       -{discountPct}%
     </div>
   );
+
+  /** Add to cart: always visible, under the heart. */
+  function cartIcon(Icon: typeof ShoppingCart = ShoppingCart) {
+    if (outOfStock) return null;
+    return (
+      <button
+        onClick={handleAddToCart}
+        aria-label={added ? "Added to cart" : addLabel}
+        title={addLabel}
+        className="absolute top-12 right-2.5 z-[2] w-8 h-8 rounded-full flex items-center justify-center shadow-md transition-all duration-200 hover:scale-110 active:scale-95"
+        style={added ? { backgroundColor: "#10b981", color: "#fff" } : onAccent}
+      >
+        {added ? <Check className="w-3.5 h-3.5" /> : <Icon className="w-3.5 h-3.5" />}
+      </button>
+    );
+  }
 
   const bookmarkButton = (
     <button
@@ -206,7 +248,7 @@ export default function ProductCard({ product, storeSlug }: Props) {
   if (theme.layout.card === "editorial") {
     return (
       <Link href={href} prefetch={false} className="group flex flex-col">
-        <div className="relative aspect-[3/4] overflow-hidden rounded-[var(--sf-radius)] bg-surface-100 dark:bg-surface-800">
+        <div className="relative aspect-[3/4] overflow-hidden bg-surface-100 dark:bg-surface-800">
           {photo(gridSizes, hoverImageUrl ? "group-hover:opacity-0" : "group-hover:scale-[1.03]")}
           {hoverImageUrl && (
             <Image
@@ -221,18 +263,15 @@ export default function ProductCard({ product, storeSlug }: Props) {
           {discountBadge}
           {bookmarkButton}
           {soldOut}
-          <button
-            onClick={handleAddToCart}
-            disabled={outOfStock}
-            className="absolute inset-x-2 bottom-2 z-[2] flex items-center justify-center gap-1.5 py-2.5 rounded-[var(--sf-radius-btn)] text-xs font-bold uppercase tracking-wider transition-all duration-300 lg:translate-y-[130%] lg:group-hover:translate-y-0 disabled:hidden"
-            style={added ? { backgroundColor: "#10b981", color: "#fff" } : onAccent}
-          >
-            {added ? <><Check className="w-3.5 h-3.5" /> Added</> : <><ShoppingBag className="w-3.5 h-3.5" /> {addLabel}</>}
-          </button>
+          {cartIcon(ShoppingBag)}
         </div>
-        <div className="pt-3 space-y-1">
+        <div className="px-1 pt-2.5 pb-1 space-y-1">
           <p className="text-sm font-medium text-surface-800 dark:text-surface-100 line-clamp-1">{product.name}</p>
+          {blurbLine}
+          {ratingRow}
           {price}
+          {savings}
+          {lowStock}
         </div>
       </Link>
     );
@@ -242,24 +281,20 @@ export default function ProductCard({ product, storeSlug }: Props) {
   if (theme.layout.card === "minimal") {
     return (
       <Link href={href} prefetch={false} className="group flex flex-col">
-        <div className="relative aspect-square overflow-hidden rounded-[var(--sf-radius)] bg-surface-100 dark:bg-surface-800">
+        <div className="relative aspect-square overflow-hidden bg-surface-100 dark:bg-surface-800">
           {photo(gridSizes, "group-hover:scale-[1.04]")}
           {discountBadge}
           {bookmarkButton}
           {soldOut}
-          <button
-            onClick={handleAddToCart}
-            disabled={outOfStock}
-            aria-label={addLabel}
-            className="absolute bottom-2.5 right-2.5 z-[2] w-9 h-9 rounded-full flex items-center justify-center shadow-md transition-transform hover:scale-110 active:scale-95 disabled:hidden"
-            style={added ? { backgroundColor: "#10b981", color: "#fff" } : onAccent}
-          >
-            {added ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-          </button>
+          {cartIcon()}
         </div>
-        <div className="pt-2.5 space-y-0.5">
+        <div className="px-1 pt-2 pb-1 space-y-1">
           <p className="text-[13px] font-semibold text-surface-800 dark:text-surface-100 line-clamp-2 leading-snug">{product.name}</p>
+          {blurbLine}
+          {ratingRow}
           {price}
+          {savings}
+          {lowStock}
         </div>
       </Link>
     );
@@ -270,33 +305,25 @@ export default function ProductCard({ product, storeSlug }: Props) {
     <Link
       href={href}
       prefetch={false}
-      className="group flex flex-col rounded-[var(--sf-radius)] bg-white dark:bg-surface-900 border border-surface-100 dark:border-surface-800 overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_28px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_28px_rgba(0,0,0,0.35)] hover:-translate-y-0.5 transition-all duration-200"
+      className="group flex flex-col bg-white dark:bg-surface-900 border border-surface-100 dark:border-surface-800 overflow-hidden hover:shadow-[0_8px_28px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_8px_28px_rgba(0,0,0,0.35)] transition-shadow duration-200"
     >
       <div className="relative aspect-square overflow-hidden bg-surface-50 dark:bg-surface-800">
         {photo(gridSizes, "group-hover:scale-[1.04]")}
         {discountBadge}
         {soldOut}
         {bookmarkButton}
-        {/* Add to cart: always visible, under the heart */}
-        {!outOfStock && (
-          <button
-            onClick={handleAddToCart}
-            aria-label={added ? "Added to cart" : addLabel}
-            title={addLabel}
-            className="absolute top-12 right-2.5 z-[2] w-8 h-8 rounded-full flex items-center justify-center shadow-md transition-all duration-200 hover:scale-110 active:scale-95"
-            style={added ? { backgroundColor: "#10b981", color: "#fff" } : onAccent}
-          >
-            {added ? <Check className="w-3.5 h-3.5" /> : <ShoppingCart className="w-3.5 h-3.5" />}
-          </button>
-        )}
+        {cartIcon()}
       </div>
 
       <div className="flex flex-col flex-1 px-2.5 pt-2 pb-2.5 gap-1 sm:p-3 sm:pt-2.5">
-        <p className="text-[13px] font-semibold text-surface-800 dark:text-surface-100 line-clamp-2 leading-snug flex-1">
+        <p className="text-[13px] font-semibold text-surface-800 dark:text-surface-100 line-clamp-2 leading-snug">
           {product.name}
         </p>
-        <div className="mt-0.5">{price}</div>
+        {blurbLine}
+        {ratingRow}
+        <div className="mt-auto pt-0.5">{price}</div>
         {savings}
+        {lowStock}
       </div>
     </Link>
   );

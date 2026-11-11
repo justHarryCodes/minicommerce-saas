@@ -43,7 +43,11 @@ const isListCard = (layout: ThemeLayout) => layout.card === "menu" || layout.car
 export function gridClass(layout: ThemeLayout): string {
   if (isListCard(layout)) return "grid grid-cols-1 gap-3 md:grid-cols-2 sm:gap-4";
   // Classic cards sit 2px apart on phones so each card gets more width
-  const gap = layout.card === "editorial" ? "gap-x-3 gap-y-9 sm:gap-x-5" : layout.card === "classic" ? "gap-0.5 sm:gap-4" : "gap-3 sm:gap-4";
+  const gap =
+    layout.card === "editorial" ? "gap-x-0.5 gap-y-6 sm:gap-x-5 sm:gap-y-9"
+    : layout.card === "minimal" ? "gap-x-0.5 gap-y-4 sm:gap-4"
+    : layout.card === "classic" ? "gap-0.5 sm:gap-4"
+    : "gap-3 sm:gap-4";
   const cols: Record<ThemeLayout["columns"], string> = {
     2: "grid-cols-2",
     3: "grid-cols-2 lg:grid-cols-3",

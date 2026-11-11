@@ -51,12 +51,14 @@ interface Props {
   storeSlug: string;
   storeBase: string;
   aiAssistantEnabled?: boolean;
+  /** Review summary per product id: [average, count] (cards show stars) */
+  ratings?: Record<string, [number, number]>;
   /** Rendered inside the providers, after the nav (tracking, assistant, …) */
   extras?: React.ReactNode;
   children: React.ReactNode;
 }
 
-export default function StorefrontShell({ store, theme, categories, storeSlug, storeBase, aiAssistantEnabled = false, extras, children }: Props) {
+export default function StorefrontShell({ store, theme, categories, storeSlug, storeBase, aiAssistantEnabled = false, ratings, extras, children }: Props) {
   const { mode, bodyFont, headingFont } = theme.tokens;
   const announcement = theme.copy.announcement;
   // Opening hours (food stores mostly): live open/closed bar
@@ -64,7 +66,7 @@ export default function StorefrontShell({ store, theme, categories, storeSlug, s
   const prep = store.prep_time_minutes ? Number(store.prep_time_minutes) : null;
 
   return (
-    <StoreProvider storeSlug={storeSlug} storeBase={storeBase} theme={theme} aiAssistantEnabled={aiAssistantEnabled}>
+    <StoreProvider storeSlug={storeSlug} storeBase={storeBase} theme={theme} aiAssistantEnabled={aiAssistantEnabled} ratings={ratings}>
       <CartProvider storeId={store.id}>
         <div className={`storefront min-h-screen ${mode === "dark" ? "dark" : ""}`} style={{ fontFamily: "var(--sf-font)" }} data-theme={theme.id}>
           <link rel="preconnect" href="https://fonts.googleapis.com" />

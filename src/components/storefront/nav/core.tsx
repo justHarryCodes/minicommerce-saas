@@ -377,7 +377,7 @@ export function CategoryLinks({ max = Infinity, className = "", linkClass = "" }
 
 /** Phone category rail under the header: every category as a swipeable
  *  tab, the current one underlined and scrolled into view. */
-export function CategoryRail({ className = "" }: { className?: string }) {
+export function CategoryRail({ className = "", plain = false }: { className?: string; plain?: boolean }) {
   const { categories, homeHref, activeCategory, isHome, opts } = useNav();
   const ref = useRef<HTMLElement>(null);
   useActiveIntoView(ref, activeCategory);
@@ -387,7 +387,7 @@ export function CategoryRail({ className = "" }: { className?: string }) {
     `relative flex h-10 shrink-0 items-center whitespace-nowrap px-3 text-[13px] font-semibold transition-opacity ${active ? "opacity-100" : "opacity-70 hover:opacity-100"}`;
   const bar = <span className="absolute inset-x-3 bottom-0 h-[3px] rounded-t-full" style={{ background: "var(--sf-accent)" }} />;
   return (
-    <nav ref={ref} aria-label="Categories" className={`no-scrollbar flex overflow-x-auto border-t border-[color:var(--nav-line)] px-1 ${className}`}>
+    <nav ref={ref} aria-label="Categories" className={`no-scrollbar flex overflow-x-auto px-1 ${plain ? "" : "border-t border-[color:var(--nav-line)]"} ${className}`}>
       <Link href={homeHref} data-active={allActive} className={tab(allActive)}>
         All
         {allActive && bar}

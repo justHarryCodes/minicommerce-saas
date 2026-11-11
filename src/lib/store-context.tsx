@@ -11,6 +11,8 @@ interface StoreCtx {
   theme: ResolvedTheme;
   /** Resolved server-side (plan + merchant opt-in) — components just read this, no re-checking. */
   aiAssistantEnabled: boolean;
+  /** Approved-review summary per product: [average, count] */
+  ratings: Record<string, [number, number]>;
 }
 
 // No default theme on purpose: building one here pulled the whole theme
@@ -21,6 +23,7 @@ const StoreCtx = createContext<StoreCtx>({
   storeBase: "",
   theme: null as unknown as ResolvedTheme,
   aiAssistantEnabled: false,
+  ratings: {},
 });
 
 export function StoreProvider({
@@ -29,15 +32,17 @@ export function StoreProvider({
   storeBase,
   theme,
   aiAssistantEnabled = false,
+  ratings = {},
 }: {
   children: React.ReactNode;
   storeSlug: string;
   storeBase: string;
   theme: ResolvedTheme;
   aiAssistantEnabled?: boolean;
+  ratings?: Record<string, [number, number]>;
 }) {
   return (
-    <StoreCtx.Provider value={{ storeSlug, storeBase, theme, aiAssistantEnabled }}>
+    <StoreCtx.Provider value={{ storeSlug, storeBase, theme, aiAssistantEnabled, ratings }}>
       {children}
     </StoreCtx.Provider>
   );
