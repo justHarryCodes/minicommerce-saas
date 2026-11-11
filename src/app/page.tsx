@@ -25,6 +25,8 @@ import {
 import ProductSlider, { type ProductSlide } from "./ProductSlider";
 import HomeNav from "./HomeNav";
 import Footer from "@/components/Footer";
+import GooglePlayBadge from "@/components/GooglePlayBadge";
+import { Bell, Camera, CreditCard } from "lucide-react";
 
 const CATEGORY_META: Record<string, { icon: string; color: string }> = {
   "Fashion and Clothing": { icon: "👗", color: "#ec4899" },
@@ -407,6 +409,13 @@ export default async function HomePage() {
                 </li>
               ))}
             </ul>
+
+            <div className="mt-7 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
+              <GooglePlayBadge size="sm" />
+              <span className="text-sm" style={{ color: "var(--text-muted)" }}>
+                Manage your store from the Duka app
+              </span>
+            </div>
           </div>
 
           {/* Hero visual: storefront mock */}
@@ -1145,6 +1154,73 @@ export default async function HomePage() {
               See pricing
             </Link>
           </p>
+        </div>
+      </section>
+
+      {/* ═════════════ VENDOR APP ═════════════ */}
+      <section id="app" className="px-4 pb-20">
+        <div
+          className="mx-auto grid max-w-7xl items-center gap-10 overflow-hidden rounded-[2rem] border px-6 py-12 sm:px-12 lg:grid-cols-[1.1fr_0.9fr] lg:py-14"
+          style={{ background: "var(--bg-secondary, var(--bg))", borderColor: "var(--border)" }}
+        >
+          <div className="text-center lg:text-left">
+            <p className="mb-3 text-sm font-bold uppercase tracking-widest" style={{ color: "var(--accent)" }}>
+              The Duka app
+            </p>
+            <h2 className="mb-4 text-3xl font-black leading-tight sm:text-5xl" style={{ color: "var(--text-primary)" }}>
+              Your whole store, in your pocket.
+            </h2>
+            <p className="mx-auto mb-7 max-w-lg text-lg lg:mx-0" style={{ color: "var(--text-secondary)" }}>
+              Get an alert the moment an order lands, confirm payments and add new products straight from your phone camera.
+            </p>
+            <ul className="mx-auto mb-8 grid w-fit max-w-lg gap-3 text-left sm:w-auto sm:grid-cols-3 lg:mx-0">
+              {[
+                { icon: Bell, t: "Instant order alerts" },
+                { icon: Camera, t: "Snap and list products" },
+                { icon: CreditCard, t: "Confirm payments fast" },
+              ].map(({ icon: Icon, t }) => (
+                <li key={t} className="flex items-center gap-2 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: "var(--accent-light)" }}>
+                    <Icon className="h-4 w-4 text-black" />
+                  </span>
+                  {t}
+                </li>
+              ))}
+            </ul>
+            <GooglePlayBadge />
+          </div>
+
+          {/* Phone mock */}
+          <div className="relative mx-auto w-56 sm:w-64" aria-hidden>
+            <div className="rounded-[2.2rem] border-[6px] border-zinc-900 bg-zinc-900 shadow-2xl">
+              <div className="overflow-hidden rounded-[1.7rem] bg-white">
+                <div className="flex items-center justify-between bg-zinc-900 px-4 pb-3 pt-4 text-white">
+                  <span className="text-sm font-black">Duka</span>
+                  <Bell className="h-4 w-4" />
+                </div>
+                <div className="space-y-2.5 p-3">
+                  <div className="rounded-xl p-3 text-black" style={{ background: "var(--accent)" }}>
+                    <p className="text-[10px] font-bold uppercase opacity-70">Today</p>
+                    <p className="text-xl font-black">₦184,500</p>
+                    <p className="text-[11px] font-semibold opacity-80">12 orders</p>
+                  </div>
+                  {[
+                    ["New order #1042", "₦24,000 · Paid", "bg-green-500"],
+                    ["New order #1041", "₦9,500 · Transfer", "bg-amber-500"],
+                    ["Low stock", "Ankara gown · 2 left", "bg-red-500"],
+                  ].map(([a, b, dot]) => (
+                    <div key={a} className="flex items-center gap-2.5 rounded-xl border border-zinc-100 p-2.5">
+                      <span className={`h-2 w-2 shrink-0 rounded-full ${dot}`} />
+                      <div className="min-w-0">
+                        <p className="truncate text-xs font-bold text-zinc-900">{a}</p>
+                        <p className="truncate text-[11px] text-zinc-500">{b}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 

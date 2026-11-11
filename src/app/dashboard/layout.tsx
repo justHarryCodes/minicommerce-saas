@@ -8,6 +8,7 @@ import { Sidebar } from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
 import DashboardBottomNav from "@/components/dashboard/DashboardBottomNav";
 import TutorialBanner from "@/components/dashboard/TutorialBanner";
+import AppBanner from "@/components/dashboard/AppBanner";
 import TawkChat from "@/components/dashboard/TawkChat";
 import DashboardFrame from "@/components/dashboard/DashboardFrame";
 import { queryOne } from "@/lib/db";
@@ -74,6 +75,7 @@ export default async function DashboardLayout({
               Signed in as <span className="font-semibold text-zinc-800 dark:text-zinc-200">{ROLE_LABEL[role]}</span> at {store.name}
             </p>
           )}
+          <AppBanner />
           {children}
           <TawkChat />
         </main>

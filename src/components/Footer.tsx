@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import GooglePlayBadge from "@/components/GooglePlayBadge";
 
 const columns: { title: string; links: { href: string; label: string }[] }[] = [
   {
@@ -67,6 +68,7 @@ export default function Footer() {
             >
               Start selling <ArrowRight className="h-4 w-4" />
             </Link>
+            <GooglePlayBadge size="sm" />
           </div>
 
           {/* Link columns */}

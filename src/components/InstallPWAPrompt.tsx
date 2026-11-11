@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { X, Share, PlusSquare, Download } from "lucide-react";
 
 const DISMISSED_KEY = "duka_install_prompt_dismissed_at";
@@ -54,9 +55,12 @@ export function InstallPWAPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showIOSInstructions, setShowIOSInstructions] = useState(false);
   const [visible, setVisible] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     if (isStandalone() || wasDismissedRecently()) return;
+    // Vendor pages promote the real Duka app on Google Play instead
+    if (pathname?.startsWith("/dashboard") || document.querySelector("[data-play-promo]")) return;
 
     if (isIOS()) {
       setShowIOSInstructions(true);
@@ -71,7 +75,7 @@ export function InstallPWAPrompt() {
     }
     window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
     return () => window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
-  }, []);
+  }, [pathname]);
 
   if (!visible) return null;
 
