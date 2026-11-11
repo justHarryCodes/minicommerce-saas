@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useRef, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, type ReactNode } from "react";
 import { create, useStore } from "zustand";
 import { persist } from "zustand/middleware";
 import type { CartItem } from "@/types";
@@ -12,8 +12,6 @@ interface CartStore {
   removeItem: (productId: string, size?: string | null, startsAt?: string | null) => void;
   updateQuantity: (productId: string, qty: number, size?: string | null) => void;
   clearCart: () => void;
-  totalItems: number;
-  totalAmount: number;
 }
 
 // Two cart lines for the same product are distinct exactly when their size
@@ -29,7 +27,7 @@ type StoreApi = ReturnType<typeof createCartStore>;
 function createCartStore(storeId: string) {
   return create<CartStore>()(
     persist(
-      (set, get) => ({
+      (set) => ({
         items: [],
         storeId,
 
@@ -86,17 +84,27 @@ function createCartStore(storeId: string) {
         },
 
         clearCart: () => set({ items: [] }),
-
-        get totalItems() {
-          return get().items.reduce((sum, i) => sum + i.quantity, 0);
-        },
-        get totalAmount() {
-          return get().items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-        },
       }),
-      { name: `cart-${storeId}` }
+      {
+        name: `cart-${storeId}`,
+        // Only the lines are saved. (Totals used to live in the store as
+        // getters; restoring a saved cart copied them before the store
+        // existed, which threw and silently dropped the whole cart on every
+        // refresh. useCart computes totals instead.)
+        partialize: (s) => ({ items: s.items }),
+        merge: (persisted, current) => ({ ...current, items: savedItems(persisted) }),
+      }
     )
   );
+}
+
+/** Cart lines from storage, skipping anything malformed. */
+function savedItems(persisted: unknown): CartItem[] {
+  const items = (persisted as { items?: unknown } | null)?.items;
+  if (!Array.isArray(items)) return [];
+  return items
+    .filter((i): i is CartItem => !!i && typeof i === "object" && typeof (i as CartItem).product_id === "string" && Number((i as CartItem).quantity) > 0)
+    .map((i) => ({ ...i, price: Number(i.price), quantity: Number(i.quantity), stock_quantity: Number(i.stock_quantity) }));
 }
 
 type CartContextValue = { storeApi: StoreApi; storeId: string };
@@ -119,6 +127,16 @@ export default function CartProvider({ storeId, children }: { storeId: string; c
   if (!storeRef.current || storeRef.current.id !== storeId) {
     storeRef.current = { id: storeId, api: createCartStore(storeId) };
   }
+  const api = storeRef.current.api;
+
+  // Another tab changed this store's cart: pick it up here too
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === `cart-${storeId}`) void api.persist.rehydrate();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [api, storeId]);
 
   return (
     <CartContext.Provider value={{ storeApi: storeRef.current.api, storeId }}>
