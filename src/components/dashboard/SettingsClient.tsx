@@ -165,7 +165,8 @@ export default function SettingsClient({ store: initial, messaging = { sms: fals
 
       const credential = EmailAuthProvider.credential(currentUser.email, emailForm.currentPassword);
       await reauthenticateWithCredential(currentUser, credential);
-      await verifyBeforeUpdateEmail(currentUser, emailForm.newEmail);
+      // The confirmation link opens /_/auth/action, then continues to sign-in
+      await verifyBeforeUpdateEmail(currentUser, emailForm.newEmail, { url: `${window.location.origin}/auth/login` });
 
       toast.success("Verification email sent to " + emailForm.newEmail + ". Click the link to confirm your new address.");
       setShowEmailForm(false);

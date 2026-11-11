@@ -79,6 +79,21 @@ const nextConfig: NextConfig = {
     minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days
   },
 
+  // Google sign-in on Duka's own domain: Firebase's sign-in handler
+  // (/__/auth/*) and its config (/__/firebase/*) are served through
+  // dukanigeria.com, so Google shows "continue to dukanigeria.com". Only used
+  // once NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN is set to dukanigeria.com; until
+  // then sign-in keeps going through <project>.firebaseapp.com.
+  async rewrites() {
+    const project = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    if (!project) return [];
+    const firebaseHost = `https://${project}.firebaseapp.com`;
+    return [
+      { source: "/__/auth/:path*", destination: `${firebaseHost}/__/auth/:path*` },
+      { source: "/__/firebase/:path*", destination: `${firebaseHost}/__/firebase/:path*` },
+    ];
+  },
+
   async headers() {
     const securityHeaders = [
       { key: "X-Frame-Options",           value: "SAMEORIGIN" },
