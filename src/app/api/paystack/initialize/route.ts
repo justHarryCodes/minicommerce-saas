@@ -63,6 +63,9 @@ export async function POST(req: NextRequest) {
       referencePrefix: order.order_number,
       metadata: { orderId: order.id, orderNumber: order.order_number },
       subaccountCode: store!.paystack_subaccount_code,
+      // Back to the address the shopper is on (subdomain / custom domain),
+      // where their cart lives; checked against the store in the callback
+      returnTo: req.headers.get("origin"),
     });
 
     if (!started.ok) return NextResponse.json({ error: started.error }, { status: started.status });

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyTransaction } from '@/lib/paystack'
+import { getAppUrl, verifyTransaction } from '@/lib/paystack' // public address: behind the proxy req.url is localhost
 import { queryOne } from '@/lib/db'
 import { koboOf } from '@/lib/payments'
 import { fulfillSubscriptionPayment } from '@/lib/billing-fulfillment'
@@ -10,12 +10,12 @@ export async function GET(req: NextRequest) {
   const type = searchParams.get('type') as 'setup_fee' | 'monthly' | 'plan' | null
 
   if (!reference || !type || !['setup_fee', 'monthly', 'plan'].includes(type)) {
-    return NextResponse.redirect(new URL('/dashboard/billing?error=invalid_params', req.url))
+    return NextResponse.redirect(new URL('/dashboard/billing?error=invalid_params', getAppUrl()))
   }
 
   // Checkouts started through lib/payments settle there (once, amount-checked)
   if (await queryOne('SELECT 1 FROM payment_attempts WHERE reference = $1', [reference])) {
-    return NextResponse.redirect(new URL(`/api/payments/callback?reference=${encodeURIComponent(reference)}`, req.url))
+    return NextResponse.redirect(new URL(`/api/payments/callback?reference=${encodeURIComponent(reference)}`, getAppUrl()))
   }
 
   // Verify with Paystack before touching the DB
@@ -31,23 +31,23 @@ export async function GET(req: NextRequest) {
     // Not marked failed: if Paystack is still processing, the webhook
     // completes it later. Only a confirmed, exact payment is ever applied.
     const stillOpen = paystackRes.status && paystackRes.data?.status !== 'failed' && paystackRes.data?.status !== 'abandoned'
-    return NextResponse.redirect(new URL(stillOpen ? '/dashboard/billing?pending=1' : '/dashboard/billing?error=payment_failed', req.url))
+    return NextResponse.redirect(new URL(stillOpen ? '/dashboard/billing?pending=1' : '/dashboard/billing?error=payment_failed', getAppUrl()))
   }
 
   const result = await fulfillSubscriptionPayment(reference, type)
 
   if (result.error === 'already_paid') {
-    return NextResponse.redirect(new URL('/dashboard/billing?success=already_paid', req.url))
+    return NextResponse.redirect(new URL('/dashboard/billing?success=already_paid', getAppUrl()))
   }
   if (result.error === 'payment_not_found') {
-    return NextResponse.redirect(new URL('/dashboard/billing?error=not_found', req.url))
+    return NextResponse.redirect(new URL('/dashboard/billing?error=not_found', getAppUrl()))
   }
   if (result.error === 'type_mismatch') {
-    return NextResponse.redirect(new URL('/dashboard/billing?error=invalid_params', req.url))
+    return NextResponse.redirect(new URL('/dashboard/billing?error=invalid_params', getAppUrl()))
   }
   if (!result.ok) {
-    return NextResponse.redirect(new URL('/dashboard/billing?error=payment_failed', req.url))
+    return NextResponse.redirect(new URL('/dashboard/billing?error=payment_failed', getAppUrl()))
   }
 
-  return NextResponse.redirect(new URL('/dashboard/billing?success=paid', req.url))
+  return NextResponse.redirect(new URL('/dashboard/billing?success=paid', getAppUrl()))
 }

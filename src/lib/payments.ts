@@ -91,8 +91,14 @@ export function subscriptionTypeOf(target: string): 'plan' | 'monthly' | 'setup_
   return target.startsWith('plan:') ? 'plan' : target.startsWith('setup_fee:') ? 'setup_fee' : 'monthly'
 }
 
-export function callbackUrlFor(reference: string): string {
-  return `${getAppUrl()}/api/payments/callback?reference=${encodeURIComponent(reference)}`
+/**
+ * Where Paystack returns the payer. `returnTo` is the origin they paid from
+ * (a store subdomain or custom domain); the callback only honours it after
+ * checking it belongs to that store, then sends them back there.
+ */
+export function callbackUrlFor(reference: string, returnTo?: string | null): string {
+  const back = returnTo ? `&return=${encodeURIComponent(returnTo)}` : ''
+  return `${getAppUrl()}/api/payments/callback?reference=${encodeURIComponent(reference)}${back}`
 }
 
 export type StartResult =
@@ -117,6 +123,8 @@ export async function startPayment(opts: {
   subaccountCode?: string | null
   /** Runs inside the lock after a new checkout is created (e.g. a subscription_payments row). */
   onCreated?: (client: PoolClient, reference: string) => Promise<void>
+  /** Origin the payer started from, to return them there (see callbackUrlFor) */
+  returnTo?: string | null
 }): Promise<StartResult> {
   if (!(opts.amount > 0)) return { ok: false, error: 'Nothing to pay', status: 400 }
 
@@ -172,7 +180,7 @@ export async function startPayment(opts: {
       email: opts.email,
       amount: opts.amount,
       reference,
-      callbackUrl: callbackUrlFor(reference),
+      callbackUrl: callbackUrlFor(reference, opts.returnTo),
       metadata: { ...opts.metadata, kind: opts.kind, target: opts.targetId, ...(split ? { duka_pay: true, store_id: opts.storeId } : {}) },
       split,
       channels: split ? DUKA_PAY_CHANNELS : undefined,

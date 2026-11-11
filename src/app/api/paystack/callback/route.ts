@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { queryOne } from "@/lib/db";
 import { markOrderPaidOnline, ONLINE_PAID_STATUSES } from "@/lib/order-payments";
-import { verifyTransaction } from "@/lib/paystack";
+import { getAppUrl, verifyTransaction } from "@/lib/paystack"; // public address: behind the proxy req.url is localhost
 import { koboOf } from "@/lib/payments";
 
 export async function GET(req: NextRequest) {
@@ -11,12 +11,12 @@ export async function GET(req: NextRequest) {
     const orderId = searchParams.get("orderId");
 
     if (!reference || !orderId) {
-      return NextResponse.redirect(new URL("/", req.url));
+      return NextResponse.redirect(new URL("/", getAppUrl()));
     }
 
     // Checkouts started through lib/payments settle there (once, amount-checked)
     if (await queryOne("SELECT 1 FROM payment_attempts WHERE reference = $1", [reference])) {
-      return NextResponse.redirect(new URL(`/api/payments/callback?reference=${encodeURIComponent(reference)}`, req.url));
+      return NextResponse.redirect(new URL(`/api/payments/callback?reference=${encodeURIComponent(reference)}`, getAppUrl()));
     }
 
     // Fetch order and validate that the reference matches what we stored at init time.
@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
     );
 
     if (!order) {
-      return NextResponse.redirect(new URL("/", req.url));
+      return NextResponse.redirect(new URL("/", getAppUrl()));
     }
 
     const store = await queryOne<{ slug: string }>(
@@ -54,14 +54,14 @@ export async function GET(req: NextRequest) {
     // Idempotency: already processed
     if (ONLINE_PAID_STATUSES.includes(order.payment_status)) {
       return NextResponse.redirect(
-        new URL(receipt, req.url)
+        new URL(receipt, getAppUrl())
       );
     }
 
     // Reference mismatch — reject silently (redirect to failure)
     if (order.payment_reference !== reference) {
       return NextResponse.redirect(
-        new URL(`/store/${slug}/checkout?failed=true`, req.url)
+        new URL(`/store/${slug}/checkout?failed=true`, getAppUrl())
       );
     }
 
@@ -71,15 +71,15 @@ export async function GET(req: NextRequest) {
     if (verification.data?.status === "success" && Number(verification.data.amount) === koboOf(due)) {
       await markOrderPaidOnline(orderId);
       return NextResponse.redirect(
-        new URL(receipt, req.url)
+        new URL(receipt, getAppUrl())
       );
     }
 
     return NextResponse.redirect(
-      new URL(`/store/${slug}/checkout?failed=true`, req.url)
+      new URL(`/store/${slug}/checkout?failed=true`, getAppUrl())
     );
   } catch (err) {
     console.error("[paystack/callback] error:", err);
-    return NextResponse.redirect(new URL("/", req.url));
+    return NextResponse.redirect(new URL("/", getAppUrl()));
   }
 }
