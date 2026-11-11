@@ -98,8 +98,11 @@ export async function removeStoreDomain(storeId: string, storeSlug: string): Pro
 export async function slugForHostname(hostname: string): Promise<string | null> {
   const row = await queryOne<{ slug: string; id: string }>(
     `SELECT s.slug, s.id FROM store_domains d JOIN stores s ON s.id = d.store_id
-     WHERE d.hostname = $1 AND d.status = 'active' AND s.is_active = true`,
-    [hostname.toLowerCase().replace(/^www\./, "")]
+     WHERE d.hostname IN ($1, $2) AND d.status = 'active' AND s.is_active = true
+     ORDER BY d.hostname = $1 DESC LIMIT 1`,
+    // Exact match first (www.brand.com connected as-is), else the bare
+    // domain for a www request (brand.com connected, visitor typed www.)
+    [hostname.toLowerCase(), hostname.toLowerCase().replace(/^www\./, "")]
   );
   if (!row) return null;
   return (await hasFeature(row.id, "custom_domain")) ? row.slug : null;
