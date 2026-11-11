@@ -18,10 +18,12 @@ export interface PlatformSettings {
   allow_new_registrations: boolean
   require_plan_subscription: boolean
   reels_monthly_limit: number
+  /** Stores may offer manual bank transfer at checkout (turn off once Duka Pay carries payments) */
+  allow_manual_transfers: boolean
 }
 
 const SETTING_DEFAULTS: PlatformSettings = {
-  require_setup_fee: true,
+  require_setup_fee: false,
   setup_fee_amount: 10000,
   setup_fee_duration_months: 2,
   require_subscription: false,
@@ -30,6 +32,7 @@ const SETTING_DEFAULTS: PlatformSettings = {
   allow_new_registrations: true,
   require_plan_subscription: false,
   reels_monthly_limit: 20,
+  allow_manual_transfers: true,
 }
 
 // Emails that are automatically granted super_admin on first login.
@@ -147,5 +150,6 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
       SETTING_DEFAULTS.require_plan_subscription
     ),
     reels_monthly_limit: Number(raw.reels_monthly_limit ?? SETTING_DEFAULTS.reels_monthly_limit),
+    allow_manual_transfers: toBool(raw.allow_manual_transfers, SETTING_DEFAULTS.allow_manual_transfers),
   }
 }

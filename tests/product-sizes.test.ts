@@ -15,6 +15,8 @@ import type { NextRequest } from "next/server";
 const STORE_ID = "11111111-1111-1111-1111-111111111111";
 const PRODUCT_ID = "22222222-2222-2222-2222-222222222222";
 
+// The order API reads the platform switch for manual bank transfers
+vi.mock("@/lib/admin-auth", () => ({ getPlatformSettings: vi.fn(async () => ({ allow_manual_transfers: true })) }));
 vi.mock("@/lib/plan", async () => (await import("./helpers/plan-mock")).planMock.module());
 vi.mock("@/lib/db", () => ({
   query: vi.fn(),

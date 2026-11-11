@@ -7,6 +7,7 @@ import { deliverySettingsOf, podSettingsOf } from "@/lib/delivery";
 import { parseHours } from "@/lib/hours";
 import type { Store } from "@/types";
 import { checkoutMethods, dukaPayActive } from "@/lib/duka-pay";
+import { getPlatformSettings } from "@/lib/admin-auth";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -29,7 +30,8 @@ export default async function CheckoutPage({ params }: Props) {
   const podRaw = podSettingsOf(store as unknown as Record<string, unknown>);
   // Deposits are paid online, so they need Duka Pay too
   const pod = online ? podRaw : { ...podRaw, depositPercent: 0 };
-  const paymentMethods: string[] = checkoutMethods(dukaPayStore, pod.enabled);
+  const { allow_manual_transfers } = await getPlatformSettings();
+  const paymentMethods: string[] = checkoutMethods(dukaPayStore, pod.enabled, { allowTransfers: allow_manual_transfers });
 
   const features = await getStoreFeatures(store.id);
 

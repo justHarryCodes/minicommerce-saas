@@ -16,6 +16,7 @@ import { checkGiftCard, GiftCardBalanceError, redeemGiftCard } from "@/lib/gift-
 import { loyaltyDiscount, loyaltyFor } from "@/lib/loyalty";
 import { newOrderNumber } from "@/lib/order-number";
 import { checkoutMethods, dukaPayActive } from "@/lib/duka-pay";
+import { getPlatformSettings } from "@/lib/admin-auth";
 import { z } from "zod";
 
 // Thrown from inside the order transaction when a size's stock was raced
@@ -91,7 +92,11 @@ export async function POST(
     const { slug } = await params;
 
     const store = await queryOne<StoreRow>(
-      `SELECT id, is_active, payment_preference, delivery_zones, free_delivery_threshold,
+      `SELECT id, is_active, payment_preference,
+              -- read through to_jsonb so checkout still works before checkout_switches.sql has run
+              (to_jsonb(stores) ->> 'duka_pay_enabled')::boolean AS duka_pay_enabled,
+              (to_jsonb(stores) ->> 'bank_transfer_enabled')::boolean AS bank_transfer_enabled,
+              delivery_zones, free_delivery_threshold,
               pickup_enabled, pickup_address, pod_enabled, pod_deposit_percent, low_stock_threshold,
               opening_hours, allow_preorders, minimum_order, booking_slot_minutes, booking_buffer_minutes,
               booking_window_days, booking_min_notice_minutes, loyalty_every_n, loyalty_percent,
@@ -127,7 +132,8 @@ export async function POST(
     const online = dukaPayActive(store);
     const podRaw = podSettingsOf(store);
     const pod = online ? podRaw : { ...podRaw, depositPercent: 0 };
-    const allowed = checkoutMethods(store as Parameters<typeof checkoutMethods>[0], pod.enabled).includes(d.paymentMethod);
+    const { allow_manual_transfers } = await getPlatformSettings();
+    const allowed = checkoutMethods(store as Parameters<typeof checkoutMethods>[0], pod.enabled, { allowTransfers: allow_manual_transfers }).includes(d.paymentMethod);
     if (!allowed) {
       return NextResponse.json({ error: "That payment method isn't available for this store" }, { status: 400 });
     }

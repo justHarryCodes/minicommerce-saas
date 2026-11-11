@@ -71,7 +71,7 @@ interface Props {
   error?: string;
 }
 
-type PayType = "setup_fee" | "monthly" | "plan";
+type PayType = "plan";
 type PayMethod = "paystack" | "transfer";
 type StepState = "done" | "current" | "review" | "locked";
 
@@ -591,8 +591,6 @@ export default function BillingClient({
   success,
   error,
 }: Props) {
-  const [loadingSetupFee, setLoadingSetupFee] = useState(false);
-  const [loadingSubscribe, setLoadingSubscribe] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [pendingTransfer, setPendingTransfer] = useState<
     Record<string, boolean>
@@ -601,33 +599,14 @@ export default function BillingClient({
   // ── Derived billing state ──────────────────────────────────────────────────
   const now = new Date();
 
-  const setupPaid =
-    store.subscriptionStatus === "setup_fee_paid" ||
-    store.subscriptionStatus === "subscribed" ||
-    store.subscriptionStatus === "expired";
-
-  const expiresAt = store.subscriptionExpiresAt
-    ? new Date(store.subscriptionExpiresAt)
-    : null;
-  const isExpired = expiresAt ? expiresAt < now : false;
-  const isSubscribed = store.subscriptionStatus === "subscribed" && !isExpired;
-
   const planExpiresAt = store.planExpiresAt
     ? new Date(store.planExpiresAt)
     : null;
   const isPlanActive = planExpiresAt ? planExpiresAt > now : false;
 
-  const isRenewalWindow = now.getDate() >= 25;
-  const daysUntilExpiry = expiresAt
-    ? Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-    : null;
-  const expiringVerySoon =
-    daysUntilExpiry !== null && daysUntilExpiry <= 7 && daysUntilExpiry > 0;
-  const needsRenewal = isRenewalWindow || expiringVerySoon;
-  const daysLeft = daysUntilExpiry === null ? 0 : Math.max(daysUntilExpiry, 0);
-  const cyclePct = Math.min(100, Math.round((daysLeft / 30) * 100));
+  // A paid plan that has run out: the store is back on Free until renewed
+  const planLapsed = !!planExpiresAt && !isPlanActive && !!currentPlan && currentPlan.price_monthly > 0;
 
-  const [monthlyOpen, setMonthlyOpen] = useState(!isSubscribed || needsRenewal);
   const [plansOpen, setPlansOpen] = useState(!isPlanActive);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
 
@@ -691,10 +670,6 @@ export default function BillingClient({
     setLoading(false);
   }
 
-  const paySetupFee = () =>
-    startCheckout("/api/billing/setup-fee", setLoadingSetupFee);
-  const subscribe = () =>
-    startCheckout("/api/billing/subscribe", setLoadingSubscribe);
   const subscribeToPlan = (planId: string) =>
     startCheckout(
       "/api/billing/subscribe-plan",
@@ -703,31 +678,9 @@ export default function BillingClient({
     );
 
   // ── Step visibility & state ────────────────────────────────────────────────
-  const showSetup = settings.require_setup_fee;
-  const showMonthly = settings.require_subscription;
-  const showPlan = settings.require_plan_subscription;
-
-  const setupNo = 1;
-  const monthlyNo = (showSetup ? 1 : 0) + 1;
-  const planNo = (showSetup ? 1 : 0) + (showMonthly ? 1 : 0) + 1;
-  const lastStep = showPlan ? "plan" : showMonthly ? "monthly" : "setup";
-
-  const setupState: StepState = setupPaid
-    ? "done"
-    : pendingTransfer.setup_fee || store.status === "pending_approval"
-      ? "review"
-      : "current";
-
-  const monthlyUnlocked = !showSetup || setupPaid;
-  const monthlyState: StepState = !monthlyUnlocked
-    ? "locked"
-    : pendingTransfer.monthly
-      ? "review"
-      : isSubscribed && !monthlyOpen
-        ? "done"
-        : isSubscribed
-          ? "current"
-          : "current";
+  // One subscription: a monthly plan (Free / Pro / Business)
+  const showPlan = true;
+  const planNo = 1;
 
   const planState: StepState = pendingTransfer.plan
     ? "review"
@@ -767,119 +720,7 @@ export default function BillingClient({
           borderColor: "var(--border)",
         }}
       >
-        <Overview label="Registration">
-          {showSetup ? (
-            setupPaid ? (
-              <>
-                <p
-                  className="flex items-center gap-1.5 text-base font-bold"
-                  style={{ color: "#16a34a" }}
-                >
-                  <BadgeCheck className="h-4 w-4" /> Paid
-                </p>
-                {store.setupFeePaidAt && (
-                  <p
-                    className="mt-1 text-xs"
-                    style={{ color: "var(--text-muted)" }}
-                  >
-                    on {fmtDate(store.setupFeePaidAt)}
-                  </p>
-                )}
-              </>
-            ) : (
-              <>
-                <p
-                  className="text-base font-bold"
-                  style={{ color: "var(--text-primary)" }}
-                >
-                  {setupState === "review" ? "Under review" : "Not paid"}
-                </p>
-                <p
-                  className="mt-1 text-xs"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  {fmt(settings.setup_fee_amount)} one-time fee
-                </p>
-              </>
-            )
-          ) : (
-            <p
-              className="text-base font-bold"
-              style={{ color: "var(--text-primary)" }}
-            >
-              Not required
-            </p>
-          )}
-        </Overview>
 
-        {showMonthly && (
-          <Overview label="Subscription">
-            {expiresAt ? (
-              <>
-                <p
-                  className="text-base font-bold"
-                  style={{
-                    color: isExpired ? "#dc2626" : "var(--text-primary)",
-                  }}
-                >
-                  {isExpired ? "Expired" : "Active"}
-                </p>
-                <p
-                  className="mt-1 text-xs"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  {isExpired ? "Ended" : "Renews by"} {fmtDate(expiresAt)}
-                </p>
-                {!isExpired && (
-                  <div className="mt-3">
-                    <div
-                      className="h-1.5 overflow-hidden rounded-full"
-                      style={{ background: "var(--bg-secondary, #f3f4f6)" }}
-                      role="progressbar"
-                      aria-valuenow={daysLeft}
-                      aria-valuemin={0}
-                      aria-valuemax={30}
-                      aria-label="Days left in billing period"
-                    >
-                      <div
-                        className="h-full rounded-full"
-                        style={{
-                          width: `${cyclePct}%`,
-                          background: expiringVerySoon ? "#d97706" : "#16a34a",
-                        }}
-                      />
-                    </div>
-                    <p
-                      className="mt-1.5 text-xs font-medium"
-                      style={{
-                        color: expiringVerySoon
-                          ? "#b45309"
-                          : "var(--text-secondary)",
-                      }}
-                    >
-                      {daysLeft} day{daysLeft === 1 ? "" : "s"} left
-                    </p>
-                  </div>
-                )}
-              </>
-            ) : (
-              <>
-                <p
-                  className="text-base font-bold"
-                  style={{ color: "var(--text-primary)" }}
-                >
-                  Not subscribed
-                </p>
-                <p
-                  className="mt-1 text-xs"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  {fmt(settings.monthly_fee_amount)} per month
-                </p>
-              </>
-            )}
-          </Overview>
-        )}
 
         {showPlan && (
           <Overview label="Product plan">
@@ -926,7 +767,7 @@ export default function BillingClient({
       </section>
 
       {/* ── Alerts ── */}
-      {(store.status === "pending_approval" || isExpired) && (
+      {(store.status === "pending_approval" || planLapsed) && (
         <div className="mb-6 space-y-3">
           {store.status === "pending_approval" && (
             <div
@@ -944,7 +785,7 @@ export default function BillingClient({
               </p>
             </div>
           )}
-          {isExpired && expiresAt && (
+          {planLapsed && planExpiresAt && (
             <div
               role="alert"
               className="flex gap-3 rounded-xl border px-4 py-3"
@@ -956,9 +797,9 @@ export default function BillingClient({
               />
               <p className="text-sm" style={{ color: "#b91c1c" }}>
                 <strong>
-                  Your subscription expired on {fmtDate(expiresAt)}.
+                  Your {currentPlan?.name} plan ended on {fmtDate(planExpiresAt)}.
                 </strong>{" "}
-                Renew below to restore your store.
+                You&apos;re on the Free plan until you renew below.
               </p>
             </div>
           )}
@@ -969,7 +810,7 @@ export default function BillingClient({
       <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         {/* Steps */}
         <section aria-label="Payments">
-          {!showSetup && !showMonthly && !showPlan ? (
+          {!showPlan ? (
             <div
               className="rounded-2xl border p-6 text-sm"
               style={{
@@ -983,129 +824,6 @@ export default function BillingClient({
             </div>
           ) : (
             <ol className="list-none p-0">
-              {/* Registration fee */}
-              {showSetup && (
-                <Step
-                  no={setupNo}
-                  state={setupState}
-                  isLast={lastStep === "setup"}
-                  title="Registration fee"
-                  chip={
-                    setupState === "done"
-                      ? "Paid"
-                      : setupState === "review"
-                        ? "In review"
-                        : undefined
-                  }
-                  description={
-                    setupPaid
-                      ? "Your store registration is complete."
-                      : `Pay once to submit your store for verification. Valid for ${settings.setup_fee_duration_months} month${settings.setup_fee_duration_months !== 1 ? "s" : ""}.`
-                  }
-                  price={setupPaid ? undefined : fmt(settings.setup_fee_amount)}
-                  priceNote={setupPaid ? undefined : "one-time"}
-                >
-                  {setupState === "current" ? (
-                    <PaymentSection
-                      type="setup_fee"
-                      amount={settings.setup_fee_amount}
-                      bankAccounts={bankAccounts}
-                      canPayPaystack
-                      paystackLabel={`Pay ${fmt(settings.setup_fee_amount)}`}
-                      onPaystack={paySetupFee}
-                      paystackLoading={loadingSetupFee}
-                      onTransferSubmitted={() =>
-                        setPendingTransfer((p) => ({ ...p, setup_fee: true }))
-                      }
-                    />
-                  ) : setupState === "review" ? (
-                    <p
-                      className="flex items-center gap-2 text-sm font-semibold"
-                      style={{ color: "#d97706" }}
-                    >
-                      <Hourglass className="h-4 w-4" />
-                      Payment submitted. Awaiting admin confirmation.
-                    </p>
-                  ) : null}
-                </Step>
-              )}
-
-              {/* Monthly subscription */}
-              {showMonthly && (
-                <Step
-                  no={monthlyNo}
-                  state={monthlyState}
-                  isLast={lastStep === "monthly"}
-                  title="Monthly subscription"
-                  chip={
-                    monthlyState === "locked"
-                      ? "Pay registration first"
-                      : monthlyState === "review"
-                        ? "In review"
-                        : isExpired
-                          ? "Expired"
-                          : isSubscribed && needsRenewal
-                            ? "Renew now"
-                            : isSubscribed
-                              ? "Active"
-                              : undefined
-                  }
-                  description={
-                    monthlyState === "locked"
-                      ? "Unlocks once your registration fee is paid."
-                      : isExpired && expiresAt
-                        ? `Expired ${fmtDate(expiresAt)}. Renew to restore your store.`
-                        : isSubscribed && expiresAt
-                          ? needsRenewal
-                            ? `Expires ${fmtDate(expiresAt)}. Renewing adds 30 days to your current expiry date.`
-                            : `Active until ${fmtDate(expiresAt)}.`
-                          : "Keeps your store live. Billed every 30 days."
-                  }
-                  price={
-                    monthlyState === "locked"
-                      ? undefined
-                      : fmt(settings.monthly_fee_amount)
-                  }
-                  priceNote={
-                    monthlyState === "locked" ? undefined : "per 30 days"
-                  }
-                  action={
-                    monthlyState === "done" ? (
-                      <GhostButton onClick={() => setMonthlyOpen(true)}>
-                        Renew early
-                      </GhostButton>
-                    ) : undefined
-                  }
-                >
-                  {monthlyState === "current" ? (
-                    <PaymentSection
-                      type="monthly"
-                      amount={settings.monthly_fee_amount}
-                      bankAccounts={bankAccounts}
-                      canPayPaystack
-                      paystackLabel={
-                        isExpired || isSubscribed
-                          ? `Renew for ${fmt(settings.monthly_fee_amount)}`
-                          : `Subscribe for ${fmt(settings.monthly_fee_amount)}`
-                      }
-                      onPaystack={subscribe}
-                      paystackLoading={loadingSubscribe}
-                      onTransferSubmitted={() =>
-                        setPendingTransfer((p) => ({ ...p, monthly: true }))
-                      }
-                    />
-                  ) : monthlyState === "review" ? (
-                    <p
-                      className="flex items-center gap-2 text-sm font-semibold"
-                      style={{ color: "#d97706" }}
-                    >
-                      <Clock className="h-4 w-4" />
-                      Transfer submitted. Awaiting admin confirmation.
-                    </p>
-                  ) : null}
-                </Step>
-              )}
-
               {/* Product plan */}
               {showPlan && (
                 <Step

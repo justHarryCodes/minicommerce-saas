@@ -57,6 +57,11 @@ export interface Store {
   bank_account_number?: string
   bank_account_name?: string
   paystack_public_key?: string
+  /** Checkout switches (Settings → Payments) */
+  duka_pay_enabled?: boolean
+  dukaPayEnabled?: boolean
+  bank_transfer_enabled?: boolean
+  bankTransferEnabled?: boolean
   isActive?: boolean
   is_active?: boolean
   // Subscription / billing

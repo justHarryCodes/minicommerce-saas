@@ -10,58 +10,11 @@
 //     Duka's cut is exactly the percentage.
 // One webhook (/api/paystack/webhook) confirms payments for every store.
 import { getOrSet } from './redis'
+import { platformFeePercent } from './duka-pay-shared'
+
+export * from './duka-pay-shared'
 
 const PAYSTACK_BASE = 'https://api.paystack.co'
-
-/** Duka's cut of each successful Duka Pay checkout, in percent. */
-export function platformFeePercent(): number {
-  const v = Number(process.env.DUKA_PAY_FEE_PERCENT ?? 1)
-  return Number.isFinite(v) && v >= 0 && v <= 10 ? v : 1
-}
-
-/** Duka's fee for a charge, in kobo (rounded, never the whole amount). */
-export function platformFeeKobo(amountKobo: number, percent = platformFeePercent()): number {
-  if (!(amountKobo > 0) || !(percent > 0)) return 0
-  return Math.min(amountKobo - 1, Math.round((amountKobo * percent) / 100))
-}
-
-/** Online checkout channels shown on the Paystack page. */
-export const DUKA_PAY_CHANNELS = ['card', 'bank_transfer', 'ussd', 'bank'] as const
-
-export interface SplitParams {
-  subaccount: string
-  bearer: 'subaccount'
-  transaction_charge: number // kobo for Duka
-}
-
-/** Paystack initialise parameters that route a charge to a store. */
-export function splitFor(subaccountCode: string, amountKobo: number): SplitParams {
-  return { subaccount: subaccountCode, bearer: 'subaccount', transaction_charge: platformFeeKobo(amountKobo) }
-}
-
-export interface DukaPayStore {
-  duka_pay_status?: string | null
-  paystack_subaccount_code?: string | null
-}
-
-/** A store can take online payments once its payout account is connected. */
-export function dukaPayActive(store: DukaPayStore | null | undefined): boolean {
-  return !!store && store.duka_pay_status === 'active' && !!store.paystack_subaccount_code
-}
-
-/** What Paystack reported splitting, in Naira. Null when it wasn't a split charge. */
-export function feesFromCharge(charge: {
-  fees?: number | null
-  fees_split?: { paystack?: number; integration?: number; subaccount?: number } | null
-}): { paystackFee: number | null; platformShare: number | null; storeShare: number | null } {
-  const s = charge.fees_split
-  const n = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v / 100 : null)
-  return {
-    paystackFee: n(s?.paystack ?? charge.fees),
-    platformShare: n(s?.integration),
-    storeShare: n(s?.subaccount),
-  }
-}
 
 /* ───────────────────────────── Paystack API ───────────────────────────── */
 
@@ -146,24 +99,3 @@ export async function upsertSubaccount(opts: {
   return code ? { ok: true, code } : { ok: false, error: 'Paystack did not return a subaccount' }
 }
 
-export type CheckoutMethod = 'paystack' | 'transfer' | 'pay_on_delivery'
-
-/**
- * Payment options a store's checkout offers, Duka Pay first (the default).
- * Used by the checkout page and re-checked by the order API, so they agree.
- */
-export function checkoutMethods(store: DukaPayStore & {
-  payment_preference?: string | null
-  bank_account_number?: string | null
-}, payOnDeliveryEnabled: boolean): CheckoutMethod[] {
-  const pref = store.payment_preference ?? 'paystack'
-  const online = dukaPayActive(store)
-  const wantsOnline = pref === 'paystack' || pref === 'both'
-  const out: CheckoutMethod[] = []
-  if (online && wantsOnline) out.push('paystack')
-  // Manual transfer when chosen — or as the fallback for an "online only"
-  // store whose payout account isn't connected yet, so checkout never dead-ends
-  if (pref === 'bank_transfer' || pref === 'both' || (wantsOnline && !online && store.bank_account_number)) out.push('transfer')
-  if (payOnDeliveryEnabled) out.push('pay_on_delivery')
-  return out
-}

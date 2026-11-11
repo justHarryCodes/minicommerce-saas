@@ -227,6 +227,17 @@ export async function POST(req: NextRequest) {
     // ── Everything below is secondary. The store already exists, so none of
     // these steps may turn a successful creation into an error response. ──
 
+    // Checkout switches follow what they picked at sign-up (column defaults:
+    // Duka Pay on, manual transfer off). Never fails the signup.
+    try {
+      await query(
+        "UPDATE stores SET duka_pay_enabled = $2, bank_transfer_enabled = $3 WHERE id = $1",
+        [newStore.id, paymentPreference !== "bank_transfer", paymentPreference !== "paystack" && !!bankAccountNumber],
+      );
+    } catch (err) {
+      console.error("[POST /api/stores] payment switches not set (continuing)", newStore.id, err);
+    }
+
     // Seed the default Uncategorized category for the new store
     try {
       await ensureUncategorized(newStore.id as string);

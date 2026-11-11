@@ -351,8 +351,8 @@ export default function SettingsClient({ initialSettings, initialBankAccounts }:
         <Info className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "var(--accent)" }} />
         <div className="text-xs leading-relaxed space-y-1.5" style={{ color: "var(--text-secondary)" }}>
           <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>What do these settings do?</p>
-          <p><strong>Setup Fee</strong> — vendors must pay once before their store goes live. Good to set before launch to filter serious sellers.</p>
-          <p><strong>Monthly Subscription</strong> — keeps vendors paying to stay on the platform. Only activates after the setup fee period ends.</p>
+          <p><strong>Plans</strong> — Duka has one subscription: monthly plans (Free, Pro, Business). Prices and limits live on the Plans page.</p>
+          <p><strong>Manual bank transfers</strong> — let stores offer &ldquo;pay by transfer, then confirm&rdquo; at checkout. Turn it off once Duka Pay is carrying payments.</p>
 <p><strong>New Registrations</strong> — turn this off to pause all sign-ups (e.g. during maintenance). Existing vendors are unaffected.</p>
         </div>
       </div>
@@ -367,44 +367,23 @@ export default function SettingsClient({ initialSettings, initialBankAccounts }:
       )}
 
       <div className="space-y-5">
-        {/* Payments */}
-        <Section title="Subscription & Payments" icon="💰">
-          <ToggleRow
-            label="Require setup fee"
-            description="Vendors must pay a one-time setup fee before their store goes live and products are visible."
-            enabled={s.require_setup_fee}
-            onChange={(v) => update("require_setup_fee", v)}
-          >
-            <NumberInput label="Setup fee amount" value={s.setup_fee_amount} onChange={(v) => update("setup_fee_amount", v)} />
-            <NumberInput label="Valid for (months)" value={s.setup_fee_duration_months} onChange={(v) => update("setup_fee_duration_months", v)} prefix="" />
-          </ToggleRow>
-
-          <div className="border-t" style={{ borderColor: "var(--border)" }} />
-
-          <ToggleRow
-            label="Require monthly subscription"
-            description="After the setup fee period expires, vendors must pay a recurring monthly fee to continue selling."
-            enabled={s.require_subscription}
-            onChange={(v) => update("require_subscription", v)}
-          >
-            <NumberInput label="Monthly fee" value={s.monthly_fee_amount} onChange={(v) => update("monthly_fee_amount", v)} />
-          </ToggleRow>
-        </Section>
-
-        {/* Plan subscriptions */}
-        <Section title="Plan Subscriptions" icon="📋">
-          <ToggleRow
-            label="Require plan subscription"
-            description="Vendors must subscribe to a plan to list products. When disabled (testing mode), all vendors can list freely regardless of plan."
-            enabled={s.require_plan_subscription}
-            onChange={(v) => update("require_plan_subscription", v)}
-          />
+        {/* Billing & checkout */}
+        <Section title="Billing & checkout" icon="💰">
           <div className="text-xs px-1" style={{ color: "var(--text-muted)" }}>
-            Manage available plans and pricing on the{" "}
+            Stores pay one monthly subscription: a plan (Free, Pro or Business). Manage prices and limits on the{" "}
             <Link href="/admin/plans" className="underline font-semibold hover:opacity-80" style={{ color: "var(--accent)" }}>
               Plans page →
             </Link>
           </div>
+
+          <div className="border-t" style={{ borderColor: "var(--border)" }} />
+
+          <ToggleRow
+            label="Allow manual bank transfers at checkout"
+            description="Stores can offer 'pay by transfer, then confirm' alongside Duka Pay. Turn off to make Duka Pay (card, transfer, USSD — confirmed automatically) the only online option on every store."
+            enabled={s.allow_manual_transfers}
+            onChange={(v) => update("allow_manual_transfers", v)}
+          />
         </Section>
 
         {/* Registrations */}

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("@/lib/redis", () => ({ getOrSet: vi.fn(async (_k: string, fn: () => unknown) => fn()) }));
 
-import { checkoutMethods, dukaPayActive, feesFromCharge, listBanks, platformFeeKobo, platformFeePercent, resolveAccount, splitFor, upsertSubaccount } from "@/lib/duka-pay";
+import { checkoutMethods, paymentSwitches, dukaPayActive, feesFromCharge, listBanks, platformFeeKobo, platformFeePercent, resolveAccount, splitFor, upsertSubaccount } from "@/lib/duka-pay";
 
 // Duka Pay: fee maths, which stores can take online payments, and the
 // Paystack calls behind connecting a payout account.
@@ -52,6 +52,30 @@ describe("which payment options a checkout offers", () => {
   it("paused or half-set-up accounts don't count as connected", () => {
     expect(dukaPayActive({ duka_pay_status: "disabled", paystack_subaccount_code: "ACCT_1" })).toBe(false);
     expect(dukaPayActive({ duka_pay_status: "active", paystack_subaccount_code: null })).toBe(false);
+  });
+});
+
+describe("checkout switches (Duka Pay · Bank transfer · Pay on delivery)", () => {
+  const connected = { duka_pay_status: "active", paystack_subaccount_code: "ACCT_1", bank_account_number: "0123456789" };
+
+  it("each switch controls its own method, in Duka Pay-first order", () => {
+    expect(checkoutMethods({ ...connected, duka_pay_enabled: true, bank_transfer_enabled: true }, true)).toEqual(["paystack", "transfer", "pay_on_delivery"]);
+    expect(checkoutMethods({ ...connected, duka_pay_enabled: false, bank_transfer_enabled: true }, false)).toEqual(["transfer"]);
+    expect(checkoutMethods({ ...connected, duka_pay_enabled: false, bank_transfer_enabled: false }, true)).toEqual(["pay_on_delivery"]);
+  });
+
+  it("the switches win over the old single choice; without them the old choice still works", () => {
+    expect(paymentSwitches({ duka_pay_enabled: false, bank_transfer_enabled: true, payment_preference: "paystack" })).toEqual({ dukaPay: false, bankTransfer: true });
+    expect(paymentSwitches({ duka_pay_enabled: null, bank_transfer_enabled: undefined, payment_preference: "both" })).toEqual({ dukaPay: true, bankTransfer: true });
+    expect(paymentSwitches({ payment_preference: "bank_transfer" })).toEqual({ dukaPay: false, bankTransfer: true });
+  });
+
+  it("Duka can retire manual transfers everywhere — including the not-yet-connected fallback", () => {
+    const off = { allowTransfers: false };
+    expect(checkoutMethods({ ...connected, duka_pay_enabled: true, bank_transfer_enabled: true }, true, off)).toEqual(["paystack", "pay_on_delivery"]);
+    const notConnected = { ...connected, duka_pay_status: "not_connected", duka_pay_enabled: true, bank_transfer_enabled: false };
+    expect(checkoutMethods(notConnected, false)).toEqual(["transfer"]); // fallback while allowed
+    expect(checkoutMethods(notConnected, false, off)).toEqual([]);
   });
 });
 

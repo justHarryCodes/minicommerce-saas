@@ -27,7 +27,7 @@ const DEFAULT_SETTINGS = {
   require_nin_verification: false,
   allow_new_registrations: true,
   require_plan_subscription: false,
-  reels_monthly_limit: 20,
+  reels_monthly_limit: 20, allow_manual_transfers: true,
 };
 
 /** The one atomic UPDATE that marks the payment paid (via queryOne, RETURNING id). */

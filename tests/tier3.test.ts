@@ -8,6 +8,8 @@ import type { NextRequest } from "next/server";
 // ─────────────────────────────────────────────────────────────────────────
 
 process.env.NEXT_PUBLIC_APP_URL = "https://dukanigeria.com";
+// The order API reads the platform switch for manual bank transfers
+vi.mock("@/lib/admin-auth", () => ({ getPlatformSettings: vi.fn(async () => ({ allow_manual_transfers: true })) }));
 vi.mock("@/lib/plan", async () => (await import("./helpers/plan-mock")).planMock.module());
 vi.mock("@/lib/db", () => ({ query: vi.fn(), queryOne: vi.fn(), queryMany: vi.fn(), withTransaction: vi.fn() }));
 vi.mock("@/lib/push", () => ({ notifyStoreNewOrder: vi.fn().mockResolvedValue(undefined), notifyStoreEvent: vi.fn().mockResolvedValue(undefined) }));

@@ -32,7 +32,8 @@ import { Tip } from "@/components/dashboard/Tip";
 import { clLogo } from "@/lib/cloudinary";
 import Link from "next/link";
 import { deliverySettingsOf, podSettingsOf } from "@/lib/delivery";
-import { CustomerMessagesEditor, DeliveryOptionsEditor, PayOnDeliveryEditor } from "@/components/dashboard/CheckoutSettings";
+import { CustomerMessagesEditor, DeliveryOptionsEditor } from "@/components/dashboard/CheckoutSettings";
+import { paymentSwitches } from "@/lib/duka-pay-shared";
 import CustomDomainSettings from "@/components/dashboard/CustomDomainSettings";
 import DukaPaySettings from "@/components/dashboard/DukaPaySettings";
 import StoreHoursSettings from "@/components/dashboard/StoreHoursSettings";
@@ -50,9 +51,11 @@ interface Props {
   store: StoreType;
   /** Which automatic customer-message channels the platform has configured */
   messaging?: { sms: boolean; email: boolean; included?: boolean };
+  /** Platform switch: may stores offer manual bank transfer at all? */
+  allowManualTransfers?: boolean;
 }
 
-export default function SettingsClient({ store: initial, messaging = { sms: false, email: false } }: Props) {
+export default function SettingsClient({ store: initial, messaging = { sms: false, email: false }, allowManualTransfers = true }: Props) {
   const router = useRouter();
   const [store, setStore] = useState(() => {
     const delivery = deliverySettingsOf(initial as unknown as Record<string, unknown>);
@@ -60,8 +63,15 @@ export default function SettingsClient({ store: initial, messaging = { sms: fals
     return {
       ...initial,
       aiAssistantEnabled: initial.aiAssistantEnabled ?? initial.ai_assistant_enabled ?? false,
-      paymentPreference:
-        initial.paymentPreference ?? initial.payment_preference ?? "paystack",
+      ...(() => {
+        const raw = initial as unknown as Record<string, unknown>;
+        const sw = paymentSwitches({
+          duka_pay_enabled: (raw.dukaPayEnabled ?? raw.duka_pay_enabled) as boolean | null | undefined,
+          bank_transfer_enabled: (raw.bankTransferEnabled ?? raw.bank_transfer_enabled) as boolean | null | undefined,
+          payment_preference: (initial.paymentPreference ?? initial.payment_preference) as string | undefined,
+        });
+        return { dukaPayEnabled: sw.dukaPay, bankTransferEnabled: sw.bankTransfer };
+      })(),
       deliveryZones: delivery.zones,
       freeDeliveryThreshold: delivery.freeDeliveryThreshold,
       pickupEnabled: delivery.pickupEnabled,
@@ -215,10 +225,8 @@ export default function SettingsClient({ store: initial, messaging = { sms: fals
           bankAccountNumber:
             store.bankAccountNumber ?? store.bank_account_number,
           bankAccountName: store.bankAccountName ?? store.bank_account_name,
-          paymentPreference:
-            store.paymentPreference ?? store.payment_preference,
-          paystackPublicKey:
-            store.paystackPublicKey ?? store.paystack_public_key,
+          dukaPayEnabled: store.dukaPayEnabled,
+          bankTransferEnabled: store.bankTransferEnabled,
           return_policy: store.return_policy ?? store.returnPolicy ?? null,
           deliveryTimeFrame: store.deliveryTimeFrame ?? store.delivery_time_frame ?? "",
           deliveryZones: store.deliveryZones,
@@ -396,7 +404,7 @@ export default function SettingsClient({ store: initial, messaging = { sms: fals
           <span>
             <span className="block text-sm font-semibold text-surface-900 dark:text-white">Themes &amp; design</span>
             <span className="block text-xs text-surface-500 dark:text-surface-400">
-              Choose from 18 storefront themes and customise colours, fonts, layout and light/dark mode.
+              Choose from 40+ storefront themes and customise colours, fonts, layout and light/dark mode.
             </span>
           </span>
           <ExternalLink className="w-4 h-4 text-surface-400 shrink-0" />
@@ -427,83 +435,25 @@ export default function SettingsClient({ store: initial, messaging = { sms: fals
         )}
       </section>
 
-      {/* Payment settings */}
-      <section id="payments" className="scroll-mt-28 xl:scroll-mt-16 bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-6 space-y-5 2xl:col-span-2">
-        <h2 className="font-bold text-surface-900 dark:text-white flex items-center gap-2">
-          <CreditCard className="w-4 h-4" />
-          Payment settings
-        </h2>
-
+      {/* Payments at checkout — three switches */}
+      <section id="payments" className="scroll-mt-28 xl:scroll-mt-16 bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-6 space-y-4 2xl:col-span-2">
         <div>
-          <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-            Accepted payment methods
-          </label>
-          <div className="grid sm:grid-cols-3 gap-2">
-            {(["paystack", "bank_transfer", "both"] as const).map((method) => (
-              <button
-                key={method}
-                onClick={() => change("paymentPreference", method)}
-                className={`py-2.5 px-3 rounded-xl text-sm font-medium border-2 transition-all text-left ${
-                  store.paymentPreference === method
-                    ? "border-accent-400 bg-accent-50 dark:bg-accent-950 text-accent-700 dark:text-accent-300"
-                    : "border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800"
-                }`}
-              >
-                {method === "paystack"
-                  ? "Duka Pay only"
-                  : method === "bank_transfer"
-                    ? "Bank transfer only"
-                    : "Both methods"}
-              </button>
-            ))}
-          </div>
+          <h2 className="font-bold text-surface-900 dark:text-white flex items-center gap-2">
+            <CreditCard className="w-4 h-4" />
+            Payments at checkout
+          </h2>
+          <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">
+            Turn on the ways customers can pay. Duka Pay is recommended — payments are confirmed automatically and paid to your bank.
+          </p>
         </div>
 
-        {(store.paymentPreference === "bank_transfer" ||
-          store.paymentPreference === "both") && (
-          <div className="grid gap-4">
-            <div>
-              <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
-                Bank name
-              </label>
-              <input
-                value={store.bankName ?? store.bank_name ?? ""}
-                onChange={(e) => change("bankName", e.target.value)}
-                placeholder="e.g. Access Bank"
-                className="w-full px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-transparent text-surface-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-400 text-sm"
-              />
-            </div>
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
-                  Account number
-                </label>
-                <input
-                  value={
-                    store.bankAccountNumber ?? store.bank_account_number ?? ""
-                  }
-                  onChange={(e) => change("bankAccountNumber", e.target.value)}
-                  placeholder="0123456789"
-                  className="w-full px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-transparent text-surface-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-400 text-sm font-mono"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1.5">
-                  Account name
-                </label>
-                <input
-                  value={store.bankAccountName ?? store.bank_account_name ?? ""}
-                  onChange={(e) => change("bankAccountName", e.target.value)}
-                  placeholder="John Doe"
-                  className="w-full px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-transparent text-surface-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-400 text-sm"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {(store.paymentPreference === "paystack" ||
-          store.paymentPreference === "both") && (
+        <PaySwitch
+          title="Duka Pay"
+          badge="Recommended"
+          description="Card, bank transfer or USSD. Confirmed instantly, paid to your bank."
+          checked={store.dukaPayEnabled}
+          onChange={(v) => change("dukaPayEnabled", v)}
+        >
           <DukaPaySettings
             onAccount={(a) => {
               change("bankName", a.bankName);
@@ -511,7 +461,77 @@ export default function SettingsClient({ store: initial, messaging = { sms: fals
               change("bankAccountName", a.accountName);
             }}
           />
-        )}
+        </PaySwitch>
+
+        <PaySwitch
+          title="Bank transfer"
+          description={
+            allowManualTransfers
+              ? "Customers transfer to your account, then you confirm the payment."
+              : "Turned off by Duka — use Duka Pay to accept transfers that confirm automatically."
+          }
+          checked={allowManualTransfers && store.bankTransferEnabled}
+          disabled={!allowManualTransfers}
+          onChange={(v) => change("bankTransferEnabled", v)}
+        >
+          <div className="grid gap-3 sm:grid-cols-3">
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-300">Bank name</span>
+              <input
+                value={store.bankName ?? store.bank_name ?? ""}
+                onChange={(e) => change("bankName", e.target.value)}
+                placeholder="e.g. Access Bank"
+                className="w-full px-3 py-2.5 rounded-lg border border-surface-200 dark:border-surface-700 bg-transparent text-surface-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-400 text-sm"
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-300">Account number</span>
+              <input
+                value={store.bankAccountNumber ?? store.bank_account_number ?? ""}
+                onChange={(e) => change("bankAccountNumber", e.target.value.replace(/\D/g, "").slice(0, 10))}
+                inputMode="numeric"
+                placeholder="0123456789"
+                className="w-full px-3 py-2.5 rounded-lg border border-surface-200 dark:border-surface-700 bg-transparent text-surface-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-400 text-sm font-mono"
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-medium text-surface-600 dark:text-surface-300">Account name</span>
+              <input
+                value={store.bankAccountName ?? store.bank_account_name ?? ""}
+                onChange={(e) => change("bankAccountName", e.target.value)}
+                placeholder="As it appears at your bank"
+                className="w-full px-3 py-2.5 rounded-lg border border-surface-200 dark:border-surface-700 bg-transparent text-surface-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-400 text-sm"
+              />
+            </label>
+          </div>
+        </PaySwitch>
+
+        <PaySwitch
+          title="Pay on delivery"
+          description="Customers pay when the order arrives. Many shoppers won't prepay a store they don't know yet."
+          checked={store.podEnabled}
+          onChange={(v) => change("podEnabled", v)}
+        >
+          <p className="mb-2 text-xs font-medium text-surface-600 dark:text-surface-300">Deposit paid online first</p>
+          <div className="flex flex-wrap gap-1.5">
+            {[0, 10, 20, 30, 50].map((pct) => (
+              <button
+                key={pct}
+                type="button"
+                onClick={() => change("podDepositPercent", pct)}
+                aria-pressed={store.podDepositPercent === pct}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border-2 transition-all ${
+                  store.podDepositPercent === pct
+                    ? "border-accent-400 bg-accent-50 dark:bg-accent-950 text-accent-700 dark:text-accent-300"
+                    : "border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800"
+                }`}
+              >
+                {pct === 0 ? "No deposit" : `${pct}%`}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-surface-400">Deposits are taken with Duka Pay, so they need it switched on and connected.</p>
+        </PaySwitch>
       </section>
 
       {/* Delivery */}
@@ -572,14 +592,6 @@ export default function SettingsClient({ store: initial, messaging = { sms: fals
         allowPreorders={store.allowPreorders}
         minimumOrder={store.minimumOrder}
         prepTimeMinutes={store.prepTimeMinutes}
-        onChange={(key, value) => setStore((s) => ({ ...s, [key]: value }) as typeof s)}
-      />
-      </div>
-
-      <div id="pod" className="scroll-mt-28 xl:scroll-mt-16 min-w-0">
-      <PayOnDeliveryEditor
-        enabled={store.podEnabled}
-        depositPercent={store.podDepositPercent}
         onChange={(key, value) => setStore((s) => ({ ...s, [key]: value }) as typeof s)}
       />
       </div>
@@ -814,7 +826,6 @@ const SETTINGS_SECTIONS: { id: string; label: string }[] = [
   { id: "payments", label: "Payments" },
   { id: "delivery", label: "Delivery" },
   { id: "hours", label: "Opening hours" },
-  { id: "pod", label: "Pay on delivery" },
   { id: "messages", label: "Customer messages" },
   { id: "policies", label: "Returns policy" },
   { id: "account", label: "Account" },
@@ -863,5 +874,50 @@ function SettingsNav() {
         ))}
       </ul>
     </nav>
+  );
+}
+
+/** One payment method: a switch, and its settings underneath when on. */
+function PaySwitch({
+  title,
+  badge,
+  description,
+  checked,
+  disabled,
+  onChange,
+  children,
+}: {
+  title: string;
+  badge?: string;
+  description: string;
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (v: boolean) => void;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className={`rounded-xl border transition-colors ${checked ? "border-accent-300 dark:border-accent-800" : "border-surface-200 dark:border-surface-700"} ${disabled ? "opacity-60" : ""}`}>
+      <div className="flex items-start gap-3 p-3.5">
+        <div className="min-w-0 flex-1">
+          <p className="flex items-center gap-2 text-sm font-semibold text-surface-900 dark:text-white">
+            {title}
+            {badge && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">{badge}</span>}
+          </p>
+          <p className="mt-0.5 text-xs text-surface-500 dark:text-surface-400">{description}</p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={checked}
+          aria-label={title}
+          disabled={disabled}
+          onClick={() => onChange(!checked)}
+          className={`relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed ${checked ? "bg-accent-400" : "bg-surface-200 dark:bg-surface-700"}`}
+        >
+          <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${checked ? "translate-x-5" : ""}`} />
+        </button>
+      </div>
+      {checked && children && <div className="border-t border-surface-100 p-3.5 dark:border-surface-800">{children}</div>}
+    </div>
   );
 }

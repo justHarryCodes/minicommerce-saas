@@ -2,7 +2,7 @@
 // and the ⌘K palette all read from here.
 import {
   BarChart3, Boxes, CalendarDays, CreditCard, FileText, Film, FolderTree, Gift, Layout, LayoutDashboard, Package, Palette,
-  ScanBarcode, Settings, Share2, ShoppingBag, ShoppingCart, Star, Tag, Ticket, UserCog, Users, type LucideIcon,
+  ScanBarcode, Settings, Share2, ShoppingBag, ShoppingCart, Star, Tag, Ticket, UserCog, Users, Wallet, type LucideIcon,
 } from "lucide-react";
 
 export interface NavItem {
@@ -30,6 +30,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: "/dashboard/bookings", label: "Bookings", icon: CalendarDays, keywords: "appointments calendar" },
       { href: "/dashboard/abandoned", label: "Abandoned carts", icon: ShoppingCart, keywords: "recovery checkout" },
       { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3, keywords: "reports revenue visitors" },
+      { href: "/dashboard/earnings", label: "Earnings", icon: Wallet, keywords: "duka pay payouts fees money paystack settlement" },
     ],
   },
   {

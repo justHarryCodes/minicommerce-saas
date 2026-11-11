@@ -30,11 +30,6 @@ export async function POST(req: NextRequest) {
   if (!plan) return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
   if (!plan.is_active) return NextResponse.json({ error: 'Plan is not available' }, { status: 400 })
 
-  const settings = await getPlatformSettings()
-  if (!settings.require_plan_subscription) {
-    return NextResponse.json({ error: 'Plan subscriptions are not required' }, { status: 400 })
-  }
-
   // One open checkout per store and plan: clicking again reopens it, and a
   // checkout that was already paid is settled instead of charged again.
   const started = await startPayment({

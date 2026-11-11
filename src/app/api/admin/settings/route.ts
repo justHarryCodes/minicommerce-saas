@@ -3,16 +3,13 @@ import { verifyAdminSession, logAdminAction, getPlatformSettings } from '@/lib/a
 import { query } from '@/lib/db'
 import { z } from 'zod'
 
+// Billing is monthly plans only (Admin → Plans); the old setup-fee and
+// flat-monthly switches are gone.
 const SettingsSchema = z.object({
-  require_setup_fee:          z.boolean(),
-  setup_fee_amount:           z.number().min(0),
-  setup_fee_duration_months:  z.number().min(1).max(24),
-  require_subscription:       z.boolean(),
-  monthly_fee_amount:         z.number().min(0),
   require_nin_verification:   z.boolean(),
   allow_new_registrations:    z.boolean(),
-  require_plan_subscription:  z.boolean(),
   reels_monthly_limit:        z.number().int().min(1).max(500),
+  allow_manual_transfers:     z.boolean(),
 })
 
 export async function GET() {
@@ -35,15 +32,10 @@ export async function PUT(req: NextRequest) {
 
   // Upsert each setting value
   const entries: [string, unknown][] = [
-    ['require_setup_fee',          s.require_setup_fee],
-    ['setup_fee_amount',           s.setup_fee_amount],
-    ['setup_fee_duration_months',  s.setup_fee_duration_months],
-    ['require_subscription',       s.require_subscription],
-    ['monthly_fee_amount',         s.monthly_fee_amount],
     ['require_nin_verification',   s.require_nin_verification],
     ['allow_new_registrations',    s.allow_new_registrations],
-    ['require_plan_subscription',  s.require_plan_subscription],
     ['reels_monthly_limit',        s.reels_monthly_limit],
+    ['allow_manual_transfers',     s.allow_manual_transfers],
   ]
 
   for (const [key, value] of entries) {
