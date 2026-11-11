@@ -6,6 +6,8 @@ const RESERVED_SLUGS = new Set([
   'login', 'logout', 'signup', 'register', 'checkout', 'account',
   'settings', 'profile', 'help', 'support', 'about', 'terms', 'privacy',
   'static', 'public', 'assets', 'images', 'media', 'uploads',
+  // Infrastructure hostnames under dukanigeria.com (stores.* is the custom-domain CNAME target)
+  'stores', 'mail', 'smtp', 'ftp', 'cdn', 'status', 'docs', 'blog', 'app',
 ])
 
 export async function GET(req: NextRequest) {

@@ -42,6 +42,14 @@ describe("POST /api/stores", () => {
     expect(res.status).toBe(201);
   });
 
+  it("keeps infrastructure names free (stores.dukanigeria.com is the custom-domain target)", async () => {
+    for (const slug of ["stores", "www", "admin"]) {
+      const res = await post({ ...valid, slug });
+      expect(res.status, slug).toBe(409);
+    }
+    expect(query).not.toHaveBeenCalled();
+  });
+
   it("ignores a malformed referral code instead of failing", async () => {
     const res = await post({ ...valid, referralCode: "THIS-IS-WAY-TOO-LONG-FOR-A-CODE" });
     expect(res.status).toBe(201);

@@ -31,6 +31,16 @@ const RESERVED_SLUGS = new Set([
   "images",
   "media",
   "uploads",
+  // Infrastructure hostnames under dukanigeria.com (stores.* is the custom-domain CNAME target)
+  "stores",
+  "mail",
+  "smtp",
+  "ftp",
+  "cdn",
+  "status",
+  "docs",
+  "blog",
+  "app",
 ]);
 
 const FIELD_LABELS: Record<string, string> = {
