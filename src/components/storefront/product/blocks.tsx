@@ -2,14 +2,17 @@
 
 // Building blocks for product pages. Layouts (./layouts) arrange these;
 // they all read from useProductPage so behaviour never differs by theme.
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { AnimatePresence, m } from "framer-motion";
 import {
-  Check, ChevronDown, ChevronLeft, ChevronRight, Loader2, Minus, Plus, Send, Share2, ShieldCheck, ShoppingBag, Star, Store as StoreIcon, Truck,
+  BadgeCheck, Check, ChevronDown, ChevronLeft, ChevronRight, CreditCard, Heart, History, Loader2, Lock, MessageCircle, Minus, Plus, RotateCcw, Send, Share2,
+  ShieldCheck, ShoppingBag, Star, Store as StoreIcon, Truck, Zap,
 } from "lucide-react";
 import ProductCard from "@/components/storefront/ProductCard";
+import { useStore } from "@/lib/store-context";
+import { arrivalDate, deliveryDays } from "./useProductPage";
 import BookingPicker from "@/components/storefront/BookingPicker";
 import SizeGuideButton from "@/components/storefront/SizeGuideButton";
 import BackInStockForm from "@/components/storefront/BackInStockForm";
@@ -63,39 +66,88 @@ export function Title({ s, p, size = "lg", eyebrow = true }: BlockProps & { size
           {product.category_name}
         </Link>
       )}
-      <h1 className={`sf-display text-surface-900 dark:text-white ${cls}`}>{product.name}</h1>
-      <a href="#reviews" className="mt-2.5 inline-flex items-center gap-2 text-xs text-surface-500 hover:underline dark:text-surface-400">
-        {s.reviewTotal > 0 ? (
-          <>
-            <Stars rating={s.avgRating} />
-            {s.avgRating.toFixed(1)} · {s.reviewTotal} review{s.reviewTotal === 1 ? "" : "s"}
-          </>
-        ) : (
-          "No reviews yet"
+      <div className="flex items-start gap-3">
+        <h1 className={`sf-display min-w-0 flex-1 text-surface-900 dark:text-white ${cls}`}>{product.name}</h1>
+        <ActionIcons s={s} p={p} />
+      </div>
+      <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-surface-500 dark:text-surface-400">
+        <a href="#reviews" className="inline-flex items-center gap-2 hover:underline">
+          {s.reviewTotal > 0 ? (
+            <>
+              <Stars rating={s.avgRating} />
+              <span className="font-semibold text-surface-700 dark:text-surface-200">{s.avgRating.toFixed(1)}</span>
+              <span>({s.reviewTotal} review{s.reviewTotal === 1 ? "" : "s"})</span>
+            </>
+          ) : (
+            <>
+              <Stars rating={0} /> Be the first to review
+            </>
+          )}
+        </a>
+        {s.hasDiscount && (
+          <span className="rounded px-1.5 py-0.5 font-bold text-white" style={{ background: "#e11d48" }}>
+            Deal · {s.discountPct}% off
+          </span>
         )}
-      </a>
+        {s.inStock && !s.isBookable && <span className="font-semibold text-emerald-600 dark:text-emerald-400">In stock</span>}
+      </div>
+    </div>
+  );
+}
+
+/** Save (heart) and share, beside the product name. */
+export function ActionIcons({ s }: BlockProps) {
+  const btn = "grid h-10 w-10 shrink-0 place-items-center rounded-full border border-surface-200 transition hover:bg-surface-50 dark:border-surface-700 dark:hover:bg-surface-800";
+  return (
+    <div className="flex shrink-0 gap-2 pt-1">
+      <button type="button" onClick={s.toggleSaved} aria-pressed={s.saved} aria-label={s.saved ? "Remove from saved" : "Save for later"} className={btn}>
+        <Heart className={`h-4 w-4 ${s.saved ? "fill-red-500 text-red-500" : "text-surface-600 dark:text-surface-300"}`} />
+      </button>
+      <button type="button" onClick={s.handleShare} aria-label="Share" className={btn}>
+        {s.copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Share2 className="h-4 w-4 text-surface-600 dark:text-surface-300" />}
+      </button>
     </div>
   );
 }
 
 /** Price, in three looks: a soft card, plain and large, or a bold accent strip. */
 export function Price({ s, look = "card" }: BlockProps & { look?: "card" | "plain" | "bold" }) {
+  // Few left: a filling bar makes the number felt
+  const low = s.inStock && !s.isBookable && s.effectiveStock > 0 && s.effectiveStock <= 10;
   const stock = (
-    <p className="mt-2 flex items-center gap-2 text-sm font-medium">
-      <span className={`h-2 w-2 rounded-full ${s.inStock ? "bg-emerald-500" : "bg-red-400"}`} />
-      {s.inStock ? <span className="text-emerald-600 dark:text-emerald-400">In stock{s.stockNote ? ` · ${s.stockNote}` : ""}</span> : <span className="text-red-500">{s.soldOutToday ? "Sold out today" : "Out of stock"}</span>}
-    </p>
+    <div className="mt-3">
+      <p className="flex items-center gap-2 text-sm font-medium">
+        <span className={`h-2 w-2 rounded-full ${!s.inStock ? "bg-red-400" : low ? "bg-orange-500" : "bg-emerald-500"}`} />
+        {!s.inStock ? (
+          <span className="text-red-500">{s.soldOutToday ? "Sold out today" : "Out of stock"}</span>
+        ) : low ? (
+          <span className="font-semibold text-orange-600 dark:text-orange-400">Hurry, only {s.effectiveStock} left</span>
+        ) : (
+          <span className="text-emerald-600 dark:text-emerald-400">In stock, ready to ship</span>
+        )}
+      </p>
+      {low && (
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-200 dark:bg-surface-700">
+          <div className="h-full rounded-full bg-orange-500" style={{ width: `${Math.max(8, (s.effectiveStock / 10) * 100)}%` }} />
+        </div>
+      )}
+    </div>
   );
   const amount = (
-    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-      <span className={`font-black tabular-nums text-surface-900 dark:text-white ${look === "plain" ? "text-2xl" : "text-3xl sm:text-4xl"}`}>{s.priceLabel}</span>
+    <div>
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span className={`font-black tabular-nums text-surface-900 dark:text-white ${look === "plain" ? "text-2xl sm:text-3xl" : "text-3xl sm:text-4xl"}`}>{s.priceLabel}</span>
+        {s.hasDiscount && (
+          <>
+            <span className="text-base text-surface-400 line-through">{formatCurrency(s.comparePrice!)}</span>
+            <span className="rounded px-1.5 py-0.5 text-xs font-black text-white" style={{ background: "#e11d48" }}>
+              -{s.discountPct}%
+            </span>
+          </>
+        )}
+      </div>
       {s.hasDiscount && (
-        <>
-          <span className="text-base text-surface-400 line-through">{formatCurrency(s.comparePrice!)}</span>
-          <span className="rounded-md px-2 py-0.5 text-xs font-bold" style={{ background: "color-mix(in srgb, var(--sf-accent) 14%, transparent)", color: "var(--sf-accent-ink)" }}>
-            Save {formatCurrency(s.savings)}
-          </span>
-        </>
+        <p className="mt-1 text-sm font-bold text-emerald-600 dark:text-emerald-400">You save {formatCurrency(s.savings)}</p>
       )}
     </div>
   );
@@ -212,17 +264,25 @@ export function Quantity({ s, big = false }: BlockProps & { big?: boolean }) {
   );
 }
 
-export function BuyButtons({ s, share = true, full = false }: BlockProps & { share?: boolean; full?: boolean }) {
+/** Add to cart, and Buy now (add + straight to checkout). */
+export function BuyButtons({ s, stacked = false }: BlockProps & { stacked?: boolean }) {
   if (!s.inStock) return null;
+  const buyNow = !s.isBookable;
   return (
-    <div className="flex gap-2.5">
+    <div className={`grid gap-2.5 ${buyNow && !stacked ? "grid-cols-2" : "grid-cols-1"}`}>
       <m.button
         type="button"
         whileTap={{ scale: 0.97 }}
         onClick={s.handleAdd}
         disabled={s.needsSize}
-        className={`sf-btn flex-1 py-4 text-sm shadow-[0_10px_24px_-10px_rgba(0,0,0,.45)] disabled:cursor-not-allowed disabled:opacity-50 ${full ? "w-full" : ""}`}
-        style={s.added ? { background: "#10b981", color: "#fff" } : { background: "var(--sf-accent)", color: "var(--sf-on-accent)" }}
+        className="sf-btn w-full border-2 py-3.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+        style={
+          s.added
+            ? { background: "#10b981", borderColor: "#10b981", color: "#fff" }
+            : buyNow
+              ? { borderColor: "var(--sf-accent)", color: "var(--sf-accent-ink)" }
+              : { background: "var(--sf-accent)", borderColor: "var(--sf-accent)", color: "var(--sf-on-accent)" }
+        }
       >
         <AnimatePresence mode="wait" initial={false}>
           <m.span key={s.added ? "done" : "add"} initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -8, opacity: 0 }} className="flex items-center gap-2">
@@ -231,10 +291,17 @@ export function BuyButtons({ s, share = true, full = false }: BlockProps & { sha
           </m.span>
         </AnimatePresence>
       </m.button>
-      {share && (
-        <button type="button" onClick={s.handleShare} aria-label="Share" className="sf-btn border border-surface-200 px-4 text-surface-600 hover:bg-surface-50 dark:border-surface-700 dark:text-surface-300 dark:hover:bg-surface-800">
-          {s.copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Share2 className="h-4 w-4" />}
-        </button>
+      {buyNow && (
+        <m.button
+          type="button"
+          whileTap={{ scale: 0.97 }}
+          onClick={s.handleBuyNow}
+          disabled={s.needsSize}
+          className="sf-btn w-full border-2 py-3.5 text-sm shadow-[0_10px_24px_-10px_rgba(0,0,0,.45)] disabled:cursor-not-allowed disabled:opacity-50"
+          style={{ background: "var(--sf-accent)", borderColor: "var(--sf-accent)", color: "var(--sf-on-accent)" }}
+        >
+          <Zap className="h-4 w-4" /> Buy now
+        </m.button>
       )}
     </div>
   );
@@ -300,46 +367,188 @@ export function Notices({ s, p }: BlockProps) {
   );
 }
 
-/** Delivery / payment / quality reassurance from the theme's highlights. */
-export function Assurances({ s, p }: BlockProps) {
-  const delivery = p.store.delivery_time_frame;
-  const items = [
-    delivery ? { icon: Truck, text: `Delivery: ${delivery}` } : null,
-    { icon: ShieldCheck, text: "Secure checkout — card, transfer or USSD" },
-    ...s.theme.copy.highlights.slice(0, 2).map((h) => ({ icon: Check, text: h.title })),
-  ].filter(Boolean) as { icon: typeof Truck; text: string }[];
+type PublicStoreExtras = {
+  duka_pay_enabled?: boolean;
+  bank_transfer_enabled?: boolean;
+  pod_enabled?: boolean;
+  free_delivery_threshold?: number | string | null;
+  nin_verified?: boolean;
+  created_at?: string;
+};
+const extras = (p: BlockProps["p"]) => p.store as unknown as PublicStoreExtras;
+
+/** First ~140 characters of a policy, skipping a heading line like "Refund and Return Policy". */
+function policyPreview(policy: string): string {
+  const lines = policy.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+  const body = lines.filter((l) => !/policy$|^last updated/i.test(l)).join(" ") || lines.join(" ");
+  const flat = body.replace(/\s+/g, " ");
+  return flat.length > 140 ? `${flat.slice(0, 140).replace(/\s+\S*$/, "")}…` : flat;
+}
+
+/** "Get it by Thu, 14 Nov" — worked out in the browser so it uses the shopper's today. */
+function ArrivalEstimate({ frame }: { frame: string | null | undefined }) {
+  const [label, setLabel] = useState<string | null>(null);
+  useEffect(() => {
+    const days = deliveryDays(frame);
+    if (!days) return;
+    const fmt = (d: Date) => d.toLocaleDateString("en-NG", { weekday: "short", day: "numeric", month: "short" });
+    const [lo, hi] = days;
+    if (hi === 0) setLabel("Get it today");
+    else if (lo === hi) setLabel(`Get it by ${fmt(arrivalDate(hi))}`);
+    else setLabel(`Get it between ${fmt(arrivalDate(lo))} and ${fmt(arrivalDate(hi))}`);
+  }, [frame]);
+  if (!label) return null;
+  return <span className="block font-semibold text-surface-900 dark:text-white">{label}</span>;
+}
+
+/** Delivery, returns and payment — the box every online shop has beside the buy button. */
+export function Assurances({ p }: BlockProps) {
+  const store = p.store;
+  const x = extras(p);
+  const [policyOpen, setPolicyOpen] = useState(false);
+  const frame = store.delivery_time_frame;
+  const freeOver = Number(x.free_delivery_threshold) > 0 ? Number(x.free_delivery_threshold) : null;
+  const policy = (store.return_policy ?? "").trim();
+  const methods = [
+    x.duka_pay_enabled !== false ? "Card" : null,
+    x.duka_pay_enabled !== false ? "USSD" : null,
+    x.duka_pay_enabled !== false || x.bank_transfer_enabled ? "Bank transfer" : null,
+    x.pod_enabled ? "Pay on delivery" : null,
+  ].filter(Boolean) as string[];
+
+  const row = "flex gap-3 px-4 py-3.5";
+  const icon = "mt-0.5 h-5 w-5 shrink-0";
   return (
-    <ul className="space-y-2 text-sm text-surface-600 dark:text-surface-300">
-      {items.slice(0, 4).map(({ icon: Icon, text }) => (
-        <li key={text} className="flex items-center gap-2.5">
-          <Icon className="h-4 w-4 shrink-0" style={{ color: "var(--sf-accent-ink)" }} /> {text}
+    <div className="divide-y divide-surface-100 overflow-hidden rounded-[var(--sf-radius)] border border-surface-200/80 bg-white text-sm dark:divide-surface-800 dark:border-surface-800 dark:bg-surface-900">
+      <p className="bg-surface-50 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-surface-500 dark:bg-surface-800/60 dark:text-surface-400">Delivery &amp; returns</p>
+      <div className={row}>
+        <Truck className={icon} style={{ color: "var(--sf-accent-ink)" }} />
+        <div className="min-w-0 space-y-0.5 text-surface-600 dark:text-surface-300">
+          <ArrivalEstimate frame={frame} />
+          <span className="block">{frame ? `Delivery in ${frame}` : "Delivery available nationwide"}</span>
+          {freeOver && <span className="block font-semibold text-emerald-600 dark:text-emerald-400">Free delivery on orders over {formatCurrency(freeOver)}</span>}
+        </div>
+      </div>
+      <div className={row}>
+        <RotateCcw className={icon} style={{ color: "var(--sf-accent-ink)" }} />
+        <div className="min-w-0 text-surface-600 dark:text-surface-300">
+          <span className="block font-semibold text-surface-900 dark:text-white">Return policy</span>
+          {policy ? (
+            <>
+              {policyOpen ? (
+                <span className="block max-h-80 overflow-y-auto whitespace-pre-line pr-1">{policy}</span>
+              ) : (
+                <span className="block">{policyPreview(policy)}</span>
+              )}
+              {policy.length > 140 && (
+                <button type="button" onClick={() => setPolicyOpen((o) => !o)} className="mt-1 text-xs font-bold underline underline-offset-2" style={{ color: "var(--sf-accent-ink)" }}>
+                  {policyOpen ? "Show less" : "Read full policy"}
+                </button>
+              )}
+            </>
+          ) : (
+            <span className="block">Questions about returns? Message the seller before you buy.</span>
+          )}
+        </div>
+      </div>
+      {methods.length > 0 && (
+        <div className={row}>
+          <CreditCard className={icon} style={{ color: "var(--sf-accent-ink)" }} />
+          <div className="min-w-0">
+            <span className="block font-semibold text-surface-900 dark:text-white">Pay your way</span>
+            <span className="mt-1.5 flex flex-wrap gap-1.5">
+              {methods.map((m) => (
+                <span key={m} className="rounded border border-surface-200 px-2 py-0.5 text-xs font-semibold text-surface-700 dark:border-surface-700 dark:text-surface-200">
+                  {m}
+                </span>
+              ))}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Three reassurance tiles: secure payment, a verified seller, the theme's promise. */
+export function TrustBadges({ s, p }: BlockProps) {
+  const x = extras(p);
+  const tiles = [
+    { icon: Lock, title: "Secure payment", text: "Checkout protected by Paystack" },
+    x.nin_verified ? { icon: BadgeCheck, title: "Verified seller", text: "Identity checked by Duka" } : null,
+    // The theme's promises, minus any that repeat "secure payment"
+    ...s.theme.copy.highlights
+      .filter((h) => !/pay/i.test(h.title))
+      .map((h) => ({ icon: h.icon === "truck" ? Truck : h.icon === "refresh" ? RotateCcw : ShieldCheck, title: h.title, text: h.text })),
+  ].filter(Boolean).slice(0, 3) as { icon: typeof Lock; title: string; text: string }[];
+  return (
+    <ul className="grid grid-cols-3 gap-2">
+      {tiles.map(({ icon: Icon, title, text }) => (
+        <li key={title} className="rounded-[var(--sf-radius)] bg-surface-50 px-2 py-3 text-center dark:bg-surface-800/60">
+          <Icon className="mx-auto h-5 w-5" style={{ color: "var(--sf-accent-ink)" }} />
+          <p className="mt-1.5 text-[11px] font-bold leading-tight text-surface-900 dark:text-white sm:text-xs">{title}</p>
+          <p className="mt-0.5 hidden text-[11px] leading-snug text-surface-500 sm:block">{text}</p>
         </li>
       ))}
     </ul>
   );
 }
 
+/** Who you're buying from: logo, verified tick, store rating, tenure, chat. */
 export function SellerCard({ s, p }: BlockProps) {
   const store = p.store;
+  const x = extras(p);
+  const { ratings } = useStore();
+  // Store rating: every product's reviews, weighted by count
+  let sum = 0;
+  let n = 0;
+  for (const [avg, count] of Object.values(ratings)) {
+    sum += avg * count;
+    n += count;
+  }
+  const storeRating = n ? sum / n : 0;
+  const since = x.created_at ? new Date(x.created_at).getFullYear() : null;
+  const wa = store.whatsapp ? `https://wa.me/${String(store.whatsapp).replace(/[^0-9]/g, "")}` : null;
   return (
-    <Link href={s.homeHref} className="group flex items-center gap-3 rounded-[var(--sf-radius)] border border-surface-100 bg-white p-3.5 transition-shadow hover:shadow-md dark:border-surface-800 dark:bg-surface-900">
-      {store.logo_url ? (
-        <span className="relative h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-surface-100 bg-white dark:border-surface-800">
-          <Image src={clLogo(store.logo_url)} alt={store.name} fill sizes="44px" className="object-contain p-1" />
-        </span>
-      ) : (
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-lg font-black" style={{ background: "var(--sf-accent)", color: "var(--sf-on-accent)" }}>
-          {store.name.charAt(0).toUpperCase()}
-        </span>
-      )}
-      <span className="min-w-0 flex-1">
-        <span className="block text-[11px] font-semibold uppercase tracking-wider text-surface-400">Sold by</span>
-        <span className="block truncate text-sm font-bold text-surface-900 dark:text-white">{store.name}</span>
-      </span>
-      <span className="flex items-center gap-1 text-xs font-bold group-hover:underline" style={{ color: "var(--sf-accent-ink)" }}>
-        <StoreIcon className="h-3.5 w-3.5" /> Visit
-      </span>
-    </Link>
+    <div className="rounded-[var(--sf-radius)] border border-surface-200/80 bg-white p-4 dark:border-surface-800 dark:bg-surface-900">
+      <div className="flex items-center gap-3">
+        {store.logo_url ? (
+          <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-surface-100 bg-white dark:border-surface-800">
+            <Image src={clLogo(store.logo_url)} alt={store.name} fill sizes="48px" className="object-contain p-1" />
+          </span>
+        ) : (
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-lg font-black" style={{ background: "var(--sf-accent)", color: "var(--sf-on-accent)" }}>
+            {store.name.charAt(0).toUpperCase()}
+          </span>
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-surface-400">Sold by</p>
+          <p className="flex items-center gap-1 truncate text-sm font-bold text-surface-900 dark:text-white">
+            <span className="truncate">{store.name}</span>
+            {x.nin_verified && <BadgeCheck className="h-4 w-4 shrink-0 text-sky-500" aria-label="Verified seller" />}
+          </p>
+          <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-surface-500 dark:text-surface-400">
+            {n > 0 && (
+              <span className="flex items-center gap-1">
+                <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                <span className="font-semibold text-surface-700 dark:text-surface-200">{storeRating.toFixed(1)}</span> ({n})
+              </span>
+            )}
+            {since && <span>On Duka since {since}</span>}
+          </p>
+        </div>
+      </div>
+      <div className={`mt-3 grid gap-2 ${wa ? "grid-cols-2" : "grid-cols-1"}`}>
+        <Link href={s.homeHref} className="flex items-center justify-center gap-1.5 rounded-[var(--sf-radius-btn,0.75rem)] border border-surface-200 py-2 text-xs font-bold text-surface-800 hover:bg-surface-50 dark:border-surface-700 dark:text-surface-100 dark:hover:bg-surface-800">
+          <StoreIcon className="h-3.5 w-3.5" /> Visit store
+        </Link>
+        {wa && (
+          <a href={wa} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 rounded-[var(--sf-radius-btn,0.75rem)] border border-surface-200 py-2 text-xs font-bold text-surface-800 hover:bg-surface-50 dark:border-surface-700 dark:text-surface-100 dark:hover:bg-surface-800">
+            <MessageCircle className="h-3.5 w-3.5 text-emerald-500" /> Chat with seller
+          </a>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -433,7 +642,7 @@ export function DetailAccordion({ s, p }: BlockProps) {
     s.details?.notes ? { title: "Scent notes", body: <ScentNotes s={s} p={p} /> } : null,
     s.details?.specs?.length ? { title: "Specifications", body: <Specs s={s} p={p} /> } : null,
     s.details?.highlights?.length ? { title: "Highlights", body: <Highlights s={s} p={p} /> } : null,
-    { title: "Delivery & payment", body: <Assurances s={s} p={p} /> },
+    { title: "Delivery & returns", body: <Assurances s={s} p={p} /> },
   ].filter(Boolean) as { title: string; body: React.ReactNode }[];
   const [open, setOpen] = useState<string | null>(sections[0]?.title ?? null);
   return (
@@ -461,7 +670,7 @@ export function DetailTabs({ s, p }: BlockProps) {
   const tabs = [
     { id: "overview", label: "Overview", body: <div className="space-y-6"><Description s={s} p={p} /><Highlights s={s} p={p} /><ScentNotes s={s} p={p} /></div> },
     s.details?.specs?.length ? { id: "specs", label: "Specifications", body: <Specs s={s} p={p} /> } : null,
-    { id: "delivery", label: "Delivery", body: <Assurances s={s} p={p} /> },
+    { id: "delivery", label: "Delivery & returns", body: <div className="max-w-xl"><Assurances s={s} p={p} /></div> },
   ].filter(Boolean) as { id: string; label: string; body: React.ReactNode }[];
   const [tab, setTab] = useState(tabs[0].id);
   return (
@@ -599,15 +808,43 @@ export function Reviews({ s, p }: BlockProps) {
   );
 }
 
-export function Related({ p, title = "You might also like" }: BlockProps & { title?: string }) {
+const productGrid = "grid grid-cols-2 gap-0.5 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4";
+
+export function Related({ p, title }: BlockProps & { title?: string }) {
   if (!p.related.length) return null;
+  const category = p.product.category_name;
   return (
     <section>
-      <p className="sf-eyebrow mb-1">Explore more</p>
-      <h2 className="sf-display mb-6 text-2xl text-surface-900 dark:text-white">{title}</h2>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+      <div className="mb-5 flex items-end justify-between gap-3">
+        <div>
+          <p className="sf-eyebrow mb-1">Explore more</p>
+          <h2 className="sf-display text-2xl text-surface-900 dark:text-white">{title ?? (category ? `More from ${category}` : "You might also like")}</h2>
+        </div>
+      </div>
+      <div className={productGrid}>
         {p.related.map((r: Product) => (
           <ProductCard key={r.id} product={r} storeSlug={p.storeSlug} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/** Products this shopper opened before, on this device. */
+export function RecentlyViewed({ s, p }: BlockProps) {
+  const items = s.recentlyViewed.slice(0, 8);
+  if (!items.length) return null;
+  return (
+    <section>
+      <div className="mb-5 flex items-center gap-2">
+        <History className="h-5 w-5 text-surface-400" />
+        <h2 className="sf-display text-2xl text-surface-900 dark:text-white">Recently viewed</h2>
+      </div>
+      <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:gap-3">
+        {items.map((r) => (
+          <div key={r.id} className="w-[42%] shrink-0 sm:w-52">
+            <ProductCard product={r as unknown as Product} storeSlug={p.storeSlug} />
+          </div>
         ))}
       </div>
     </section>
@@ -617,17 +854,37 @@ export function Related({ p, title = "You might also like" }: BlockProps & { tit
 /** Phone buy bar pinned to the bottom of the screen. */
 export function StickyBar({ s }: BlockProps) {
   if (!s.inStock) return null;
+  const buyNow = !s.isBookable;
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 border-t border-surface-100 bg-white/95 p-3 pb-[max(.75rem,env(safe-area-inset-bottom))] backdrop-blur-md dark:border-surface-800 dark:bg-surface-900/95 md:hidden">
-      <div className="flex items-center gap-3">
-        <div className="min-w-0">
-          <p className="text-lg font-black leading-tight text-surface-900 dark:text-white">{s.lineTotal}</p>
-          {s.hasDiscount && <p className="text-[11px] leading-tight text-surface-400 line-through">{formatCurrency(s.comparePrice! * s.qty)}</p>}
-        </div>
-        <button type="button" onClick={s.handleAdd} disabled={s.needsSize} className="sf-btn flex-1 py-3.5 text-sm disabled:opacity-60" style={s.added ? { background: "#10b981", color: "#fff" } : { background: "var(--sf-accent)", color: "var(--sf-on-accent)" }}>
-          {s.added ? <Check className="h-4 w-4" /> : <ShoppingBag className="h-4 w-4" />}
-          {s.addLabel}
+      <div className="flex items-center gap-2">
+        <button type="button" onClick={s.toggleSaved} aria-pressed={s.saved} aria-label={s.saved ? "Remove from saved" : "Save for later"} className="grid h-12 w-12 shrink-0 place-items-center rounded-[var(--sf-radius-btn,0.75rem)] border border-surface-200 dark:border-surface-700">
+          <Heart className={`h-5 w-5 ${s.saved ? "fill-red-500 text-red-500" : "text-surface-600 dark:text-surface-300"}`} />
         </button>
+        <button
+          type="button"
+          onClick={s.handleAdd}
+          disabled={s.needsSize}
+          className="sf-btn h-12 flex-1 border-2 px-2 text-sm disabled:opacity-60"
+          style={
+            s.added
+              ? { background: "#10b981", borderColor: "#10b981", color: "#fff" }
+              : buyNow
+                ? { borderColor: "var(--sf-accent)", color: "var(--sf-accent-ink)" }
+                : { background: "var(--sf-accent)", borderColor: "var(--sf-accent)", color: "var(--sf-on-accent)" }
+          }
+        >
+          {s.added ? <Check className="h-4 w-4" /> : <ShoppingBag className="h-4 w-4" />}
+          <span className="truncate">{s.needsSize ? s.addLabel : s.added ? "Added" : buyNow ? "Add to cart" : s.addLabel}</span>
+        </button>
+        {buyNow && (
+          <button type="button" onClick={s.handleBuyNow} disabled={s.needsSize} className="sf-btn h-12 flex-1 border-2 px-2 text-sm disabled:opacity-60" style={{ background: "var(--sf-accent)", borderColor: "var(--sf-accent)", color: "var(--sf-on-accent)" }}>
+            <span className="flex flex-col items-center leading-tight">
+              <span>Buy now</span>
+              <span className="text-[11px] font-semibold opacity-80">{s.lineTotal}</span>
+            </span>
+          </button>
+        )}
       </div>
     </div>
   );

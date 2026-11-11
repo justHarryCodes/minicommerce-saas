@@ -5,7 +5,10 @@
 // variants, booking and reviews behave identically in every theme.
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/components/storefront/CartProvider";
+import { useBookmarks } from "@/hooks/useBookmarks";
+import { useRecentlyViewed } from "@/hooks/useRecentlyViewed";
 import { useStore } from "@/lib/store-context";
 import { formatCurrency } from "@/lib/utils";
 import { optionNamesOf, optionsOf } from "@/lib/variants-shared";
@@ -35,10 +38,40 @@ export interface ProductPageProps {
   stockAlertsEnabled?: boolean;
 }
 
+/** "2-5 days", "24-48 hours", "3 working days" → whole days [min, max]. */
+export function deliveryDays(frame: string | null | undefined): [number, number] | null {
+  if (!frame) return null;
+  const t = frame.toLowerCase();
+  const range = t.match(/(\d+)\s*(?:-|–|to)\s*(\d+)\s*(h(?:ou)?rs?|days?|working days?|business days?)/);
+  const single = t.match(/(\d+)\s*(h(?:ou)?rs?|days?|working days?|business days?)/);
+  const m = range ?? single;
+  if (!m) return /same.?day|today/.test(t) ? [0, 0] : /next.?day|tomorrow/.test(t) ? [1, 1] : null;
+  const a = Number(m[1]);
+  const b = range ? Number(m[2]) : a;
+  const unit = (range ? m[3] : m[2]) ?? "";
+  const toDays = (n: number) => (unit.startsWith("h") ? Math.ceil(n / 24) : n);
+  const lo = toDays(Math.min(a, b));
+  const hi = toDays(Math.max(a, b));
+  return hi > 60 ? null : [lo, hi];
+}
+
+/** Calendar date `days` from now, counted in working days (Mon–Sat). */
+export function arrivalDate(days: number, from = new Date()): Date {
+  const d = new Date(from);
+  let left = days;
+  while (left > 0) {
+    d.setDate(d.getDate() + 1);
+    if (d.getDay() !== 0) left--;
+  }
+  return d;
+}
+
 export function useProductPage({ product, storeSlug }: ProductPageProps) {
   const { addItem } = useCart();
   const { storeBase, theme } = useStore();
+  const router = useRouter();
   const homeHref = storeBase || "/";
+  const { isBookmarked, toggleBookmark } = useBookmarks(storeSlug);
 
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
@@ -173,6 +206,36 @@ export function useProductPage({ product, storeSlug }: ProductPageProps) {
     setTimeout(() => setAdded(false), 2000);
   }
 
+  /** Add, then straight to checkout. */
+  function handleBuyNow() {
+    if (needsSize || !inStock) return;
+    handleAdd();
+    router.push(`${storeBase}/checkout`);
+  }
+
+  const saved = isBookmarked(product.id);
+  function toggleSaved() {
+    toggleBookmark({
+      id: product.id,
+      name: product.name,
+      slug: product.slug ?? product.id,
+      price: product.price,
+      compare_price: comparePrice ?? null,
+      image_url: baseImages[0] ?? null,
+    });
+  }
+
+  const recentlyViewed = useRecentlyViewed(storeSlug, {
+    id: product.id,
+    name: product.name,
+    slug: product.slug ?? product.id,
+    price: product.price,
+    compare_price: comparePrice ?? null,
+    image_url: baseImages[0] ?? null,
+    stock_quantity: stockQty,
+    has_sizes: hasSizes,
+  });
+
   async function handleShare() {
     try {
       if (navigator.share) await navigator.share({ title: product.name, url: window.location.href });
@@ -249,7 +312,12 @@ export function useProductPage({ product, storeSlug }: ProductPageProps) {
     addLabel,
     lineTotal,
     handleAdd,
+    handleBuyNow,
     handleShare,
+    saved,
+    toggleSaved,
+    recentlyViewed,
+    storeBase,
     reviews,
     setReviews,
     avgRating,

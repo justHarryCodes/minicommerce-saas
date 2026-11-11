@@ -7,10 +7,46 @@ import type { ProductLayout } from "@/lib/themes/types";
 import { MosaicGallery, StackGallery, SwipeGallery, ThumbGallery } from "./Gallery";
 import {
   Assurances, Breadcrumb, BuyButtons, DetailAccordion, DetailTabs, Description, Highlights, Notices, Options, Price, Quantity, Related, Reviews,
-  ScentNotes, SellerCard, Specs, StickyBar, Title, WhatsAppOrder as WhatsAppSlot, type BlockProps,
+  RecentlyViewed, ScentNotes, SellerCard, Specs, StickyBar, Title, TrustBadges, WhatsAppOrder as WhatsAppSlot, type BlockProps,
 } from "./blocks";
 
 const gallery = (s: BlockProps["s"], p: BlockProps["p"]) => ({ ...s, name: p.product.name });
+
+/** "Product details" panel: description and highlights beside the spec sheet. */
+function ProductDetailsCard({ s, p }: BlockProps) {
+  const hasSpecs = !!s.details?.specs?.length;
+  if (!p.product.description && !s.details?.highlights?.length && !hasSpecs && !s.details?.notes) return null;
+  return (
+    <section className="mt-12 overflow-hidden rounded-[var(--sf-radius)] border border-surface-200/80 bg-white dark:border-surface-800 dark:bg-surface-900">
+      <h2 className="border-b border-surface-100 bg-surface-50 px-5 py-3.5 text-sm font-bold uppercase tracking-wider text-surface-700 dark:border-surface-800 dark:bg-surface-800/60 dark:text-surface-200">
+        Product details
+      </h2>
+      <div className={`grid gap-8 p-5 sm:p-6 ${hasSpecs ? "lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]" : ""}`}>
+        <div className="space-y-6">
+          {s.details?.highlights?.length ? (
+            <div>
+              <h3 className="mb-3 text-sm font-bold text-surface-900 dark:text-white">Key features</h3>
+              <Highlights s={s} p={p} />
+            </div>
+          ) : null}
+          {p.product.description && (
+            <div>
+              <h3 className="mb-2 text-sm font-bold text-surface-900 dark:text-white">Description</h3>
+              <Description s={s} p={p} />
+            </div>
+          )}
+          <ScentNotes s={s} p={p} />
+        </div>
+        {hasSpecs && (
+          <div>
+            <h3 className="mb-3 text-sm font-bold text-surface-900 dark:text-white">Specifications</h3>
+            <Specs s={s} p={p} />
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
 
 /** Classic: thumbnails + photo beside a tidy buy box; details below. */
 function Classic({ s, p }: BlockProps) {
@@ -18,8 +54,10 @@ function Classic({ s, p }: BlockProps) {
     <>
       <Breadcrumb s={s} p={p} className="mb-5" />
       <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
-        <ThumbGallery g={gallery(s, p)} />
-        <div className="space-y-6">
+        <div className="lg:sticky lg:top-24 lg:self-start">
+          <ThumbGallery g={gallery(s, p)} />
+        </div>
+        <div className="space-y-5">
           <Title s={s} p={p} size="md" />
           <Price s={s} p={p} />
           <Options s={s} p={p} />
@@ -27,24 +65,12 @@ function Classic({ s, p }: BlockProps) {
           <Quantity s={s} p={p} />
           <BuyButtons s={s} p={p} />
           <WhatsAppSlot s={s} p={p} />
+          <TrustBadges s={s} p={p} />
           <Assurances s={s} p={p} />
           <SellerCard s={s} p={p} />
         </div>
       </div>
-      <div className="mt-14 grid gap-10 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-        <section className="space-y-6">
-          <h2 className="sf-display text-2xl text-surface-900 dark:text-white">About this item</h2>
-          <Description s={s} p={p} />
-          <Highlights s={s} p={p} />
-          <ScentNotes s={s} p={p} />
-        </section>
-        {s.details?.specs?.length ? (
-          <section className="space-y-4">
-            <h2 className="sf-display text-2xl text-surface-900 dark:text-white">Specifications</h2>
-            <Specs s={s} p={p} />
-          </section>
-        ) : null}
-      </div>
+      <ProductDetailsCard s={s} p={p} />
     </>
   );
 }
@@ -66,7 +92,9 @@ function Editorial({ s, p }: BlockProps) {
             <Quantity s={s} p={p} />
             <BuyButtons s={s} p={p} />
             <WhatsAppSlot s={s} p={p} />
+            <TrustBadges s={s} p={p} />
             <DetailAccordion s={s} p={p} />
+            <SellerCard s={s} p={p} />
           </div>
         </div>
       </div>
@@ -116,6 +144,8 @@ function Showcase({ s, p }: BlockProps) {
           <Quantity s={s} p={p} />
           <BuyButtons s={s} p={p} />
           <WhatsAppSlot s={s} p={p} />
+          <TrustBadges s={s} p={p} />
+          <Assurances s={s} p={p} />
           <SellerCard s={s} p={p} />
         </div>
       </div>
@@ -142,6 +172,7 @@ function Split({ s, p }: BlockProps) {
             <Quantity s={s} p={p} />
             <BuyButtons s={s} p={p} />
             <WhatsAppSlot s={s} p={p} />
+            <TrustBadges s={s} p={p} />
             <Assurances s={s} p={p} />
           </div>
         </div>
@@ -191,10 +222,11 @@ function Compact({ s, p }: BlockProps) {
         <div className="flex flex-wrap items-center justify-between gap-4 rounded-[var(--sf-radius)] bg-surface-50 p-4 dark:bg-surface-900">
           <Quantity s={s} p={p} big />
           <div className="min-w-[200px] flex-1">
-            <BuyButtons s={s} p={p} share={false} />
+            <BuyButtons s={s} p={p} stacked />
           </div>
         </div>
         <WhatsAppSlot s={s} p={p} />
+        <Assurances s={s} p={p} />
         <Highlights s={s} p={p} />
         <Description s={s} p={p} collapsible />
         <Specs s={s} p={p} />
@@ -222,6 +254,7 @@ export function ProductPageView({ layout, s, p }: BlockProps & { layout: Product
       <div className={`mt-16 space-y-16 ${narrow ? "mx-auto max-w-3xl" : ""}`}>
         <Reviews s={s} p={p} />
         <Related s={s} p={p} />
+        <RecentlyViewed s={s} p={p} />
       </div>
       <StickyBar s={s} p={p} />
     </div>

@@ -10,6 +10,9 @@ const PUBLIC_FIELDS = [
   'social_links', 'business_hours', 'opening_hours', 'return_policy', 'banner_images',
   'primary_category', 'delivery_time_frame', 'custom_domain', 'prep_time_minutes',
   'allow_preorders', 'is_active',
+  // Product page: payment options, delivery perks and seller trust signals
+  'duka_pay_enabled', 'bank_transfer_enabled', 'pod_enabled', 'free_delivery_threshold',
+  'nin_verified', 'created_at',
 ] as const
 
 export function toPublicStore(store: Store): Store {
