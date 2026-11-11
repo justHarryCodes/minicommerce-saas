@@ -12,6 +12,37 @@ import StorefrontNav from "@/components/storefront/Nav";
 import CartProvider from "@/components/storefront/CartProvider";
 import ColorModeLock from "@/components/storefront/ColorModeLock";
 import type { Category, Store } from "@/types";
+import { MessageCircle, Phone } from "lucide-react";
+
+/** "Call to order" strip above the nav: the store phone and WhatsApp, one tap away. */
+function CallToOrder({ store, title }: { store: Store; title: string }) {
+  const phone = store.phone?.trim() || null;
+  const wa = store.whatsapp ? `https://wa.me/${store.whatsapp.replace(/[^0-9]/g, "")}` : null;
+  if (!phone && !wa) return null;
+  return (
+    <div className="sf-no-print bg-[#0b0b0d] text-white">
+      <div className="mx-auto flex h-9 max-w-7xl items-center justify-center gap-3 px-4 text-xs sm:justify-between sm:text-[13px] lg:px-6">
+        {title && <span className="hidden truncate opacity-75 sm:block">{title}</span>}
+        <div className="flex min-w-0 items-center gap-3 sm:gap-5">
+          {phone && (
+            <a href={`tel:${phone.replace(/[^0-9+]/g, "")}`} className="flex min-w-0 items-center gap-1.5 font-semibold hover:opacity-80">
+              <Phone className="h-3.5 w-3.5 shrink-0" style={{ color: "var(--sf-accent)" }} />
+              <span className="uppercase tracking-wide opacity-75">Call to order</span>
+              <span className="truncate">{phone}</span>
+            </a>
+          )}
+          {phone && wa && <span aria-hidden className="h-3.5 w-px bg-white/25" />}
+          {wa && (
+            <a href={wa} target="_blank" rel="noopener noreferrer" className="flex shrink-0 items-center gap-1.5 font-semibold hover:opacity-80">
+              <MessageCircle className="h-3.5 w-3.5 text-emerald-400" />
+              {phone ? "WhatsApp" : "Order on WhatsApp"}
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 interface Props {
   store: Store;
@@ -41,6 +72,7 @@ export default function StorefrontShell({ store, theme, categories, storeSlug, s
           <link rel="stylesheet" href={googleFontsHref([bodyFont, headingFont])} />
           <style dangerouslySetInnerHTML={{ __html: themeCss(theme) }} />
           <ColorModeLock mode={mode} />
+          <CallToOrder store={store} title={theme.copy.ctaTitle} />
           {announcement && (
             <div
               className="sf-no-print px-4 py-2.5 text-center text-xs font-semibold tracking-wide sm:text-[13px]"

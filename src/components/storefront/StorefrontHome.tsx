@@ -10,7 +10,6 @@ import StorefrontFooter from "@/components/storefront/StorefrontFooter";
 import {
   AboutSection,
   CategoryStrip,
-  CtaBand,
   Hero,
   HighlightsSection,
   ProductRail,
@@ -214,7 +213,8 @@ export default function StorefrontHome(props: StorefrontHomeProps) {
 
     about: <AboutSection store={store} whatsappHref={whatsappHref} image={aboutImage} />,
 
-    ctaBand: <CtaBand theme={theme} whatsappHref={whatsappHref} fallbackHref={shopAllHref} />,
+    // Call-to-order now lives in the strip above the nav (StorefrontShell)
+    ctaBand: null,
   };
 
   const allProductsIndex = sections.indexOf("allProducts");

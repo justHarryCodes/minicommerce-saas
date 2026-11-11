@@ -4,7 +4,7 @@
 // quick browsing (markets, supermarkets, gadgets, food menus).
 import Link from "next/link";
 import { LayoutGrid, MessageCircle, Package, Phone, Truck } from "lucide-react";
-import { Bar, CartButton, CategoryChips, CategoryLinks, Logo, MenuButton, SavedButton, SearchBar, SearchIcon, toneStyle, useNav } from "../core";
+import { Bar, CartButton, CategoryChips, CategoryLinks, CategoryRail, Logo, MenuButton, SavedButton, SearchBar, SearchIcon, toneStyle, useNav } from "../core";
 import { MobileRow } from "./basic";
 
 /** 3 · Marketplace — big search bar, labelled actions, department row. */
@@ -13,7 +13,7 @@ export function MarketplaceNav() {
   return (
     <Bar style={toneStyle(opts.tone)}>
       <div className="lg:hidden">
-        <MobileRow search={false} />
+        <MobileRow search={false} cats={false} />
         {opts.search !== "hidden" && (
           <div className="px-3 pb-2">
             <SearchBar className="w-full !rounded-xl" />
@@ -75,12 +75,13 @@ export function TwoTierNav() {
         </div>
       </div>
       <div className="border-b border-[color:var(--nav-line)]" style={{ ...toneStyle(opts.tone), background: "var(--nav-bg)", color: "var(--nav-fg)" }}>
-        <MobileRow search={false} />
+        <MobileRow search={false} cats={false} />
         {opts.search !== "hidden" && (
           <div className="px-3 pb-3 lg:hidden">
             <SearchBar className="w-full" />
           </div>
         )}
+        <CategoryRail className="lg:hidden" />
         <div className="mx-auto hidden h-[76px] max-w-7xl items-center gap-6 px-6 lg:flex">
           <Logo />
           <CategoryLinks max={5} className="shrink-0" />

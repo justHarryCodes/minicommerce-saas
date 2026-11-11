@@ -4,12 +4,13 @@
 // search, category links, and the overlays (menu, cart, search) every bar
 // opens. Each style in ./styles composes these into its own layout.
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 import { AnimatePresence, m } from "framer-motion";
-import { ChevronDown, Heart, Menu, Search, ShoppingBag, ShoppingCart } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Heart, Menu, Search, ShoppingBag, ShoppingCart } from "lucide-react";
 import { useCart } from "../CartProvider";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import { useStore } from "@/lib/store-context";
@@ -197,15 +198,15 @@ export function SearchBar({ className = "", placeholder }: { className?: string;
 }
 
 export function SavedButton(_: { withLabel?: boolean } = {}) {
-  const { homeHref, bookmarkCount } = useNav();
+  const { storeBase, bookmarkCount } = useNav();
   return (
-    <a href={`${homeHref}#saved-items`} className={actionBtn} aria-label={`Saved items, ${bookmarkCount}`}>
+    <Link href={`${storeBase}/saved`} className={actionBtn} aria-label={`Saved items, ${bookmarkCount}`}>
       <span className="relative">
         <Heart className="h-5 w-5" />
         <CountBadge n={bookmarkCount} />
       </span>
       <span className={actionLabel}>Saved</span>
-    </a>
+    </Link>
   );
 }
 
@@ -223,43 +224,143 @@ export function CartButton({ bag = false }: { withLabel?: boolean; bag?: boolean
   );
 }
 
-/** Desktop category links with animated sub-category dropdowns. */
-export function CategoryLinks({ max = 6, className = "", linkClass = "" }: { max?: number; className?: string; linkClass?: string }) {
+/** Scroll state of a horizontal rail: whether there is more to either side. */
+function useRailEdges<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [edges, setEdges] = useState({ left: false, right: false });
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () =>
+      setEdges({ left: el.scrollLeft > 4, right: el.scrollLeft + el.clientWidth < el.scrollWidth - 4 });
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", update);
+      ro.disconnect();
+    };
+  }, []);
+  const nudge = (dir: 1 | -1) => ref.current?.scrollBy({ left: dir * ref.current.clientWidth * 0.7, behavior: "smooth" });
+  return { ref, edges, nudge };
+}
+
+/** Bring the selected category into view inside its rail. */
+function useActiveIntoView(rail: React.RefObject<HTMLElement | null>, active: string | null) {
+  useEffect(() => {
+    const r = rail.current;
+    const el = r?.querySelector<HTMLElement>("[data-active='true']");
+    if (!r || !el) return;
+    r.scrollLeft = el.offsetLeft - r.clientWidth / 2 + el.clientWidth / 2;
+  }, [rail, active]);
+}
+
+const railArrow =
+  "absolute top-1/2 z-10 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full border border-[color:var(--nav-line)] bg-[color:var(--nav-bg)] shadow-sm backdrop-blur";
+
+/** Desktop category links: every category on one line, scrolling sideways
+ *  when they don't fit, with sub-category dropdowns. */
+export function CategoryLinks({ max = Infinity, className = "", linkClass = "" }: { max?: number; className?: string; linkClass?: string }) {
   const { categories, homeHref, activeCategory, opts } = useNav();
-  const [open, setOpen] = useState<string | null>(null);
+  const { ref, edges, nudge } = useRailEdges<HTMLUListElement>();
+  const [open, setOpen] = useState<{ id: string; left: number; top: number } | null>(null);
+  const [host, setHost] = useState<Element | null>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useActiveIntoView(ref, activeCategory);
+
+  // Dropdowns render outside the scrolling list (which would clip them),
+  // inside the storefront wrapper so theme colours still apply.
+  useEffect(() => setHost(ref.current?.closest(".storefront") ?? document.body), [ref]);
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(null);
+    const list = ref.current;
+    window.addEventListener("scroll", close, { passive: true });
+    list?.addEventListener("scroll", close, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", close);
+      list?.removeEventListener("scroll", close);
+    };
+  }, [open, ref]);
+
   if (!opts.categories || !categories.length) return null;
-  const shown = categories.slice(0, max);
+  const shown = Number.isFinite(max) ? categories.slice(0, max) : categories;
+  const cancelClose = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+  };
+  const scheduleClose = () => {
+    cancelClose();
+    closeTimer.current = setTimeout(() => setOpen(null), 140);
+  };
+  const show = (id: string, el: HTMLElement) => {
+    cancelClose();
+    const r = el.getBoundingClientRect();
+    setOpen({ id, left: Math.max(8, Math.min(r.left, window.innerWidth - 240)), top: r.bottom });
+  };
+  const openCat = open ? shown.find((c) => c.id === open.id) : null;
+  const fade = (side: boolean, from: string, to: string) => (side ? `${from}, ${to}` : "black");
+
   return (
-    <ul className={`flex min-w-0 items-center overflow-hidden [mask-image:linear-gradient(to_right,black_92%,transparent)] ${className}`} onMouseLeave={() => setOpen(null)}>
-      {shown.map((cat) => (
-        <li key={cat.id} className="relative" onMouseEnter={() => setOpen(cat.id)}>
-          <Link
-            href={`${homeHref}?category=${cat.slug}`}
-            onFocus={() => setOpen(cat.id)}
-            className={`relative flex items-center gap-1 whitespace-nowrap px-3 py-2 text-sm font-semibold opacity-80 transition-opacity hover:opacity-100 ${activeCategory === cat.slug ? "!opacity-100" : ""} ${linkClass}`}
-          >
-            {cat.name}
-            {cat.subcategories.length > 0 && <ChevronDown className="h-3.5 w-3.5 opacity-50" />}
-            {activeCategory === cat.slug && (
-              <span className="absolute inset-x-3 -bottom-0.5 h-0.5 rounded-full" style={{ background: "var(--sf-accent)" }} />
-            )}
-          </Link>
+    <div className={`relative min-w-0 ${className}`}>
+      <ul
+        ref={ref}
+        className="no-scrollbar flex min-w-0 items-center overflow-x-auto"
+        style={{
+          maskImage: `linear-gradient(to right, ${fade(edges.left, "transparent", "black 48px")}, ${fade(edges.right, "black calc(100% - 48px)", "transparent")})`,
+        }}
+        onMouseLeave={scheduleClose}
+      >
+        {shown.map((cat) => (
+          <li key={cat.id} className="shrink-0" onMouseEnter={(e) => (cat.subcategories.length ? show(cat.id, e.currentTarget) : setOpen(null))}>
+            <Link
+              href={`${homeHref}?category=${cat.slug}`}
+              data-active={activeCategory === cat.slug}
+              onFocus={(e) => (cat.subcategories.length ? show(cat.id, e.currentTarget) : setOpen(null))}
+              className={`relative flex items-center gap-1 whitespace-nowrap px-3 py-2 text-sm font-semibold opacity-80 transition-opacity hover:opacity-100 ${activeCategory === cat.slug ? "!opacity-100" : ""} ${linkClass}`}
+            >
+              {cat.name}
+              {cat.subcategories.length > 0 && <ChevronDown className="h-3.5 w-3.5 opacity-50" />}
+              {activeCategory === cat.slug && (
+                <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full" style={{ background: "var(--sf-accent)" }} />
+              )}
+            </Link>
+          </li>
+        ))}
+      </ul>
+      {edges.left && (
+        <button type="button" onClick={() => nudge(-1)} aria-label="Scroll categories left" className={`${railArrow} -left-1`}>
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+      )}
+      {edges.right && (
+        <button type="button" onClick={() => nudge(1)} aria-label="Scroll categories right" className={`${railArrow} -right-1`}>
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      )}
+      {host &&
+        createPortal(
           <AnimatePresence>
-            {open === cat.id && cat.subcategories.length > 0 && (
+            {open && openCat && (
               <m.div
+                key={openCat.id}
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 6 }}
                 transition={{ duration: 0.16 }}
-                className="absolute left-0 top-full z-50 min-w-56 rounded-2xl border border-surface-100 bg-white p-2 text-surface-800 shadow-2xl dark:border-surface-800 dark:bg-surface-900 dark:text-surface-200"
+                onMouseEnter={cancelClose}
+                onMouseLeave={scheduleClose}
+                style={{ position: "fixed", left: open.left, top: open.top }}
+                className="z-50 min-w-56 rounded-2xl border border-surface-100 bg-white p-2 text-surface-800 shadow-2xl dark:border-surface-800 dark:bg-surface-900 dark:text-surface-200"
               >
-                <Link href={`${homeHref}?category=${cat.slug}`} className="block rounded-xl px-3 py-2 text-sm font-bold hover:bg-surface-50 dark:hover:bg-surface-800">
-                  All {cat.name}
+                <Link href={`${homeHref}?category=${openCat.slug}`} onClick={() => setOpen(null)} className="block rounded-xl px-3 py-2 text-sm font-bold hover:bg-surface-50 dark:hover:bg-surface-800">
+                  All {openCat.name}
                 </Link>
-                {cat.subcategories.map((sub) => (
+                {openCat.subcategories.map((sub) => (
                   <Link
                     key={sub.id}
-                    href={`${homeHref}?category=${cat.slug}&sub=${sub.slug}`}
+                    href={`${homeHref}?category=${openCat.slug}&sub=${sub.slug}`}
+                    onClick={() => setOpen(null)}
                     className="block rounded-xl px-3 py-2 text-sm text-surface-600 hover:bg-surface-50 hover:text-surface-900 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:text-white"
                   >
                     {sub.name}
@@ -267,10 +368,37 @@ export function CategoryLinks({ max = 6, className = "", linkClass = "" }: { max
                 ))}
               </m.div>
             )}
-          </AnimatePresence>
-        </li>
+          </AnimatePresence>,
+          host,
+        )}
+    </div>
+  );
+}
+
+/** Phone category rail under the header: every category as a swipeable
+ *  tab, the current one underlined and scrolled into view. */
+export function CategoryRail({ className = "" }: { className?: string }) {
+  const { categories, homeHref, activeCategory, isHome, opts } = useNav();
+  const ref = useRef<HTMLElement>(null);
+  useActiveIntoView(ref, activeCategory);
+  if (!opts.categories || !categories.length) return null;
+  const allActive = isHome && !activeCategory;
+  const tab = (active: boolean) =>
+    `relative flex h-10 shrink-0 items-center whitespace-nowrap px-3 text-[13px] font-semibold transition-opacity ${active ? "opacity-100" : "opacity-70 hover:opacity-100"}`;
+  const bar = <span className="absolute inset-x-3 bottom-0 h-[3px] rounded-t-full" style={{ background: "var(--sf-accent)" }} />;
+  return (
+    <nav ref={ref} aria-label="Categories" className={`no-scrollbar flex overflow-x-auto border-t border-[color:var(--nav-line)] px-1 ${className}`}>
+      <Link href={homeHref} data-active={allActive} className={tab(allActive)}>
+        All
+        {allActive && bar}
+      </Link>
+      {categories.map((c) => (
+        <Link key={c.id} href={`${homeHref}?category=${c.slug}`} data-active={activeCategory === c.slug} className={tab(activeCategory === c.slug)}>
+          {c.name}
+          {activeCategory === c.slug && bar}
+        </Link>
       ))}
-    </ul>
+    </nav>
   );
 }
 

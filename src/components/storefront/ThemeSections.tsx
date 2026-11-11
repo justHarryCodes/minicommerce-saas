@@ -42,7 +42,8 @@ const isListCard = (layout: ThemeLayout) => layout.card === "menu" || layout.car
 /** Product grid classes for the theme's card variant + column count. */
 export function gridClass(layout: ThemeLayout): string {
   if (isListCard(layout)) return "grid grid-cols-1 gap-3 md:grid-cols-2 sm:gap-4";
-  const gap = layout.card === "editorial" ? "gap-x-3 gap-y-9 sm:gap-x-5" : "gap-3 sm:gap-4";
+  // Classic cards sit 2px apart on phones so each card gets more width
+  const gap = layout.card === "editorial" ? "gap-x-3 gap-y-9 sm:gap-x-5" : layout.card === "classic" ? "gap-0.5 sm:gap-4" : "gap-3 sm:gap-4";
   const cols: Record<ThemeLayout["columns"], string> = {
     2: "grid-cols-2",
     3: "grid-cols-2 lg:grid-cols-3",
@@ -533,7 +534,7 @@ export function CategoryStrip({
 
   if (style === "pills") {
     return (
-      <div className={`gap-2 px-4 pb-1 lg:flex-wrap lg:px-0 ${scrollRow}`}>
+      <div className="flex flex-wrap gap-2 px-4 lg:px-0">
         <Link href={shopAllHref} className="sf-btn shrink-0 whitespace-nowrap px-5 py-2.5 text-sm" style={onAccent}>
           All
         </Link>
@@ -554,19 +555,19 @@ export function CategoryStrip({
   if (style === "cards") {
     const cols = tiles.length >= 4 ? "lg:grid-cols-4" : tiles.length === 3 ? "lg:grid-cols-3" : "lg:grid-cols-2";
     return (
-      <div className={`gap-3 px-4 pb-1 sm:gap-4 lg:grid ${cols} lg:overflow-visible lg:px-0 ${scrollRow}`}>
+      <div className={`grid grid-cols-2 gap-3 px-4 sm:grid-cols-3 sm:gap-4 ${cols} lg:px-0`}>
         {tiles.slice(0, 8).map((cat) => (
           <Link
             key={cat.id}
             href={hrefFor(cat.slug)}
-            className="group relative aspect-[4/5] w-[62%] shrink-0 snap-start overflow-hidden rounded-[var(--sf-radius)] bg-surface-200 dark:bg-surface-800 sm:w-64 lg:w-auto"
+            className="group relative aspect-[4/5] overflow-hidden rounded-[var(--sf-radius)] bg-surface-200 dark:bg-surface-800"
           >
             {cat.cover_image && (
               <Image src={cat.cover_image} unoptimized={isPreOptimized(cat.cover_image)} alt="" fill sizes="(min-width: 1024px) 25vw, 60vw" className="object-cover transition-transform duration-700 group-hover:scale-105" />
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 p-5 text-white">
-              <p className="sf-display text-2xl sm:text-3xl">{cat.name}</p>
+              <p className="sf-display text-xl sm:text-3xl">{cat.name}</p>
               <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-white/80">
                 Shop {cat.product_count} <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
               </p>
@@ -645,25 +646,25 @@ export function CategoryStrip({
   // tiles / circles share structure; only the image shape differs
   const shape = style === "circles" ? "rounded-full" : "rounded-[var(--sf-radius)]";
   return (
-    <div className={`gap-4 px-4 pb-1 lg:gap-6 lg:px-0 ${scrollRow}`}>
-      <Link href={shopAllHref} className="group w-[76px] shrink-0 snap-start sm:w-24 lg:w-28">
+    <div className="grid grid-cols-4 gap-x-3 gap-y-5 px-4 sm:grid-cols-6 sm:gap-x-4 lg:grid-cols-8 lg:gap-x-6 lg:px-0">
+      <Link href={shopAllHref} className="group min-w-0">
         <div className={`grid aspect-square place-items-center ${shape} transition-transform group-hover:scale-[1.03]`} style={onAccent}>
           <LayoutGrid className="h-7 w-7" />
         </div>
-        <span className="mt-2 block text-center text-xs font-semibold text-surface-800 dark:text-surface-200 sm:text-[13px]">Shop all</span>
+        <span className="mt-2 block text-center text-[11px] font-semibold text-surface-800 dark:text-surface-200 sm:text-[13px]">Shop all</span>
       </Link>
       {tiles.map((cat) => (
-        <Link key={cat.id} href={hrefFor(cat.slug)} className="group w-[76px] shrink-0 snap-start sm:w-24 lg:w-28">
+        <Link key={cat.id} href={hrefFor(cat.slug)} className="group min-w-0">
           <div
             className={`relative aspect-square overflow-hidden ${shape} bg-surface-100 ring-1 ring-black/5 transition-shadow group-hover:ring-2 group-hover:ring-[color:var(--sf-accent)] dark:bg-surface-800 dark:ring-white/10`}
           >
             {cat.cover_image ? (
-              <Image src={cat.cover_image} unoptimized={isPreOptimized(cat.cover_image)} alt="" fill sizes="(min-width: 1024px) 112px, 96px" className="object-cover transition-transform duration-500 group-hover:scale-110" />
+              <Image src={cat.cover_image} unoptimized={isPreOptimized(cat.cover_image)} alt="" fill sizes="(min-width: 1024px) 140px, 25vw" className="object-cover transition-transform duration-500 group-hover:scale-110" />
             ) : (
               <span className="absolute inset-0 grid place-items-center text-2xl font-black text-surface-400">{cat.name.charAt(0).toUpperCase()}</span>
             )}
           </div>
-          <span className="mt-2 line-clamp-2 block text-center text-xs font-semibold leading-tight text-surface-800 dark:text-surface-200 sm:text-[13px]">
+          <span className="mt-2 line-clamp-2 block break-words text-center text-[11px] font-semibold leading-tight text-surface-800 dark:text-surface-200 sm:text-[13px]">
             {cat.name}
           </span>
         </Link>

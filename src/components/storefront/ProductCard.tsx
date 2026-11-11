@@ -87,6 +87,13 @@ export default function ProductCard({ product, storeSlug }: Props) {
     </div>
   );
 
+  // What the shopper saves, from the gap between the old and new price
+  const savings = hasDiscount ? (
+    <p className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+      You save {formatCurrency(comparePrice! - product.price)}
+    </p>
+  ) : null;
+
   const discountBadge = hasDiscount && (
     <div className="absolute top-2.5 left-2.5 z-[2] px-2 py-0.5 rounded-full text-[11px] font-black tracking-wide" style={onAccent}>
       -{discountPct}%
@@ -270,27 +277,26 @@ export default function ProductCard({ product, storeSlug }: Props) {
         {discountBadge}
         {soldOut}
         {bookmarkButton}
+        {/* Add to cart: always visible, under the heart */}
+        {!outOfStock && (
+          <button
+            onClick={handleAddToCart}
+            aria-label={added ? "Added to cart" : addLabel}
+            title={addLabel}
+            className="absolute top-12 right-2.5 z-[2] w-8 h-8 rounded-full flex items-center justify-center shadow-md transition-all duration-200 hover:scale-110 active:scale-95"
+            style={added ? { backgroundColor: "#10b981", color: "#fff" } : onAccent}
+          >
+            {added ? <Check className="w-3.5 h-3.5" /> : <ShoppingCart className="w-3.5 h-3.5" />}
+          </button>
+        )}
       </div>
 
-      <div className="flex flex-col flex-1 p-3 pt-2.5 gap-1.5">
+      <div className="flex flex-col flex-1 px-2.5 pt-2 pb-2.5 gap-1 sm:p-3 sm:pt-2.5">
         <p className="text-[13px] font-semibold text-surface-800 dark:text-surface-100 line-clamp-2 leading-snug flex-1">
           {product.name}
         </p>
         <div className="mt-0.5">{price}</div>
-        <button
-          onClick={handleAddToCart}
-          disabled={outOfStock}
-          className={`flex items-center justify-center gap-1.5 w-full py-2 rounded-[var(--sf-radius-btn)] text-xs font-bold transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.97] ${
-            added ? "bg-emerald-500 text-white" : "hover:opacity-90"
-          }`}
-          style={added ? {} : onAccent}
-        >
-          {added ? (
-            <><Check className="w-3.5 h-3.5" /> Added</>
-          ) : (
-            <><ShoppingCart className="w-3.5 h-3.5" /> {addLabel}</>
-          )}
-        </button>
+        {savings}
       </div>
     </Link>
   );

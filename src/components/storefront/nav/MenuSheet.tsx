@@ -61,7 +61,7 @@ export default function MenuSheet({ open, onClose }: { open: boolean; onClose: (
                     <Icon className="h-4 w-4" /> {label}
                   </Link>
                 ))}
-                <a href={`${homeHref}#saved-items`} onClick={onClose} className="flex items-center gap-2.5 rounded-xl bg-surface-50 px-3 py-3 text-sm font-semibold hover:bg-surface-100 dark:bg-surface-800 dark:hover:bg-surface-700">
+                <a href={`${storeBase}/saved`} onClick={onClose} className="flex items-center gap-2.5 rounded-xl bg-surface-50 px-3 py-3 text-sm font-semibold hover:bg-surface-100 dark:bg-surface-800 dark:hover:bg-surface-700">
                   <Heart className="h-4 w-4" /> Saved
                   {bookmarkCount > 0 && (
                     <span className="ml-auto rounded-full px-2 py-0.5 text-xs font-bold" style={{ background: "var(--sf-accent)", color: "var(--sf-on-accent)" }}>

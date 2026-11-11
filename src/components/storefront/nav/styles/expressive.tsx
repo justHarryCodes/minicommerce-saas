@@ -201,7 +201,7 @@ export function DrawerNav() {
                 <div className="mt-10 flex flex-wrap gap-x-6 gap-y-2 text-sm opacity-70">
                   <Link href={`${storeBase}/track`} onClick={() => setOpen(false)}>Track order</Link>
                   <Link href={`${storeBase}/reels`} onClick={() => setOpen(false)}>Reels</Link>
-                  <a href={`${homeHref}#saved-items`} onClick={() => setOpen(false)}>Saved</a>
+                  <a href={`${storeBase}/saved`} onClick={() => setOpen(false)}>Saved</a>
                 </div>
               </nav>
               <div className="relative hidden aspect-[4/5] overflow-hidden lg:block" style={{ borderRadius: "var(--sf-radius)" }}>
@@ -223,7 +223,7 @@ export function DrawerNav() {
 
 /** 7 · App — slim top bar; on phones a bottom tab bar with a categories sheet. */
 export function AppNav() {
-  const { opts, categories, homeHref, totalItems, bookmarkCount, openCart, openSearch, isHome } = useNav();
+  const { opts, categories, homeHref, storeBase, totalItems, bookmarkCount, openCart, openSearch, isHome } = useNav();
   const pathname = usePathname();
   const [sheet, setSheet] = useState(false);
   const [sheetUsed, setSheetUsed] = useState(false);
@@ -263,7 +263,7 @@ export function AppNav() {
           <button onClick={openSearch} className={tab}>
             <Search className="h-5 w-5" /> Search
           </button>
-          <a href={`${homeHref}#saved-items`} className={`${tab} relative`}>
+          <a href={`${storeBase}/saved`} className={`${tab} relative`}>
             <span className="relative">
               <Heart className="h-5 w-5" />
               <CountBadge n={bookmarkCount} />

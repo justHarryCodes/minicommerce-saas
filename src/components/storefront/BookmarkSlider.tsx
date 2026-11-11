@@ -2,7 +2,8 @@
 
 import { useRef } from "react";
 import Image from "next/image";
-import { Heart, ChevronLeft, ChevronRight, X } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Heart, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import { useStore } from "@/lib/store-context";
 import { formatCurrency } from "@/lib/utils";
@@ -33,12 +34,17 @@ export default function BookmarkSlider({ storeSlug }: Props) {
             {bookmarks.length}
           </span>
         </div>
-        <button
-          onClick={clearAll}
-          className="text-xs text-surface-400 hover:text-red-500 transition-colors font-medium flex items-center gap-1"
-        >
-          <X className="w-3.5 h-3.5" /> Clear all
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={clearAll}
+            className="text-xs text-surface-400 hover:text-red-500 transition-colors font-medium flex items-center gap-1"
+          >
+            <X className="w-3.5 h-3.5" /> Clear all
+          </button>
+          <Link href={`${storeBase}/saved`} className="flex items-center gap-1 text-sm font-semibold text-surface-900 hover:opacity-70 dark:text-white">
+            View all <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
       </div>
 
       <div className="relative group/bslider">
