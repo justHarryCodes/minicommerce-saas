@@ -8,7 +8,7 @@ import Image from "next/image";
 import { AnimatePresence, m } from "framer-motion";
 import {
   BadgeCheck, Check, ChevronDown, ChevronLeft, ChevronRight, CreditCard, Heart, History, Loader2, Lock, MessageCircle, Minus, Plus, RotateCcw, Send, Share2,
-  ShieldCheck, ShoppingBag, Star, Store as StoreIcon, Truck, Zap,
+  ShieldCheck, ShoppingBag, Star, Store as StoreIcon, Truck, Users, Zap,
 } from "lucide-react";
 import ProductCard from "@/components/storefront/ProductCard";
 import { useStore } from "@/lib/store-context";
@@ -823,6 +823,28 @@ export function Related({ p, title }: BlockProps & { title?: string }) {
       </div>
       <div className={productGrid}>
         {p.related.map((r: Product) => (
+          <ProductCard key={r.id} product={r} storeSlug={p.storeSlug} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/** What other shoppers who viewed this product also opened. */
+export function AlsoViewed({ p }: BlockProps) {
+  const items = p.alsoViewed ?? [];
+  if (items.length < 2) return null; // one lone match isn't a pattern yet
+  return (
+    <section>
+      <div className="mb-5 flex items-center gap-2">
+        <Users className="h-5 w-5 text-surface-400" />
+        <div>
+          <h2 className="sf-display text-2xl text-surface-900 dark:text-white">Customers also viewed</h2>
+          <p className="text-xs text-surface-500 dark:text-surface-400">Popular with shoppers who looked at this</p>
+        </div>
+      </div>
+      <div className={productGrid}>
+        {items.slice(0, 8).map((r: Product) => (
           <ProductCard key={r.id} product={r} storeSlug={p.storeSlug} />
         ))}
       </div>

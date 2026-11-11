@@ -6,7 +6,7 @@ import { keySpecs } from "@/lib/product-details";
 import type { ProductLayout } from "@/lib/themes/types";
 import { MosaicGallery, StackGallery, SwipeGallery, ThumbGallery } from "./Gallery";
 import {
-  Assurances, Breadcrumb, BuyButtons, DetailAccordion, DetailTabs, Description, Highlights, Notices, Options, Price, Quantity, Related, Reviews,
+  AlsoViewed, Assurances, Breadcrumb, BuyButtons, DetailAccordion, DetailTabs, Description, Highlights, Notices, Options, Price, Quantity, Related, Reviews,
   RecentlyViewed, ScentNotes, SellerCard, Specs, StickyBar, Title, TrustBadges, WhatsAppOrder as WhatsAppSlot, type BlockProps,
 } from "./blocks";
 
@@ -253,6 +253,7 @@ export function ProductPageView({ layout, s, p }: BlockProps & { layout: Product
       <View s={s} p={p} />
       <div className={`mt-16 space-y-16 ${narrow ? "mx-auto max-w-3xl" : ""}`}>
         <Reviews s={s} p={p} />
+        <AlsoViewed s={s} p={p} />
         <Related s={s} p={p} />
         <RecentlyViewed s={s} p={p} />
       </div>

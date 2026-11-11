@@ -32,6 +32,8 @@ export type PageProduct = Product & { category_name?: string; category_slug?: st
 export interface ProductPageProps {
   product: PageProduct;
   related: Product[];
+  /** Products this product's viewers also opened (empty until there's data) */
+  alsoViewed?: Product[];
   store: Store;
   storeSlug: string;
   bookingsEnabled?: boolean;
@@ -224,6 +226,29 @@ export function useProductPage({ product, storeSlug }: ProductPageProps) {
       image_url: baseImages[0] ?? null,
     });
   }
+
+  // Count the view (once per product per browser session) for "Customers
+  // also viewed" and the store's analytics. Anonymous: the random browser id.
+  useEffect(() => {
+    try {
+      const key = `sf_pv_${product.id}`;
+      if (sessionStorage.getItem(key)) return;
+      let visitorId = localStorage.getItem("sf_vid");
+      if (!visitorId) {
+        visitorId = crypto.randomUUID();
+        localStorage.setItem("sf_vid", visitorId);
+      }
+      sessionStorage.setItem(key, "1");
+      fetch(`/api/storefront/${storeSlug}/view`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product_id: product.id, visitor_id: visitorId }),
+        keepalive: true,
+      }).catch(() => {});
+    } catch {
+      /* storage blocked: skip tracking */
+    }
+  }, [product.id, storeSlug]);
 
   const recentlyViewed = useRecentlyViewed(storeSlug, {
     id: product.id,

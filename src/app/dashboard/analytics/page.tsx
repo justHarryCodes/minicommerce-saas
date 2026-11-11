@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { featureGate } from "@/components/dashboard/FeatureGate";
 import { redirect } from "next/navigation";
-import { Search, SearchX } from "lucide-react";
+import { EyeOff, Search, SearchX } from "lucide-react";
+import { productViewStats, viewedNotBought } from "@/lib/product-views";
 import { verifySession } from "@/lib/auth";
 import { getPageStore } from "@/lib/access";
 import { getAnalytics, pctChange, RANGES, type RangeDays } from "@/lib/analytics";
@@ -33,7 +34,9 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
 
   const { range } = await searchParams;
   const days = (RANGES as readonly number[]).includes(Number(range)) ? (Number(range) as RangeDays) : 30;
-  const a = await getAnalytics(store.id, days);
+  const [a, viewStats] = await Promise.all([getAnalytics(store.id, days), productViewStats(store.id, days).catch(() => [])]);
+  const mostViewed = viewStats.slice(0, 8);
+  const notBought = viewedNotBought(viewStats);
   const k = a.kpis;
   const aov = k.orders ? k.revenue / k.orders : 0;
   const aovPrev = k.ordersPrev ? k.revenuePrev / k.ordersPrev : 0;
@@ -107,6 +110,51 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
           format={count}
           empty="No visits yet."
         />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <BarList
+          title="Most viewed products"
+          subtitle="Unique shoppers who opened each product"
+          items={mostViewed.map((p) => ({
+            label: p.name,
+            value: p.views,
+            note: `${count(p.orders)} order${p.orders === 1 ? "" : "s"} · ${pct(p.orders, p.views)}`,
+          }))}
+          format={(n) => `${count(n)} view${n === 1 ? "" : "s"}`}
+          empty="Product views will show here once shoppers start browsing."
+        />
+        <section className="rounded-2xl border border-surface-100 bg-white p-4 dark:border-surface-800 dark:bg-surface-900 sm:p-5">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-surface-900 dark:text-white">
+            <EyeOff className="h-4 w-4 text-surface-400" /> Viewed but not bought
+          </h2>
+          <p className="text-xs text-surface-500 dark:text-surface-400">
+            Shoppers look but don&apos;t buy. Try a better photo, a clearer description or a small discount.
+          </p>
+          {notBought.length === 0 ? (
+            <p className="mt-6 pb-4 text-center text-sm text-surface-400">
+              {viewStats.length ? "Nothing stands out. Your most viewed products are selling. 🎉" : "Not enough views yet."}
+            </p>
+          ) : (
+            <table className="mt-3 w-full text-sm">
+              <tbody className="tabular-nums">
+                {notBought.map((p) => (
+                  <tr key={p.productId} className="border-t border-surface-50 first:border-0 dark:border-surface-800">
+                    <td className="py-1.5 pr-2">
+                      <Link href={`/dashboard/products/${p.productId}/edit`} className="text-surface-700 hover:underline dark:text-surface-200">
+                        {p.name}
+                      </Link>
+                    </td>
+                    <td className="py-1.5 text-right text-xs text-surface-400">
+                      {p.orders} order{p.orders === 1 ? "" : "s"}
+                    </td>
+                    <td className="w-20 py-1.5 text-right font-semibold text-surface-900 dark:text-white">{count(p.views)} views</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">

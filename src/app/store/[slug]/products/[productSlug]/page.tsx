@@ -7,6 +7,7 @@ import { getStoreFeatures } from "@/lib/plan";
 import { toCardProduct, toPublicStore } from "@/lib/public-store";
 import { storeCached } from "@/lib/store-cache";
 import { dateOnly, getCachedStore } from "@/lib/storefront-page";
+import { alsoViewedIds } from "@/lib/product-views";
 import type { Product, ProductSize } from "@/types";
 
 interface Props {
@@ -54,6 +55,32 @@ async function loadProductPage(storeSlug: string, productSlug: string) {
   return data ? { store, ...data } : null;
 }
 
+/** "Customers also viewed": co-viewed products, refreshed every 10 minutes. */
+async function loadAlsoViewed(storeId: string, productId: string): Promise<Product[]> {
+  try {
+    return await storeCached(
+      storeId,
+      `also:${productId}`,
+      async () => {
+        const ids = await alsoViewedIds(storeId, productId, 8);
+        if (!ids.length) return [] as Product[];
+        const rows = await query<Product>(
+          `SELECT * FROM products WHERE store_id = $1 AND id = ANY($2::uuid[]) AND is_active = true`,
+          [storeId, ids]
+        );
+        const byId = new Map(rows.map((r) => [r.id, r]));
+        return ids
+          .map((id) => byId.get(id))
+          .filter((r): r is Product => !!r)
+          .map((r) => ({ ...r, sold_out_until: dateOnly(r.sold_out_until) as never }));
+      },
+      600
+    );
+  } catch {
+    return []; // a recommendation rail is never worth failing the page
+  }
+}
+
 function productImages(p: Product): string[] {
   return [...new Set([p.image_url, ...(p.images ?? [])].filter((u): u is string => !!u))];
 }
@@ -67,7 +94,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { store, product } = found;
   const price = `₦${Number(product.price).toLocaleString("en-NG")}`;
   const description = (product.short_description || product.description || `${product.name} — ${price} at ${store.name}`)
-    .replace(/s+/g, " ")
+    .replace(/\s+/g, " ")
     .slice(0, 200);
   const images = productImages(product).slice(0, 4);
   const url = `${getStoreUrl(store.slug, store.custom_domain ?? null)}/products/${product.slug || product.id}`;
@@ -99,7 +126,10 @@ export default async function ProductDetailPage({ params }: Props) {
   if (!found) notFound();
   const { store, product, related } = found;
 
-  const features = await getStoreFeatures(store.id);
+  const [features, alsoViewed] = await Promise.all([getStoreFeatures(store.id), loadAlsoViewed(store.id, product.id)]);
+  // Don't repeat "Customers also viewed" items in "More from <category>"
+  const alsoIds = new Set(alsoViewed.map((p) => p.id));
+  const moreFromCategory = related.filter((r) => !alsoIds.has(r.id));
 
   // Product structured data — eligible for Google's rich results & free listings
   const price = Number(product.price);
@@ -125,7 +155,8 @@ export default async function ProductDetailPage({ params }: Props) {
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
     <ProductDetailClient
       product={product as any}
-      related={related.map((r) => toCardProduct(r as unknown as Record<string, unknown>) as unknown as Product)}
+      related={moreFromCategory.map((r) => toCardProduct(r as unknown as Record<string, unknown>) as unknown as Product)}
+      alsoViewed={alsoViewed.map((r) => toCardProduct(r as unknown as Record<string, unknown>) as unknown as Product)}
       store={toPublicStore(store)}
       storeSlug={storeSlug}
       bookingsEnabled={features.has("bookings")}
