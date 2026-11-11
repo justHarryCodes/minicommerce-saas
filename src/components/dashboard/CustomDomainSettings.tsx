@@ -29,6 +29,30 @@ interface State {
   domain: Domain | null;
 }
 
+/** brand.com / brand.com.ng: the part a DNS host's records live under. */
+function zoneOf(hostname: string): string {
+  const parts = hostname.split(".");
+  const twoLevel = parts.length >= 3 && /^(com|org|net|edu|gov|co)$/.test(parts[parts.length - 2]) && parts[parts.length - 1].length === 2;
+  return parts.slice(twoLevel ? -3 : -2).join(".");
+}
+
+/** What to type in the DNS host's "Name / Host" box: "@", "www", "_cf-custom-hostname"… */
+function hostLabel(name: string, zone: string): string {
+  if (name === zone) return "@";
+  return name.endsWith(`.${zone}`) ? name.slice(0, -(zone.length + 1)) : name;
+}
+
+/** Cloudflare's verification errors, in words a merchant can act on. */
+function friendlyError(err: string, apex: boolean): string {
+  if (/does not CNAME|point to the SaaS zone|using Cloudflare/i.test(err)) {
+    return apex
+      ? "Your domain isn't pointing to Duka yet. Most DNS hosts can't point a bare domain with a CNAME — use the www address instead (button above)."
+      : "Your domain isn't pointing to Duka yet. Add the CNAME record above and delete any other A or CNAME record with the same name.";
+  }
+  if (/caa/i.test(err)) return "A CAA record on your domain is blocking the SSL certificate. Remove it or allow letsencrypt.org and pki.goog.";
+  return err;
+}
+
 function CopyField({ value }: { value: string }) {
   return (
     <button
@@ -79,6 +103,7 @@ export default function CustomDomainSettings({ freeAddress }: { freeAddress: str
   }
 
   const d = state?.domain;
+  const zone = d ? zoneOf(d.hostname) : "";
 
   return (
     <section className="bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-6 space-y-4">
@@ -112,7 +137,7 @@ export default function CustomDomainSettings({ freeAddress }: { freeAddress: str
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="shop.yourbrand.com"
+              placeholder="www.yourbrand.com"
               autoCapitalize="none"
               autoCorrect="off"
               spellCheck={false}
@@ -201,22 +226,46 @@ export default function CustomDomainSettings({ freeAddress }: { freeAddress: str
                   </p>
                   <div className="grid gap-2 sm:grid-cols-[80px_1fr] sm:items-center">
                     <span className="text-xs text-surface-400">Name / Host</span>
-                    <CopyField value={r.name} />
+                    <div>
+                      <CopyField value={hostLabel(r.name, zone)} />
+                      {hostLabel(r.name, zone) !== r.name && (
+                        <p className="mt-1 text-[11px] text-surface-400">
+                          {hostLabel(r.name, zone) === "@" ? "@ means the domain itself. " : ""}If your DNS host asks for the full name, use {r.name}
+                        </p>
+                      )}
+                    </div>
                     <span className="text-xs text-surface-400">{r.type === "CNAME" ? "Points to" : "Value"}</span>
                     <CopyField value={r.value} />
                   </div>
                 </div>
               ))}
               {d.apex && (
-                <p className="flex items-start gap-2 rounded-xl bg-amber-50 px-3 py-2.5 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
-                  <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  Bare domains (yourbrand.com) need a DNS host that supports CNAME flattening or ALIAS records. If yours doesn&apos;t,
-                  connect <strong className="mx-1">www.{d.hostname}</strong> instead.
-                </p>
+                <div className="space-y-2.5 rounded-xl bg-amber-50 px-3.5 py-3 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+                  <p className="flex items-start gap-2">
+                    <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    <span>
+                      <strong>{d.hostname}</strong> is a bare domain. Most DNS hosts (Hostinger, Namecheap, GoDaddy, Whogohost) can&apos;t point a bare domain
+                      with a CNAME, so it won&apos;t verify. Connect <strong>www.{d.hostname}</strong> instead, then set a redirect from {d.hostname} to it at
+                      your DNS host.
+                    </span>
+                  </p>
+                  <button
+                    type="button"
+                    disabled={!!busy}
+                    onClick={async () => {
+                      if (!confirm(`Switch to www.${d.hostname}? You'll add a new CNAME for "www".`)) return;
+                      await call("DELETE", "remove");
+                      await call("POST", "add", { hostname: `www.${d.hostname}` });
+                    }}
+                    className="flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 font-bold text-black hover:bg-amber-400 disabled:opacity-50"
+                  >
+                    {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />} Use www.{d.hostname} instead
+                  </button>
+                </div>
               )}
               <p className="text-xs text-surface-400">
                 DNS changes usually take a few minutes, sometimes a few hours. We&apos;ll set up SSL automatically once it&apos;s in place.
-                {d.last_error && <span className="mt-1 block text-red-500">Last check: {d.last_error}</span>}
+                {d.last_error && <span className="mt-1 block text-red-500">Last check: {friendlyError(d.last_error, d.apex)}</span>}
               </p>
             </div>
           )}
