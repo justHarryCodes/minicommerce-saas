@@ -10,6 +10,7 @@ import { getAppUrl } from "@/lib/paystack";
 import { FEATURES, featuresForPlan, type Feature } from "@/lib/features-shared";
 import { yearlyPrice, yearlySavings } from "@/lib/plan-pricing";
 import { emailConfigured, sendEmail } from "./providers";
+import { emailHeader } from "./email-brand";
 import { ensureTable, esc, unsubscribeUrl } from "./setup-reminders";
 
 export interface CampaignPlan {
@@ -79,7 +80,7 @@ ${d.yearlyDiscount > 0 ? `<p style="margin:4px 0 0;font-size:12px;color:#15803d;
   const html = `<!doctype html><html><body style="margin:0;background:#f4f4f5;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#18181b">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:24px 12px"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;padding:28px"><tr><td>
-<p style="margin:0 0 20px;font-size:20px;font-weight:900;color:#f59e0b">Duka</p>
+${emailHeader()}
 <h1 style="margin:0 0 10px;font-size:24px;line-height:1.25">Hi${hi ? ` ${esc(hi)}` : ""}, ready to grow ${esc(d.storeName)}?</h1>
 <p style="margin:0 0 18px;font-size:15px;color:#3f3f46;line-height:1.6">You're on the Free plan. ${entry ? `${esc(entry.name)}` : "A paid plan"} gives you the tools serious sellers use to get more orders and look professional:</p>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${highlights}</table>
