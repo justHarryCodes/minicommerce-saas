@@ -70,7 +70,7 @@ export default async function BillingPage({
     }>(
       // billing_cycle via to_jsonb: works before and after migrations/yearly_billing.sql
       `SELECT sp.id, sp.type, sp.amount, sp.payment_status, sp.payment_method, sp.period_start, sp.period_end, sp.created_at,
-              to_jsonb(sp) ->> billing_cycle AS billing_cycle, p.name AS plan_name
+              to_jsonb(sp) ->> 'billing_cycle' AS billing_cycle, p.name AS plan_name
        FROM subscription_payments sp LEFT JOIN plans p ON p.id = sp.plan_id
        WHERE sp.store_id = $1 ORDER BY sp.created_at DESC LIMIT 20`,
       [store.id]
@@ -103,7 +103,7 @@ export default async function BillingPage({
     searchParams,
     yearlyBillingReady(),
     // Has this store ever paid for a plan? Never → Billing opens like a pricing page
-    queryOne(`SELECT 1 FROM subscription_payments WHERE store_id = $1 AND type = plan AND payment_status = paid LIMIT 1`, [store.id]),
+    queryOne(`SELECT 1 FROM subscription_payments WHERE store_id = $1 AND type = 'plan' AND payment_status = 'paid' LIMIT 1`, [store.id]),
   ]);
   // Cheapest first, the order the pricing page uses
   const sortedPlans = [...plans].sort((a, b) => a.sort_order - b.sort_order || Number(a.price_monthly) - Number(b.price_monthly));
