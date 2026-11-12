@@ -307,10 +307,11 @@ export async function sendDueSetupReminders(opts: { now?: Date; enabled: boolean
     storesSent++;
   }
 
-  // ── People who signed up but never created a store (once a day, 10am) ──
+  // ── People who signed up but never created a store (once a day, first
+  // run from 10am — scheduled runs can be hours apart, so not "at 10") ──
   let signupsSent = 0;
   const hour = (now.getUTCHours() + 1) % 24;
-  if (hour === 10 && emailConfigured()) {
+  if (hour >= 10 && emailConfigured()) {
     const already = await queryOne<{ last_sent_at: Date | null }>(
       "SELECT last_sent_at FROM setup_reminders WHERE subject = 'job:signups'",
     );
