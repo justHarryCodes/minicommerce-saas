@@ -23,6 +23,8 @@ export interface PlatformSettings {
   allow_manual_transfers: boolean
   /** Discount for paying a plan yearly, in percent (0–50) */
   yearly_discount_percent: number
+  /** Remind vendors (email + push) to finish setting up their store */
+  setup_reminders_enabled: boolean
 }
 
 const SETTING_DEFAULTS: PlatformSettings = {
@@ -37,6 +39,7 @@ const SETTING_DEFAULTS: PlatformSettings = {
   reels_monthly_limit: 20,
   allow_manual_transfers: true,
   yearly_discount_percent: DEFAULT_YEARLY_DISCOUNT,
+  setup_reminders_enabled: true,
 }
 
 // Emails that are automatically granted super_admin on first login.
@@ -156,5 +159,6 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
     reels_monthly_limit: Number(raw.reels_monthly_limit ?? SETTING_DEFAULTS.reels_monthly_limit),
     allow_manual_transfers: toBool(raw.allow_manual_transfers, SETTING_DEFAULTS.allow_manual_transfers),
     yearly_discount_percent: clampDiscount(raw.yearly_discount_percent ?? SETTING_DEFAULTS.yearly_discount_percent),
+    setup_reminders_enabled: toBool(raw.setup_reminders_enabled, SETTING_DEFAULTS.setup_reminders_enabled),
   }
 }

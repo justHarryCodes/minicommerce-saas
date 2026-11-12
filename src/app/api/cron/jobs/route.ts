@@ -8,6 +8,8 @@ import { sendDueCartReminders } from "@/lib/notify/cart-reminders";
 import { sendDueBookingReminders } from "@/lib/notify/booking-reminders";
 import { refreshPendingDomains, syncCustomDomainsWithPlans } from "@/lib/domains";
 import { reconcilePendingPayments } from "@/lib/payments";
+import { getPlatformSettings } from "@/lib/admin-auth";
+import { sendDueSetupReminders } from "@/lib/notify/setup-reminders";
 
 export const dynamic = "force-dynamic";
 
@@ -22,15 +24,22 @@ function authorized(req: NextRequest): boolean {
 async function run(req: NextRequest) {
   if (!process.env.CRON_SECRET) return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 503 });
   if (!authorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const [carts, bookings, domains, payments] = await Promise.all([
+  const settings = await getPlatformSettings().catch(() => null);
+  const [carts, bookings, domains, payments, setupReminders] = await Promise.all([
     sendDueCartReminders(),
     sendDueBookingReminders(),
     // Domains Cloudflare has verified since we last looked, then plan sync
     refreshPendingDomains().then(async (pending) => ({ pending, ...(await syncCustomDomainsWithPlans()) })),
     // Paystack checkouts still pending: settle missed webhooks, close abandoned ones
     reconcilePendingPayments(),
+    // Nudge vendors who haven't finished setting up (day 1, 3, 7, 14)
+    sendDueSetupReminders({ enabled: settings?.setup_reminders_enabled ?? true }).catch((err) => ({
+      stores: 0,
+      signups: 0,
+      skipped: err instanceof Error ? err.message : "failed",
+    })),
   ]);
-  return NextResponse.json({ ok: true, carts, bookings, domains, payments });
+  return NextResponse.json({ ok: true, carts, bookings, domains, payments, setupReminders });
 }
 
 export const GET = run;

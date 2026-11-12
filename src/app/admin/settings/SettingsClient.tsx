@@ -411,6 +411,13 @@ export default function SettingsClient({ initialSettings, initialBankAccounts }:
             enabled={s.allow_new_registrations}
             onChange={(v) => update("allow_new_registrations", v)}
           />
+          <div className="border-t" style={{ borderColor: "var(--border)" }} />
+          <ToggleRow
+            label="Remind vendors to finish setting up"
+            description="Automatic email and app notifications on day 1, 3, 7 and 14 for stores with no products or no way to get paid, and for people who signed up but never created a store. Stops when setup is done; vendors can unsubscribe. Sent 9am–8pm Lagos time."
+            enabled={s.setup_reminders_enabled}
+            onChange={(v) => update("setup_reminders_enabled", v)}
+          />
         </Section>
 
         {/* Reels */}

@@ -11,6 +11,7 @@ const SettingsSchema = z.object({
   reels_monthly_limit:        z.number().int().min(1).max(500),
   allow_manual_transfers:     z.boolean(),
   yearly_discount_percent:    z.number().int().min(0).max(50),
+  setup_reminders_enabled:    z.boolean(),
 })
 
 export async function GET() {
@@ -38,6 +39,7 @@ export async function PUT(req: NextRequest) {
     ['reels_monthly_limit',        s.reels_monthly_limit],
     ['allow_manual_transfers',     s.allow_manual_transfers],
     ['yearly_discount_percent',    s.yearly_discount_percent],
+    ['setup_reminders_enabled',    s.setup_reminders_enabled],
   ]
 
   for (const [key, value] of entries) {
