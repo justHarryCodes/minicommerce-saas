@@ -321,7 +321,11 @@ export async function sendDueSetupReminders(opts: { now?: Date; enabled: boolean
         `INSERT INTO setup_reminders (subject, step, last_sent_at) VALUES ('job:signups', 0, NOW())
          ON CONFLICT (subject) DO UPDATE SET last_sent_at = NOW(), updated_at = NOW()`,
       );
-      signupsSent = await remindSignupsWithoutStore(now, appUrl, limit);
+      // A Firebase hiccup must not lose the store reminders already sent
+      signupsSent = await remindSignupsWithoutStore(now, appUrl, limit).catch((err) => {
+        console.error("[setup-reminders] sign-up pass failed:", err);
+        return 0;
+      });
     }
   }
 

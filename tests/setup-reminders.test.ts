@@ -103,7 +103,14 @@ describe("the scheduled job", () => {
     vi.mocked(emailConfigured).mockReturnValue(true);
     vi.mocked(notifyStoreEvent).mockReset().mockResolvedValue(undefined);
     vi.mocked(adminAuth.getUser).mockResolvedValue({ email: "amaka@example.com", displayName: "Amaka Obi" } as never);
-    vi.mocked(adminAuth.listUsers).mockReset();
+    vi.mocked(adminAuth.listUsers).mockReset().mockResolvedValue({ users: [], pageToken: undefined } as never);
+  });
+
+  it("a Firebase failure in the sign-up check doesn't lose the store reminders", async () => {
+    routeQueries([storeRow()]);
+    vi.mocked(adminAuth.listUsers).mockRejectedValue(new Error("firebase down"));
+    const res = await sendDueSetupReminders({ enabled: true, now: NOON_LAGOS });
+    expect(res).toMatchObject({ stores: 1, signups: 0 });
   });
 
   function routeQueries(stores: unknown[], claimed = true) {
