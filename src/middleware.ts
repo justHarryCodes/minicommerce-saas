@@ -53,6 +53,7 @@ function devLog(message: string): void {
 // same store as the /store/<slug> path — so a request can never pass
 // itself off as a different store. The rest are always set here.
 const STORE_HEADERS = ["x-store-slug", "x-is-subdomain", "x-custom-domain"];
+const RESOLVE_PATH = "/api/domains/resolve";
 const ALWAYS_OURS = ["x-pathname", "x-theme-preview"];
 
 function cleanHeaders(req: NextRequest): Headers {
@@ -61,7 +62,10 @@ function cleanHeaders(req: NextRequest): Headers {
   if (!trustedStoreForward(req.nextUrl.pathname, (n) => req.headers.get(n))) {
     for (const h of STORE_HEADERS) headers.delete(h);
   }
-  headers.delete("x-worker-secret");
+  // The secret never reaches app code — except the custom-domain lookup the
+  // Worker calls, which checks it itself. (Stripping it there too made every
+  // lookup 401 once WORKER_SECRET was set, so custom domains never loaded.)
+  if (req.nextUrl.pathname !== RESOLVE_PATH) headers.delete("x-worker-secret");
   return headers;
 }
 
