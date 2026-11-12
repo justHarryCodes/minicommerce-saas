@@ -28,7 +28,10 @@ export function dueStep(ageDays: number, sent: number): number | null {
   return latest > sent ? latest : null;
 }
 
-export type SetupTask = "products" | "payout" | "logo";
+export type SetupTask = "products" | "more_products" | "payout" | "logo";
+
+/** A store with a single product still gets nudged to add more. */
+export const MIN_PRODUCTS = 2;
 
 export interface StoreSetup {
   products: number;
@@ -40,6 +43,7 @@ export interface StoreSetup {
 export function missingTasks(s: StoreSetup): SetupTask[] {
   const out: SetupTask[] = [];
   if (s.products <= 0) out.push("products");
+  else if (s.products < MIN_PRODUCTS) out.push("more_products");
   if (!s.hasPayout) out.push("payout");
   if (!s.hasLogo) out.push("logo");
   return out;
@@ -47,7 +51,7 @@ export function missingTasks(s: StoreSetup): SetupTask[] {
 
 /** "Set up" = something to sell and a way to be paid. (A logo is nice, not required.) */
 export function isSetUp(s: StoreSetup): boolean {
-  return s.products > 0 && s.hasPayout;
+  return s.products >= MIN_PRODUCTS && s.hasPayout;
 }
 
 /** Lagos is UTC+1 all year: 9:00–19:59 local. */
@@ -62,6 +66,12 @@ const TASK_TEXT: Record<SetupTask, { title: string; text: string; path: string; 
     text: "Snap a photo with your phone, add a price, done. Our AI can write the description for you.",
     path: "/dashboard/products/new",
     cta: "Add a product",
+  },
+  more_products: {
+    title: "Add a few more products",
+    text: "You have one product so far. More choice gives shoppers more reasons to buy, and fills your store page.",
+    path: "/dashboard/products/new",
+    cta: "Add another product",
   },
   payout: {
     title: "Choose how you get paid",
@@ -146,11 +156,13 @@ export function buildStoreReminder(d: {
   return {
     subject: STORE_SUBJECTS[i](d.storeName),
     html,
-    pushTitle: tasks[0] === "products" ? "Add your first product 📦" : "Finish setting up your store",
+    pushTitle: tasks[0] === "products" ? "Add your first product 📦" : tasks[0] === "more_products" ? "Add more products 📦" : "Finish setting up your store",
     pushBody:
       tasks[0] === "products"
         ? `${d.storeName} has no products yet. Shoppers can't buy until you add some. It takes 2 minutes.`
-        : `${first.title} so customers can buy from ${d.storeName}.`,
+        : tasks[0] === "more_products"
+          ? `${d.storeName} has just one product. Add a few more so shoppers have more to choose from.`
+          : `${first.title} so customers can buy from ${d.storeName}.`,
   };
 }
 
@@ -297,12 +309,12 @@ export async function sendDueSetupReminders(opts: { now?: Date; enabled: boolean
       /* no Firebase user: email from the store row only */
     }
     const msg = buildStoreReminder({ step, storeName: s.name, ownerName: name, missing: missingTasks(setup), appUrl, unsubscribeUrl: unsubscribeUrl(subject) });
-    if (email && emailConfigured()) await sendEmail(email, msg.subject, msg.html).catch(() => null);
+    if (email && emailConfigured()) await sendEmail(email, msg.subject, msg.html, undefined, { unsubscribeUrl: unsubscribeUrl(subject) }).catch(() => null);
     await notifyStoreEvent(s.id, {
       type: "setup_reminder",
       title: msg.pushTitle,
       body: msg.pushBody,
-      url: missingTasks(setup)[0] === "products" ? "/dashboard/products/new" : "/dashboard",
+      url: ["products", "more_products"].includes(missingTasks(setup)[0]) ? "/dashboard/products/new" : "/dashboard",
     }).catch(() => {});
     storesSent++;
   }
@@ -375,7 +387,7 @@ async function remindSignupsWithoutStore(now: Date, appUrl: string, limit: numbe
     const step = dueStep(c.ageDays, r?.step ?? 0);
     if (!step || !(await claim(subject, step))) continue;
     const msg = buildNoStoreReminder({ step, name: c.name, appUrl, unsubscribeUrl: unsubscribeUrl(subject) });
-    const res = await sendEmail(c.email, msg.subject, msg.html).catch(() => null);
+    const res = await sendEmail(c.email, msg.subject, msg.html, undefined, { unsubscribeUrl: unsubscribeUrl(subject) }).catch(() => null);
     if (res?.ok) sent++;
   }
   return sent;
@@ -386,7 +398,7 @@ export async function unfinishedStoreCount(): Promise<number> {
   const row = await queryOne<{ n: number }>(
     `SELECT COUNT(*)::int AS n FROM stores s
      WHERE s.is_active = true AND s.created_at > NOW() - INTERVAL '30 days'
-       AND (NOT EXISTS (SELECT 1 FROM products p WHERE p.store_id = s.id AND p.is_active = true)
+       AND ((SELECT COUNT(*) FROM products p WHERE p.store_id = s.id AND p.is_active = true) < ${MIN_PRODUCTS}
             OR NOT (s.duka_pay_status = 'active' OR COALESCE(s.bank_account_number, '') <> ''))`,
   );
   return row?.n ?? 0;

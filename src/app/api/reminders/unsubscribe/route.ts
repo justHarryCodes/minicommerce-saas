@@ -16,12 +16,23 @@ function page(title: string, text: string, status = 200) {
   );
 }
 
-export async function GET(req: NextRequest) {
+function signed(req: NextRequest): string | null {
   const subject = req.nextUrl.searchParams.get("s") ?? "";
   const token = req.nextUrl.searchParams.get("t") ?? "";
-  if (!/^(store|user):[A-Za-z0-9-]{6,128}$/.test(subject) || !verifyUnsubscribe(subject, token)) {
-    return page("This link doesn't work", "It may be incomplete. Copy the full link from the email and try again.", 400);
-  }
+  return /^(store|user):[A-Za-z0-9-]{6,128}$/.test(subject) && verifyUnsubscribe(subject, token) ? subject : null;
+}
+
+export async function GET(req: NextRequest) {
+  const subject = signed(req);
+  if (!subject) return page("This link doesn't work", "It may be incomplete. Copy the full link from the email and try again.", 400);
   await optOut(subject);
   return page("You won't get setup reminders any more", "Your store is still here whenever you're ready. Everything you've set up is saved.");
+}
+
+/** One-click unsubscribe (RFC 8058): Gmail / Yahoo's own "Unsubscribe" button posts here. */
+export async function POST(req: NextRequest) {
+  const subject = signed(req);
+  if (!subject) return NextResponse.json({ error: "Invalid link" }, { status: 400 });
+  await optOut(subject);
+  return NextResponse.json({ ok: true });
 }

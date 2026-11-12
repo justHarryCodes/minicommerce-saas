@@ -143,7 +143,7 @@ export default async function AdminDashboardPage() {
             <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Stores still setting up (last 30 days)</p>
             <p className="text-3xl font-black mt-1" style={{ color: unfinished ? '#d97706' : '#16a34a' }}>{unfinished}</p>
             <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-              No products yet, or no way to get paid. They get automatic reminders on day 1, 3, 7 and 14.
+              Fewer than 2 products, or no way to get paid. They get automatic reminders on day 1, 3, 7 and 14.
             </p>
           </div>
           <Link href="/admin/settings" className="text-sm font-semibold hover:underline" style={{ color: 'var(--accent)' }}>Reminder settings →</Link>

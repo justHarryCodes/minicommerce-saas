@@ -132,7 +132,9 @@ describe("the scheduled job", () => {
     routeQueries([storeRow()]);
     const res = await sendDueSetupReminders({ enabled: true, now: NOON_LAGOS });
     expect(res.stores).toBe(1);
-    expect(sendEmail).toHaveBeenCalledWith("amaka@example.com", expect.stringContaining("Amaka"), expect.stringContaining("Add a product"));
+    expect(sendEmail).toHaveBeenCalledWith("amaka@example.com", expect.stringContaining("Amaka"), expect.stringContaining("Add a product"), undefined, {
+      unsubscribeUrl: expect.stringContaining("/api/reminders/unsubscribe?s=store%3As1"),
+    });
     expect(notifyStoreEvent).toHaveBeenCalledWith("s1", expect.objectContaining({ type: "setup_reminder", url: "/dashboard/products/new" }));
   });
 
@@ -167,6 +169,8 @@ describe("the scheduled job", () => {
     const res = await sendDueSetupReminders({ enabled: true, now: TEN_AM_LAGOS });
     expect(res.signups).toBe(1);
     expect(sendEmail).toHaveBeenCalledTimes(1);
-    expect(sendEmail).toHaveBeenCalledWith("new@example.com", expect.any(String), expect.stringContaining("/onboarding"));
+    expect(sendEmail).toHaveBeenCalledWith("new@example.com", expect.any(String), expect.stringContaining("/onboarding"), undefined, {
+      unsubscribeUrl: expect.stringContaining("s=user%3Au-new"),
+    });
   });
 });
