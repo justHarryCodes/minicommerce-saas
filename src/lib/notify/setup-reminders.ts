@@ -88,11 +88,26 @@ const TASK_TEXT: Record<SetupTask, { title: string; text: string; path: string; 
   },
 };
 
-const STORE_SUBJECTS = [
-  (n: string) => `${n} is almost ready, add your first product`,
-  (n: string) => `Customers can't buy from an empty store: finish ${n}`,
-  (n: string) => `Need a hand setting up ${n}? It takes 10 minutes`,
-  (n: string) => `Last reminder: ${n} is waiting for you`,
+/** Subject per reminder; the first two name what's actually missing. */
+const STORE_SUBJECTS: ((n: string, task: SetupTask) => string)[] = [
+  (n, t) =>
+    t === "products"
+      ? `${n} is almost ready, add your first product`
+      : t === "more_products"
+        ? `${n} is almost ready, add a few more products`
+        : t === "payout"
+          ? `${n} is almost ready, choose how you get paid`
+          : `${n} is almost ready`,
+  (n, t) =>
+    t === "products"
+      ? `Customers can't buy from an empty store: finish ${n}`
+      : t === "more_products"
+        ? `Give shoppers more to choose from at ${n}`
+        : t === "payout"
+          ? `Customers can't pay ${n} yet: set up payments`
+          : `A few final touches for ${n}`,
+  (n) => `Need a hand setting up ${n}? It takes 10 minutes`,
+  (n) => `Last reminder: ${n} is waiting for you`,
 ];
 
 const STORE_INTROS = [
@@ -136,6 +151,7 @@ export function buildStoreReminder(d: {
 }): { subject: string; html: string; pushTitle: string; pushBody: string } {
   const i = Math.min(Math.max(d.step, 1), STORE_SUBJECTS.length) - 1;
   const hi = firstName(d.ownerName);
+  const storeName = d.storeName.trim().replace(/\s+/g, " ");
   const tasks = d.missing.length ? d.missing : (["products"] as SetupTask[]);
   const items = tasks
     .map((t, n) => {
@@ -148,22 +164,22 @@ export function buildStoreReminder(d: {
     .join("");
   const first = TASK_TEXT[tasks[0]];
   const html = emailShell(
-    `<h1 style="margin:0 0 10px;font-size:22px;line-height:1.3">Hi${hi ? ` ${esc(hi)}` : ""}, let's get ${esc(d.storeName)} selling</h1>
+    `<h1 style="margin:0 0 10px;font-size:22px;line-height:1.3">Hi${hi ? ` ${esc(hi)}` : ""}, let's get ${esc(storeName)} selling</h1>
 <p style="margin:0 0 16px;font-size:15px;color:#3f3f46;line-height:1.6">${esc(STORE_INTROS[i])}</p>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${items}</table>
 <p style="margin:22px 0 0">${button(`${d.appUrl}${first.path}`, first.cta)}</p>`,
     d.unsubscribeUrl,
   );
   return {
-    subject: STORE_SUBJECTS[i](d.storeName),
+    subject: STORE_SUBJECTS[i](storeName, tasks[0]),
     html,
     pushTitle: tasks[0] === "products" ? "Add your first product 📦" : tasks[0] === "more_products" ? "Add more products 📦" : "Finish setting up your store",
     pushBody:
       tasks[0] === "products"
-        ? `${d.storeName} has no products yet. Shoppers can't buy until you add some. It takes 2 minutes.`
+        ? `${storeName} has no products yet. Shoppers can't buy until you add some. It takes 2 minutes.`
         : tasks[0] === "more_products"
-          ? `${d.storeName} has just one product. Add a few more so shoppers have more to choose from.`
-          : `${first.title} so customers can buy from ${d.storeName}.`,
+          ? `${storeName} has just one product. Add a few more so shoppers have more to choose from.`
+          : `${first.title} so customers can buy from ${storeName}.`,
   };
 }
 
@@ -404,4 +420,97 @@ export async function unfinishedStoreCount(): Promise<number> {
             OR NOT (s.duka_pay_status = 'active' OR COALESCE(s.bank_account_number, '') <> ''))`,
   );
   return row?.n ?? 0;
+}
+
+/* ───────────────────────────── Admin broadcast ───────────────────────────── */
+
+/** Every active store that isn't finished (any age), not opted out, not reminded in the last 20 hours. */
+const BROADCAST_FROM = `
+     FROM stores s
+     LEFT JOIN setup_reminders r ON r.subject = 'store:' || s.id::text
+     WHERE s.is_active = true
+       AND s.created_at < NOW() - INTERVAL '1 day'
+       AND COALESCE(r.opted_out, false) = false
+       AND (r.last_sent_at IS NULL OR r.last_sent_at < NOW() - INTERVAL '20 hours')
+       AND ((SELECT COUNT(*) FROM products p WHERE p.store_id = s.id AND p.is_active = true) < ${MIN_PRODUCTS}
+            OR NOT (s.duka_pay_status = 'active' OR COALESCE(s.bank_account_number, '') <> ''))`;
+
+export async function setupBroadcastCount(): Promise<number> {
+  await ensureTable();
+  const rows = await query<{ n: number }>(`SELECT COUNT(*)::int AS n ${BROADCAST_FROM}`);
+  return Number(rows[0]?.n ?? 0);
+}
+
+/**
+ * Admin: send reminder #1 ("let's get your store selling") now to every
+ * unfinished store, whatever its age. It counts toward the automatic
+ * schedule: the store's step moves to what its age would have reached, so
+ * the scheduled job doesn't follow up with another message the next day.
+ */
+export async function sendSetupBroadcast(opts: { now?: Date; limit?: number } = {}): Promise<{ sent: number; failed: number; remaining: number }> {
+  if (!emailConfigured()) throw new Error("Email isn't configured (RESEND_API_KEY / EMAIL_FROM)");
+  await ensureTable();
+  const now = opts.now ?? new Date();
+  const limit = Math.min(opts.limit ?? 200, 300);
+  const stores = await query<{
+    id: string; name: string; owner_id: string; owner_email: string | null; created_at: Date;
+    products: number; has_payout: boolean; has_logo: boolean;
+  }>(
+    `SELECT s.id, s.name, s.owner_id, s.owner_email, s.created_at,
+            (SELECT COUNT(*) FROM products p WHERE p.store_id = s.id AND p.is_active = true)::int AS products,
+            (s.duka_pay_status = 'active' OR COALESCE(s.bank_account_number, '') <> '') AS has_payout,
+            (COALESCE(s.logo_url, '') <> '') AS has_logo
+     ${BROADCAST_FROM}
+     ORDER BY s.created_at DESC
+     LIMIT $1`,
+    [limit],
+  );
+  const appUrl = getAppUrl();
+  const { notifyStoreEvent } = await import("@/lib/push");
+  const { adminAuth } = await import("@/lib/firebase-admin");
+
+  let sent = 0;
+  let failed = 0;
+  for (const s of stores) {
+    const setup = { products: Number(s.products), hasPayout: !!s.has_payout, hasLogo: !!s.has_logo };
+    const ageDays = (now.getTime() - new Date(s.created_at).getTime()) / 86_400_000;
+    const step = Math.max(1, dueStep(ageDays, 0) ?? 1);
+    const subject = `store:${s.id}`;
+    // Claim: record the send (keeping the higher step) unless reminded in the last 20h
+    const claimed = await query(
+      `INSERT INTO setup_reminders (subject, step, last_sent_at) VALUES ($1, $2, NOW())
+       ON CONFLICT (subject) DO UPDATE SET step = GREATEST(setup_reminders.step, EXCLUDED.step), last_sent_at = NOW(), updated_at = NOW()
+       WHERE setup_reminders.opted_out = false
+         AND (setup_reminders.last_sent_at IS NULL OR setup_reminders.last_sent_at < NOW() - INTERVAL '20 hours')
+       RETURNING subject`,
+      [subject, step],
+    );
+    if (!claimed.length) continue;
+
+    let email = s.owner_email;
+    let name: string | null = null;
+    try {
+      const u = await adminAuth.getUser(s.owner_id);
+      email = email || u.email || null;
+      name = u.displayName ?? null;
+    } catch {
+      /* store row email only */
+    }
+    const missing = missingTasks(setup);
+    const msg = buildStoreReminder({ step: 1, storeName: s.name, ownerName: name, missing, appUrl, unsubscribeUrl: unsubscribeUrl(subject) });
+    await notifyStoreEvent(s.id, {
+      type: "setup_reminder",
+      title: msg.pushTitle,
+      body: msg.pushBody,
+      url: ["products", "more_products"].includes(missing[0]) ? "/dashboard/products/new" : "/dashboard",
+    }).catch(() => {});
+    if (!email) {
+      failed++;
+      continue;
+    }
+    const res = await sendEmail(email, msg.subject, msg.html, undefined, { unsubscribeUrl: unsubscribeUrl(subject) }).catch(() => null);
+    if (res?.ok) sent++;
+    else failed++;
+  }
+  return { sent, failed, remaining: await setupBroadcastCount() };
 }

@@ -174,3 +174,54 @@ describe("the scheduled job", () => {
     });
   });
 });
+
+describe("subjects match what's missing", () => {
+  const subj = (step: number, missing: ("products" | "more_products" | "payout" | "logo")[], name = "Amaka") =>
+    buildStoreReminder({ step, storeName: name, missing, appUrl: "x", unsubscribeUrl: "u" }).subject;
+
+  it("first and second reminders name the real gap", () => {
+    expect(subj(1, ["products"])).toBe("Amaka is almost ready, add your first product");
+    expect(subj(1, ["more_products"])).toBe("Amaka is almost ready, add a few more products");
+    expect(subj(1, ["payout"])).toBe("Amaka is almost ready, choose how you get paid");
+    expect(subj(2, ["more_products"])).toBe("Give shoppers more to choose from at Amaka");
+    expect(subj(2, ["payout"])).toBe("Customers can't pay Amaka yet: set up payments");
+  });
+
+  it("tidies stray spaces in store names", () => {
+    expect(subj(1, ["products"], "Antique ")).toBe("Antique is almost ready, add your first product");
+  });
+});
+
+describe("one-off send to every unfinished store", () => {
+  it("sends reminder #1 content, records the age-based step, counts stores it can't email", async () => {
+    const { sendSetupBroadcast } = await import("@/lib/notify/setup-reminders");
+    vi.mocked(emailConfigured).mockReturnValue(true);
+    vi.mocked(sendEmail).mockReset().mockResolvedValue({ ok: true });
+    vi.mocked(notifyStoreEvent).mockReset().mockResolvedValue(undefined);
+    vi.mocked(adminAuth.getUser).mockReset().mockImplementation(async (uid: string) => {
+      if (uid === "gone") throw new Error("no user");
+      return { email: `${uid}@example.com`, displayName: "Owner" } as never;
+    });
+    const claims: unknown[][] = [];
+    vi.mocked(query).mockReset().mockImplementation(async (sql: unknown, params?: unknown[]) => {
+      const s = String(sql);
+      if (s.includes("COUNT(*)::int AS n")) return [{ n: 0 }] as never;
+      if (s.includes("SELECT s.id, s.name")) {
+        return [
+          { id: "old", name: "Antique ", owner_id: "u1", owner_email: null, created_at: daysAgo(40), products: 0, has_payout: true, has_logo: false },
+          { id: "lost", name: "Build", owner_id: "gone", owner_email: null, created_at: daysAgo(31), products: 8, has_payout: false, has_logo: true },
+        ] as never;
+      }
+      if (s.includes("INSERT INTO setup_reminders")) {
+        claims.push(params ?? []);
+        return [{ subject: "x" }] as never;
+      }
+      return [] as never;
+    });
+    const res = await sendSetupBroadcast({ now: NOON_LAGOS });
+    expect(res).toEqual({ sent: 1, failed: 1, remaining: 0 });
+    expect(claims[0]).toEqual(["store:old", 4]); // a 40-day-old store won't get the scheduled follow-ups again
+    expect(vi.mocked(sendEmail).mock.calls[0][1]).toBe("Antique is almost ready, add your first product");
+    expect(notifyStoreEvent).toHaveBeenCalledTimes(2); // both still get the in-app / phone notification
+  });
+});
