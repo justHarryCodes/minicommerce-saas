@@ -19,13 +19,16 @@ function page(title: string, text: string, status = 200) {
 function signed(req: NextRequest): string | null {
   const subject = req.nextUrl.searchParams.get("s") ?? "";
   const token = req.nextUrl.searchParams.get("t") ?? "";
-  return /^(store|user):[A-Za-z0-9-]{6,128}$/.test(subject) && verifyUnsubscribe(subject, token) ? subject : null;
+  return /^(store|user|upgrade):[A-Za-z0-9-]{6,128}$/.test(subject) && verifyUnsubscribe(subject, token) ? subject : null;
 }
 
 export async function GET(req: NextRequest) {
   const subject = signed(req);
   if (!subject) return page("This link doesn't work", "It may be incomplete. Copy the full link from the email and try again.", 400);
   await optOut(subject);
+  if (subject.startsWith("upgrade:")) {
+    return page("You won't get offers from Duka any more", "You'll still get important emails about your orders and account.");
+  }
   return page("You won't get setup reminders any more", "Your store is still here whenever you're ready. Everything you've set up is saved.");
 }
 

@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowLeftRight, Wallet,
   CreditCard,
+  Megaphone,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -26,6 +27,7 @@ const ALL_NAV = [
   { href: "/admin/plans",     label: "Plans",      icon: CreditCard,      exact: false },
   { href: "/admin/duka-pay",  label: "Duka Pay",  icon: Wallet,  exact: false },
   { href: "/admin/transfers", label: "Transfers",  icon: ArrowLeftRight,  exact: false },
+  { href: "/admin/campaigns", label: "Campaigns",  icon: Megaphone,       exact: false },
   { href: "/admin/settings",  label: "Settings",   icon: Settings,        exact: false },
   { href: "/admin/affiliates",label: "Affiliates", icon: UserCheck,       exact: false },
 ];

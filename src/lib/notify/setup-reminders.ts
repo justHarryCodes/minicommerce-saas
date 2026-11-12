@@ -105,7 +105,7 @@ function firstName(name: string | null | undefined): string {
   return (name ?? "").trim().split(/\s+/)[0] ?? "";
 }
 
-function esc(s: string): string {
+export function esc(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 }
 
@@ -214,7 +214,8 @@ export function unsubscribeUrl(subject: string): string {
 /* ───────────────────────────── Storage ───────────────────────────── */
 
 let tableReady = false;
-async function ensureTable() {
+/** The contact log shared by setup reminders and marketing emails. */
+export async function ensureTable() {
   if (tableReady) return;
   await query(`
     CREATE TABLE IF NOT EXISTS setup_reminders (
