@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { query } from "@/lib/db";
 import { getOrSet, cacheKey } from "@/lib/redis";
+import { getPlatformSettings } from "@/lib/admin-auth";
+import { yearlyPrice, yearlySavings } from "@/lib/plan-pricing";
 import HomeNav from "../HomeNav";
 import Footer from "@/components/Footer";
 
@@ -121,6 +123,10 @@ export default async function PricingPage() {
     )) ?? [];
 
   const popularIndex = plans.length > 2 ? 1 : -1;
+  // Yearly billing discount (admin setting) for the "or pay yearly" line
+  const yearlyDiscount = await getPlatformSettings()
+    .then((s) => s.yearly_discount_percent)
+    .catch(() => 0);
 
   const gridCols =
     plans.length >= 4
@@ -281,6 +287,15 @@ export default async function PricingPage() {
                 >
                   {isFree ? "No card required" : "Cancel anytime"}
                 </p>
+                {!isFree && yearlyDiscount > 0 && (
+                  <p
+                    className="-mt-5 mb-7 text-xs font-semibold"
+                    style={{ color: popular ? "rgba(0,0,0,0.75)" : "#15803d" }}
+                  >
+                    Or {fmtNaira(yearlyPrice(plan.price_monthly, yearlyDiscount))}/year: save{" "}
+                    {fmtNaira(yearlySavings(plan.price_monthly, yearlyDiscount))} ({yearlyDiscount}% off)
+                  </p>
+                )}
 
                 <Link
                   href="/auth/signup"

@@ -4,10 +4,14 @@ import { queryOne, query } from '@/lib/db'
 import { z } from 'zod'
 import { v4 as uuidv4 } from 'uuid'
 import { sendWebPushToAllAdmins } from '@/lib/webpush'
+import { getPlatformSettings } from '@/lib/admin-auth'
+import { priceFor } from '@/lib/plan-pricing'
+import { YEARLY_NOT_READY, yearlyBillingReady } from '@/lib/yearly-billing'
 
 const Schema = z.object({
   type:    z.literal('plan'),
   plan_id: z.string().uuid().optional().nullable(),
+  cycle:   z.enum(['monthly', 'yearly']).optional().default('monthly'),
 })
 
 export async function POST(req: NextRequest) {
@@ -18,7 +22,10 @@ export async function POST(req: NextRequest) {
   const parsed = Schema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 422 })
 
-  const { type, plan_id } = parsed.data
+  const { type, plan_id, cycle } = parsed.data
+  if (cycle === 'yearly' && !(await yearlyBillingReady())) {
+    return NextResponse.json({ error: YEARLY_NOT_READY }, { status: 503 })
+  }
 
   const store = await queryOne<{
     id: string
@@ -56,23 +63,32 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const amount = Number(plan.price_monthly)
+  const { yearly_discount_percent } = await getPlatformSettings()
+  const amount = priceFor(plan.price_monthly, cycle, yearly_discount_percent)
 
   const reference = `TRF-${store.id.slice(0, 8).toUpperCase()}-${uuidv4().slice(0, 8).toUpperCase()}`
 
-  await query(
-    `INSERT INTO subscription_payments
-       (store_id, type, amount, payment_reference, payment_status, payment_method, plan_id)
-     VALUES ($1, $2, $3, $4, 'pending_transfer', 'bank_transfer', $5)`,
-    [store.id, type, amount, reference, plan_id ?? null]
-  )
-
+  if (cycle === 'yearly') {
+    await query(
+      `INSERT INTO subscription_payments
+         (store_id, type, amount, payment_reference, payment_status, payment_method, plan_id, billing_cycle)
+       VALUES ($1, $2, $3, $4, 'pending_transfer', 'bank_transfer', $5, 'yearly')`,
+      [store.id, type, amount, reference, plan_id ?? null]
+    )
+  } else {
+    await query(
+      `INSERT INTO subscription_payments
+         (store_id, type, amount, payment_reference, payment_status, payment_method, plan_id)
+       VALUES ($1, $2, $3, $4, 'pending_transfer', 'bank_transfer', $5)`,
+      [store.id, type, amount, reference, plan_id ?? null]
+    )
+  }
 
   // Fire-and-forget — a vendor's payment submission must never wait on
   // (or fail because of) notifying admins.
   sendWebPushToAllAdmins({
     title: 'Bank transfer awaiting confirmation',
-    body: `${store.name} · ${type.replace(/_/g, ' ')} · ₦${amount.toLocaleString('en-NG')}`,
+    body: `${store.name} · plan${cycle === 'yearly' ? ' (YEARLY)' : ''} · ₦${amount.toLocaleString('en-NG')}`,
     url: '/admin/transfers',
   }).catch(() => {})
 

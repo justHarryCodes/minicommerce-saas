@@ -9,10 +9,12 @@ vi.mock("@/lib/db", () => ({
 vi.mock("@/lib/admin-auth", () => ({
   getPlatformSettings: vi.fn(),
 }));
+vi.mock("@/lib/webpush", () => ({ sendWebPushToAllAdmins: vi.fn().mockResolvedValue(undefined) }));
 
 import { query, queryOne } from "@/lib/db";
 import { getPlatformSettings } from "@/lib/admin-auth";
-import { fulfillSubscriptionPayment } from "@/lib/billing-fulfillment";
+import { fulfillSubscriptionPayment, planPeriodStart } from "@/lib/billing-fulfillment";
+import { sendWebPushToAllAdmins } from "@/lib/webpush";
 
 const mockedQuery = vi.mocked(query);
 const mockedQueryOne = vi.mocked(queryOne);
@@ -28,6 +30,7 @@ const DEFAULT_SETTINGS = {
   allow_new_registrations: true,
   require_plan_subscription: false,
   reels_monthly_limit: 20, allow_manual_transfers: true,
+  yearly_discount_percent: 20,
 };
 
 /** The one atomic UPDATE that marks the payment paid (via queryOne, RETURNING id). */
@@ -67,7 +70,9 @@ function mockQueryByText(routes: Record<string, unknown[]>) {
   });
 }
 
-const PAYMENT_LOOKUP = "FROM subscription_payments WHERE payment_reference";
+const PAYMENT_LOOKUP = "FROM subscription_payments sp WHERE sp.payment_reference";
+const STORE_PLAN_LOOKUP = "FROM stores s LEFT JOIN plans p";
+const NEW_PLAN_LOOKUP = "SELECT name, price_monthly FROM plans WHERE id";
 const CLAIM = "UPDATE subscription_payments SET payment_status = 'paid'";
 const REFERRER_LOOKUP = "referred_by_store_id FROM stores";
 const REFERRER_PLAN_LOOKUP = "current_plan_id, plan_expires_at FROM stores";
@@ -272,6 +277,64 @@ describe("fulfillSubscriptionPayment", () => {
       expect(result).toEqual({ ok: true });
       expect(callsContaining(AFFILIATE_REFERRAL_ACTIVATE)).toHaveLength(1); // attempted
       expect(callsContaining(AFFILIATE_BALANCE_CREDIT)).toHaveLength(0);   // but not credited again
+    });
+  });
+
+  describe("yearly billing", () => {
+    const monthsBetween = (a: string, b: string) => {
+      const x = new Date(a), y = new Date(b);
+      return (y.getFullYear() - x.getFullYear()) * 12 + (y.getMonth() - x.getMonth());
+    };
+
+    it("a yearly payment buys 12 months and tells Duka admins", async () => {
+      mockQueryOneByText({
+        [PAYMENT_LOOKUP]: { id: "p1", store_id: "s1", type: "plan", payment_status: "pending", plan_id: "plan_pro", amount: 96000, billing_cycle: "yearly" },
+        [STORE_PLAN_LOOKUP]: { current_plan_id: null, plan_expires_at: null, current_price: null, name: "Amaka Boutique" },
+        [NEW_PLAN_LOOKUP]: { name: "Pro", price_monthly: 10000 },
+        [REFERRER_LOOKUP]: { referred_by_store_id: null },
+        [AFFILIATE_LOOKUP]: { referred_by_affiliate_id: null },
+      });
+      expect(await fulfillSubscriptionPayment("ref1", "plan")).toEqual({ ok: true });
+      const [, params] = callsContaining("current_plan_id = $1")[0];
+      const period = callsContaining("period_start = $1")[0][1] as string[];
+      expect(params?.[0]).toBe("plan_pro");
+      expect(monthsBetween(period[0], period[1])).toBe(12);
+      expect(sendWebPushToAllAdmins).toHaveBeenCalledWith(expect.objectContaining({ title: expect.stringMatching(/yearly/i) }));
+    });
+
+    it("a monthly payment still buys one month, with no admin alert", async () => {
+      mockQueryOneByText({
+        [PAYMENT_LOOKUP]: { id: "p1", store_id: "s1", type: "plan", payment_status: "pending", plan_id: "plan_pro", amount: 10000, billing_cycle: null },
+        [STORE_PLAN_LOOKUP]: { current_plan_id: null, plan_expires_at: null, current_price: null, name: "Amaka Boutique" },
+        [NEW_PLAN_LOOKUP]: { name: "Pro", price_monthly: 10000 },
+        [REFERRER_LOOKUP]: { referred_by_store_id: null },
+        [AFFILIATE_LOOKUP]: { referred_by_affiliate_id: null },
+      });
+      expect(await fulfillSubscriptionPayment("ref1", "plan")).toEqual({ ok: true });
+      const period = callsContaining("period_start = $1")[0][1] as string[];
+      expect(monthsBetween(period[0], period[1])).toBe(1);
+      expect(sendWebPushToAllAdmins).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("when a new plan period starts", () => {
+    const now = new Date("2026-11-12T12:00:00Z");
+    const in30 = new Date("2026-12-12T12:00:00Z");
+
+    it("renewing the same plan early continues after the current end", () => {
+      expect(planPeriodStart({ now, newPlanId: "pro", newPlanPrice: 10000, currentPlanId: "pro", currentPlanPrice: 10000, currentEnd: in30 })).toEqual(in30);
+    });
+
+    it("switching plans keeps the unused time, at the price ratio", () => {
+      // 30 days of a ₦10,000 plan is worth 10 days of a ₦30,000 plan
+      const start = planPeriodStart({ now, newPlanId: "biz", newPlanPrice: 30000, currentPlanId: "pro", currentPlanPrice: 10000, currentEnd: in30 });
+      expect(Math.round((start.getTime() - now.getTime()) / 86_400_000)).toBe(10);
+    });
+
+    it("nothing running, or a free / expired plan: starts today", () => {
+      expect(planPeriodStart({ now, newPlanId: "pro", newPlanPrice: 10000, currentPlanId: null, currentPlanPrice: null, currentEnd: null })).toEqual(now);
+      expect(planPeriodStart({ now, newPlanId: "pro", newPlanPrice: 10000, currentPlanId: "old", currentPlanPrice: 10000, currentEnd: new Date("2026-11-01") })).toEqual(now);
+      expect(planPeriodStart({ now, newPlanId: "pro", newPlanPrice: 10000, currentPlanId: "free", currentPlanPrice: 0, currentEnd: in30 })).toEqual(now);
     });
   });
 });

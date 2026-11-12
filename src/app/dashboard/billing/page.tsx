@@ -3,6 +3,7 @@ import { verifySession } from "@/lib/auth";
 import { getPlatformSettings } from "@/lib/admin-auth";
 import { queryOne, query } from "@/lib/db";
 import BillingClient from "./BillingClient";
+import { yearlyBillingReady } from "@/lib/yearly-billing";
 
 export const metadata = { title: "Billing" };
 
@@ -53,7 +54,7 @@ export default async function BillingPage({
     store.status = "suspended";
   }
 
-  const [settings, payments, plans, bankAccounts, sp] = await Promise.all([
+  const [settings, payments, plans, bankAccounts, sp, yearlyReady, everPaid] = await Promise.all([
     getPlatformSettings(),
     query<{
       id: string;
@@ -64,9 +65,14 @@ export default async function BillingPage({
       period_start: string | null;
       period_end: string | null;
       created_at: string;
+      billing_cycle: string | null;
+      plan_name: string | null;
     }>(
-      `SELECT id, type, amount, payment_status, payment_method, period_start, period_end, created_at
-       FROM subscription_payments WHERE store_id = $1 ORDER BY created_at DESC LIMIT 20`,
+      // billing_cycle via to_jsonb: works before and after migrations/yearly_billing.sql
+      `SELECT sp.id, sp.type, sp.amount, sp.payment_status, sp.payment_method, sp.period_start, sp.period_end, sp.created_at,
+              to_jsonb(sp) ->> billing_cycle AS billing_cycle, p.name AS plan_name
+       FROM subscription_payments sp LEFT JOIN plans p ON p.id = sp.plan_id
+       WHERE sp.store_id = $1 ORDER BY sp.created_at DESC LIMIT 20`,
       [store.id]
     ),
     // DISTINCT ON name guards against duplicate rows surviving the dedup migration
@@ -78,8 +84,10 @@ export default async function BillingPage({
       max_products: number;
       max_reels: number;
       is_active: boolean;
+      features: string[] | null;
+      sort_order: number;
     }>(
-      `SELECT DISTINCT ON (name) id, name, description, price_monthly, max_products, max_reels, is_active
+      `SELECT DISTINCT ON (name) id, name, description, price_monthly, max_products, max_reels, is_active, features, sort_order
        FROM plans WHERE is_active = true ORDER BY name, sort_order, created_at`,
       []
     ),
@@ -93,7 +101,16 @@ export default async function BillingPage({
       []
     ),
     searchParams,
+    yearlyBillingReady(),
+    // Has this store ever paid for a plan? Never → Billing opens like a pricing page
+    queryOne(`SELECT 1 FROM subscription_payments WHERE store_id = $1 AND type = plan AND payment_status = paid LIMIT 1`, [store.id]),
   ]);
+  // Cheapest first, the order the pricing page uses
+  const sortedPlans = [...plans].sort((a, b) => a.sort_order - b.sort_order || Number(a.price_monthly) - Number(b.price_monthly));
+  const freePlan = sortedPlans.find((p) => Number(p.price_monthly) <= 0) ?? null;
+  // The cycle of the latest paid plan payment (what they are on now)
+  const lastPaidPlan = payments.find((p) => p.type === "plan" && p.payment_status === "paid");
+  const currentCycle = lastPaidPlan ? (lastPaidPlan.billing_cycle === "yearly" ? "yearly" : "monthly") : null;
 
   const currentPlan = store.current_plan_id
     ? await queryOne<{
@@ -104,8 +121,9 @@ export default async function BillingPage({
         max_products: number;
         max_reels: number;
         is_active: boolean;
+        features: string[] | null;
       }>(
-        "SELECT id, name, description, price_monthly, max_products, max_reels, is_active FROM plans WHERE id = $1",
+        "SELECT id, name, description, price_monthly, max_products, max_reels, is_active, features FROM plans WHERE id = $1",
         [store.current_plan_id]
       )
     : null;
@@ -125,7 +143,12 @@ export default async function BillingPage({
       }}
       settings={settings}
       payments={payments}
-      plans={plans.filter((p) => p.price_monthly > 0)}
+      plans={sortedPlans.filter((p) => p.price_monthly > 0)}
+      freePlan={freePlan}
+      yearlyDiscount={settings.yearly_discount_percent}
+      yearlyReady={yearlyReady}
+      hasEverPaid={!!everPaid}
+      currentCycle={currentCycle}
       bankAccounts={bankAccounts}
       currentPlan={currentPlan ?? null}
       success={sp.success}

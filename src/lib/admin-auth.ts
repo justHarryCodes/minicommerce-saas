@@ -1,5 +1,6 @@
 import { verifySession } from './auth'
 import { queryOne, query } from './db'
+import { clampDiscount, DEFAULT_YEARLY_DISCOUNT } from './plan-pricing'
 
 export interface AdminUser {
   firebaseUid: string
@@ -20,6 +21,8 @@ export interface PlatformSettings {
   reels_monthly_limit: number
   /** Stores may offer manual bank transfer at checkout (turn off once Duka Pay carries payments) */
   allow_manual_transfers: boolean
+  /** Discount for paying a plan yearly, in percent (0–50) */
+  yearly_discount_percent: number
 }
 
 const SETTING_DEFAULTS: PlatformSettings = {
@@ -33,6 +36,7 @@ const SETTING_DEFAULTS: PlatformSettings = {
   require_plan_subscription: false,
   reels_monthly_limit: 20,
   allow_manual_transfers: true,
+  yearly_discount_percent: DEFAULT_YEARLY_DISCOUNT,
 }
 
 // Emails that are automatically granted super_admin on first login.
@@ -151,5 +155,6 @@ export async function getPlatformSettings(): Promise<PlatformSettings> {
     ),
     reels_monthly_limit: Number(raw.reels_monthly_limit ?? SETTING_DEFAULTS.reels_monthly_limit),
     allow_manual_transfers: toBool(raw.allow_manual_transfers, SETTING_DEFAULTS.allow_manual_transfers),
+    yearly_discount_percent: clampDiscount(raw.yearly_discount_percent ?? SETTING_DEFAULTS.yearly_discount_percent),
   }
 }

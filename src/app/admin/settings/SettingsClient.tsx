@@ -351,7 +351,7 @@ export default function SettingsClient({ initialSettings, initialBankAccounts }:
         <Info className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "var(--accent)" }} />
         <div className="text-xs leading-relaxed space-y-1.5" style={{ color: "var(--text-secondary)" }}>
           <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>What do these settings do?</p>
-          <p><strong>Plans</strong> — Duka has one subscription: monthly plans (Free, Pro, Business). Prices and limits live on the Plans page.</p>
+          <p><strong>Plans</strong> — stores pay for a plan (Free, Pro, Business) monthly, or for a year upfront at the yearly discount. Prices and limits live on the Plans page.</p>
           <p><strong>Manual bank transfers</strong> — let stores offer &ldquo;pay by transfer, then confirm&rdquo; at checkout. Turn it off once Duka Pay is carrying payments.</p>
 <p><strong>New Registrations</strong> — turn this off to pause all sign-ups (e.g. during maintenance). Existing vendors are unaffected.</p>
         </div>
@@ -370,7 +370,7 @@ export default function SettingsClient({ initialSettings, initialBankAccounts }:
         {/* Billing & checkout */}
         <Section title="Billing & checkout" icon="💰">
           <div className="text-xs px-1" style={{ color: "var(--text-muted)" }}>
-            Stores pay one monthly subscription: a plan (Free, Pro or Business). Manage prices and limits on the{" "}
+            Stores pay for a plan (Free, Pro or Business) each month, or a year upfront at the discount below. Manage prices and limits on the{" "}
             <Link href="/admin/plans" className="underline font-semibold hover:opacity-80" style={{ color: "var(--accent)" }}>
               Plans page →
             </Link>
@@ -384,6 +384,23 @@ export default function SettingsClient({ initialSettings, initialBankAccounts }:
             enabled={s.allow_manual_transfers}
             onChange={(v) => update("allow_manual_transfers", v)}
           />
+
+          <div className="border-t" style={{ borderColor: "var(--border)" }} />
+
+          <div className="space-y-2 px-1">
+            <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Yearly billing discount</p>
+            <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
+              Stores can pay for a whole year upfront at this discount. Example: a ₦10,000/month plan costs{" "}
+              <strong>₦{(10000 * 12 * (1 - s.yearly_discount_percent / 100)).toLocaleString("en-NG")}</strong> a year instead of ₦120,000. Set 0
+              to charge the full 12 months.
+            </p>
+            <NumberInput
+              label="Discount for paying yearly"
+              value={s.yearly_discount_percent}
+              onChange={(v) => update("yearly_discount_percent", Math.min(50, Math.max(0, Math.round(v))))}
+              prefix="%"
+            />
+          </div>
         </Section>
 
         {/* Registrations */}

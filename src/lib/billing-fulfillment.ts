@@ -1,6 +1,7 @@
 import { query, queryOne } from '@/lib/db'
 import { invalidatePlanCache } from './plan'
 import { getPlatformSettings } from '@/lib/admin-auth'
+import { sendWebPushToAllAdmins } from '@/lib/webpush'
 
 type PaymentType = 'setup_fee' | 'monthly' | 'plan'
 
@@ -10,6 +11,36 @@ interface SubscriptionPayment {
   type: string
   payment_status: string
   plan_id: string | null
+  amount: number
+  /** 'yearly' buys 12 months; null/'monthly' one month (column may not exist yet) */
+  billing_cycle: string | null
+}
+
+/**
+ * When a newly bought plan period starts.
+ * - Same plan, still running: straight after the current end (renewing early
+ *   loses nothing).
+ * - Different plan while the current one still runs: the unused time is
+ *   carried over at the two plans' price ratio (₦ value kept), so switching
+ *   mid-way through a prepaid year never throws paid time away.
+ * - Nothing running: today.
+ */
+export function planPeriodStart(opts: {
+  now: Date
+  newPlanId: string
+  newPlanPrice: number
+  currentPlanId: string | null
+  currentPlanPrice: number | null
+  currentEnd: Date | null
+}): Date {
+  const { now, currentEnd } = opts
+  if (!currentEnd || currentEnd <= now || !opts.currentPlanId) return now
+  if (opts.currentPlanId === opts.newPlanId) return currentEnd
+  const oldPrice = Number(opts.currentPlanPrice ?? 0)
+  const newPrice = Number(opts.newPlanPrice)
+  if (!(oldPrice > 0) || !(newPrice > 0)) return now
+  const credit = (currentEnd.getTime() - now.getTime()) * (oldPrice / newPrice)
+  return new Date(now.getTime() + Math.round(credit))
 }
 
 /**
@@ -24,8 +55,11 @@ export async function fulfillSubscriptionPayment(
   reference: string,
   expectedType: PaymentType
 ): Promise<{ ok: boolean; error?: string }> {
+  // billing_cycle read through to_jsonb so this works before and after
+  // migrations/yearly_billing.sql (no column yet = every payment is monthly)
   const payment = await queryOne<SubscriptionPayment>(
-    'SELECT id, store_id, type, payment_status, plan_id FROM subscription_payments WHERE payment_reference = $1',
+    `SELECT sp.id, sp.store_id, sp.type, sp.payment_status, sp.plan_id, sp.amount, to_jsonb(sp) ->> 'billing_cycle' AS billing_cycle
+     FROM subscription_payments sp WHERE sp.payment_reference = $1`,
     [reference]
   )
 
@@ -96,16 +130,28 @@ export async function fulfillSubscriptionPayment(
     const planId = payment.plan_id
     if (!planId) return { ok: false, error: 'missing_plan_id' }
 
-    // Renewing the same plan early adds a month on top of what's left
-    // (it used to restart from today, throwing away the remaining days).
-    const current = await queryOne<{ current_plan_id: string | null; plan_expires_at: string | Date | null }>(
-      'SELECT current_plan_id, plan_expires_at FROM stores WHERE id = $1',
-      [payment.store_id]
-    )
+    // A month, or 12 for a yearly payment — added after any time still left
+    // (see planPeriodStart).
+    const yearly = payment.billing_cycle === 'yearly'
+    const [current, newPlan] = await Promise.all([
+      queryOne<{ current_plan_id: string | null; plan_expires_at: string | Date | null; current_price: number | null; name: string }>(
+        `SELECT s.current_plan_id, s.plan_expires_at, s.name, p.price_monthly AS current_price
+         FROM stores s LEFT JOIN plans p ON p.id = s.current_plan_id WHERE s.id = $1`,
+        [payment.store_id]
+      ),
+      queryOne<{ name: string; price_monthly: number }>('SELECT name, price_monthly FROM plans WHERE id = $1', [planId]),
+    ])
     const currentEnd = current?.plan_expires_at ? new Date(current.plan_expires_at) : null
-    const startFrom = current?.current_plan_id === planId && currentEnd && currentEnd > now ? currentEnd : now
+    const startFrom = planPeriodStart({
+      now,
+      newPlanId: planId,
+      newPlanPrice: Number(newPlan?.price_monthly ?? 0),
+      currentPlanId: current?.current_plan_id ?? null,
+      currentPlanPrice: current?.current_price ?? null,
+      currentEnd,
+    })
     const expiresAt = new Date(startFrom)
-    expiresAt.setMonth(expiresAt.getMonth() + 1)
+    expiresAt.setMonth(expiresAt.getMonth() + (yearly ? 12 : 1))
 
     await query(
       `UPDATE stores
@@ -130,6 +176,15 @@ export async function fulfillSubscriptionPayment(
     // renewal it matches zero rows and the reward is skipped.
     await rewardReferrerOnFirstPlanPayment(payment.store_id, now)
     await rewardAffiliateOnFirstPlanPayment(payment.store_id)
+
+    // Duka hears about every yearly subscription (a year of revenue upfront)
+    if (yearly) {
+      sendWebPushToAllAdmins({
+        title: '🎉 New yearly subscription',
+        body: `${current?.name ?? 'A store'} · ${newPlan?.name ?? 'Plan'} for a year · ₦${Number(payment.amount).toLocaleString('en-NG')} · until ${expiresAt.toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+        url: `/admin/vendors/${payment.store_id}`,
+      }).catch(() => {})
+    }
   }
 
   return { ok: true }

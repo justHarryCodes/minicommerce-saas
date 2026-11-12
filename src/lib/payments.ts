@@ -84,7 +84,9 @@ export const targets = {
   theme: (storeId: string, themeId: string) => `${storeId}:${themeId}`,
   monthly: (storeId: string) => `monthly:${storeId}`,
   setupFee: (storeId: string) => `setup_fee:${storeId}`,
-  plan: (storeId: string, planId: string) => `plan:${planId}:${storeId}`,
+  /** A yearly checkout is its own target, so it never reopens a monthly one */
+  plan: (storeId: string, planId: string, cycle: 'monthly' | 'yearly' = 'monthly') =>
+    `plan:${planId}:${storeId}${cycle === 'yearly' ? ':yearly' : ''}`,
 }
 
 export function subscriptionTypeOf(target: string): 'plan' | 'monthly' | 'setup_fee' {

@@ -10,6 +10,7 @@ const SettingsSchema = z.object({
   allow_new_registrations:    z.boolean(),
   reels_monthly_limit:        z.number().int().min(1).max(500),
   allow_manual_transfers:     z.boolean(),
+  yearly_discount_percent:    z.number().int().min(0).max(50),
 })
 
 export async function GET() {
@@ -36,6 +37,7 @@ export async function PUT(req: NextRequest) {
     ['allow_new_registrations',    s.allow_new_registrations],
     ['reels_monthly_limit',        s.reels_monthly_limit],
     ['allow_manual_transfers',     s.allow_manual_transfers],
+    ['yearly_discount_percent',    s.yearly_discount_percent],
   ]
 
   for (const [key, value] of entries) {

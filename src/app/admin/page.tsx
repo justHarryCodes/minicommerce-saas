@@ -12,7 +12,7 @@ function fmt(n: number) {
 export default async function AdminDashboardPage() {
   await verifyAdminSession() // layout already guards, but double-check
 
-  const [totalRow, activeRow, suspendedRow, pendingApprovalRow, revenueRow, recentVendors] =
+  const [totalRow, activeRow, suspendedRow, pendingApprovalRow, revenueRow, recentVendors, subsRow] =
     await Promise.all([
       query<{ count: string }>('SELECT COUNT(*) as count FROM stores WHERE is_active = true', []),
       query<{ count: string }>(`SELECT COUNT(*) as count FROM stores WHERE is_active = true AND status = 'active'`, []),
@@ -23,6 +23,26 @@ export default async function AdminDashboardPage() {
         id: string; name: string; slug: string; status: string
         subscription_status: string; created_at: string
       }>(`SELECT id, name, slug, status, subscription_status, created_at FROM stores WHERE is_active = true ORDER BY created_at DESC LIMIT 10`, []),
+      // Paying stores right now, by billing cycle (latest paid plan payment per store),
+      // and this month's plan revenue split the same way. billing_cycle via to_jsonb
+      // so this works before migrations/yearly_billing.sql runs.
+      query<{ yearly: number; monthly: number; yearly_revenue: number; monthly_revenue: number }>(
+        `WITH paid AS (
+           SELECT sp.store_id, sp.amount, sp.created_at, COALESCE(to_jsonb(sp) ->> 'billing_cycle', 'monthly') AS cycle
+           FROM subscription_payments sp WHERE sp.type = 'plan' AND sp.payment_status = 'paid'
+         ),
+         current AS (
+           SELECT DISTINCT ON (p.store_id) p.store_id, p.cycle
+           FROM paid p JOIN stores s ON s.id = p.store_id AND s.plan_expires_at > NOW()
+           ORDER BY p.store_id, p.created_at DESC
+         )
+         SELECT
+           (SELECT COUNT(*) FROM current WHERE cycle = 'yearly')::int AS yearly,
+           (SELECT COUNT(*) FROM current WHERE cycle = 'monthly')::int AS monthly,
+           (SELECT COALESCE(SUM(amount), 0) FROM paid WHERE cycle = 'yearly' AND created_at >= date_trunc('month', NOW()))::float AS yearly_revenue,
+           (SELECT COALESCE(SUM(amount), 0) FROM paid WHERE cycle = 'monthly' AND created_at >= date_trunc('month', NOW()))::float AS monthly_revenue`,
+        []
+      ).catch(() => []),
     ])
 
   const stats = [
@@ -45,6 +65,7 @@ export default async function AdminDashboardPage() {
   ]
 
   const revenueThisMonth = Number(revenueRow[0]?.total ?? 0)
+  const subs = subsRow[0]
 
   const STATUS_COLORS: Record<string, string> = {
     active: '#22c55e',
@@ -78,7 +99,7 @@ export default async function AdminDashboardPage() {
           <ul className="space-y-1 text-xs leading-relaxed list-none">
             <li>📋 <strong>Overview</strong> — this page. Check the stat cards daily for anything that needs attention.</li>
             <li>🏪 <strong>Vendors</strong> — browse all stores. Click <em>Manage</em> on any vendor to confirm registration, activate, suspend, or restrict.</li>
-            <li>📋 <strong>Plans</strong> — create and manage subscription plans vendors pay monthly to list products. Enable plan subscriptions in Settings.</li>
+            <li>📋 <strong>Plans</strong> — create and manage the plans vendors pay for, monthly or yearly. Enable plan subscriptions in Settings.</li>
             <li>⚙️ <strong>Settings</strong> — toggle platform-wide features: setup fees, plan subscriptions, and new registrations.</li>
           </ul>
           <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -109,7 +130,21 @@ export default async function AdminDashboardPage() {
         style={{ background: 'var(--accent)', borderColor: 'transparent' }}>
         <p className="text-sm font-semibold text-black/60 uppercase tracking-wide mb-1">Revenue this month</p>
         <p className="text-4xl font-black text-black">{fmt(revenueThisMonth)}</p>
-        <p className="text-sm text-black/60 mt-1">From setup fees + monthly subscriptions</p>
+        <p className="text-sm text-black/60 mt-1">From plan subscriptions</p>
+      </div>
+
+      {/* Subscriptions by billing cycle */}
+      <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className="rounded-2xl border p-5" style={{ background: 'var(--bg)', borderColor: 'var(--border)' }}>
+          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Yearly subscribers</p>
+          <p className="text-3xl font-black mt-2" style={{ color: '#16a34a' }}>{subs?.yearly ?? 0}</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Paid a year upfront · {fmt(Number(subs?.yearly_revenue ?? 0))} this month</p>
+        </div>
+        <div className="rounded-2xl border p-5" style={{ background: 'var(--bg)', borderColor: 'var(--border)' }}>
+          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Monthly subscribers</p>
+          <p className="text-3xl font-black mt-2" style={{ color: 'var(--text-primary)' }}>{subs?.monthly ?? 0}</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Renew each month · {fmt(Number(subs?.monthly_revenue ?? 0))} this month</p>
+        </div>
       </div>
 
       {/* Recent vendors */}

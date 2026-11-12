@@ -15,6 +15,7 @@ interface Transfer {
   store_slug: string
   store_id: string
   plan_name: string | null
+  billing_cycle?: string
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -151,6 +152,7 @@ export default function TransfersClient({ initialTransfers }: { initialTransfers
                         <span className="text-zinc-700 dark:text-zinc-300">
                           {TYPE_LABELS[t.type] ?? t.type}
                           {t.plan_name && <span className="text-zinc-400 ml-1">({t.plan_name})</span>}
+                          {t.billing_cycle === "yearly" && <span className="ml-1.5 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-black uppercase text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">Yearly · 12 months</span>}
                         </span>
                       </td>
                       <td className="px-5 py-4 font-bold text-zinc-900 dark:text-white">{fmt(t.amount)}</td>

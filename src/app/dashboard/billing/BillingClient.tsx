@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import type { PlatformSettings } from "@/lib/admin-auth";
 import { InfoTip } from "@/components/dashboard/Tip";
+import { type BillingCycle, priceFor, yearlySavings } from "@/lib/plan-pricing";
+import PlanPricing, { CycleToggle } from "./PlanPricing";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface StoreInfo {
@@ -40,6 +42,7 @@ interface Plan {
   max_products: number;
   max_reels: number;
   is_active: boolean;
+  features?: string[] | null;
 }
 
 interface Payment {
@@ -51,6 +54,8 @@ interface Payment {
   period_start: string | null;
   period_end: string | null;
   created_at: string;
+  billing_cycle?: string | null;
+  plan_name?: string | null;
 }
 
 interface BankAccount {
@@ -69,6 +74,14 @@ interface Props {
   currentPlan: Plan | null;
   success?: string;
   error?: string;
+  freePlan: Plan | null;
+  /** Percent off for paying a year upfront (admin setting) */
+  yearlyDiscount: number;
+  /** Yearly checkout available (database migration done) */
+  yearlyReady: boolean;
+  /** Ever paid for a plan; if not, Billing opens like a pricing page */
+  hasEverPaid: boolean;
+  currentCycle: BillingCycle | null;
 }
 
 type PayType = "plan";
@@ -179,12 +192,14 @@ function BankTransferPanel({
   type,
   planId,
   amount,
+  cycle,
   bankAccounts,
   onSubmitted,
 }: {
   type: PayType;
   planId?: string;
   amount: number;
+  cycle: BillingCycle;
   bankAccounts: BankAccount[];
   onSubmitted: () => void;
 }) {
@@ -202,7 +217,7 @@ function BankTransferPanel({
       const res = await fetch("/api/billing/transfer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, plan_id: planId ?? null }),
+        body: JSON.stringify({ type, plan_id: planId ?? null, cycle }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed");
@@ -324,6 +339,7 @@ function PaymentSection({
   type,
   planId,
   amount,
+  cycle,
   bankAccounts,
   canPayPaystack,
   paystackLabel,
@@ -334,6 +350,7 @@ function PaymentSection({
   type: PayType;
   planId?: string;
   amount: number;
+  cycle: BillingCycle;
   bankAccounts: BankAccount[];
   canPayPaystack: boolean;
   paystackLabel: string;
@@ -404,6 +421,7 @@ function PaymentSection({
           type={type}
           planId={planId}
           amount={amount}
+          cycle={cycle}
           bankAccounts={bankAccounts}
           onSubmitted={onTransferSubmitted}
         />
@@ -590,8 +608,15 @@ export default function BillingClient({
   currentPlan,
   success,
   error,
+  freePlan,
+  yearlyDiscount,
+  yearlyReady,
+  hasEverPaid,
+  currentCycle,
 }: Props) {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  // Monthly or yearly: start from what they pay now
+  const [cycle, setCycle] = useState<BillingCycle>(yearlyReady && currentCycle === "yearly" ? "yearly" : "monthly");
   const [pendingTransfer, setPendingTransfer] = useState<
     Record<string, boolean>
   >({});
@@ -674,7 +699,7 @@ export default function BillingClient({
     startCheckout(
       "/api/billing/subscribe-plan",
       (v) => setLoadingPlan(v ? planId : null),
-      { plan_id: planId },
+      { plan_id: planId, cycle },
     );
 
   // ── Step visibility & state ────────────────────────────────────────────────
@@ -691,6 +716,106 @@ export default function BillingClient({
   const selectedPlan = plans.find((p) => p.id === selectedPlanId) ?? null;
   const hasActivePlan =
     isPlanActive && !!currentPlan && currentPlan.price_monthly > 0;
+  const selectedAmount = selectedPlan ? priceFor(selectedPlan.price_monthly, cycle, yearlyDiscount) : 0;
+  const payLabel = (plan: Plan) =>
+    `${plan.id === store.currentPlanId ? "Renew" : "Subscribe"} for ${fmt(priceFor(plan.price_monthly, cycle, yearlyDiscount))} ${cycle === "yearly" ? "/ year" : "/ month"}`;
+
+  // Bring the payment box into view once a plan is picked
+  useEffect(() => {
+    if (selectedPlanId) document.getElementById("plan-checkout")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [selectedPlanId]);
+
+  const checkoutBox = selectedPlan ? (
+    <div id="plan-checkout" className="scroll-mt-24">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>
+            Your order
+          </p>
+          <p className="text-lg font-black" style={{ color: "var(--text-primary)" }}>
+            {selectedPlan.name} · {cycle === "yearly" ? "Yearly" : "Monthly"}
+          </p>
+          <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+            {cycle === "yearly"
+              ? `12 months upfront${yearlyDiscount > 0 ? `, you save ${fmt(yearlySavings(selectedPlan.price_monthly, yearlyDiscount))}` : ""}. Starts when payment is confirmed.`
+              : "One month. Renew or switch to yearly any time."}
+          </p>
+        </div>
+        <p className="text-2xl font-black tabular-nums" style={{ color: "var(--text-primary)" }}>
+          {fmt(selectedAmount)}
+          <span className="text-sm font-semibold" style={{ color: "var(--text-muted)" }}>
+            {" "}
+            / {cycle === "yearly" ? "year" : "month"}
+          </span>
+        </p>
+      </div>
+      <PaymentSection
+        key={`${selectedPlan.id}-${cycle}`}
+        type="plan"
+        planId={selectedPlan.id}
+        amount={selectedAmount}
+        cycle={cycle}
+        bankAccounts={bankAccounts}
+        canPayPaystack
+        paystackLabel={payLabel(selectedPlan)}
+        onPaystack={() => subscribeToPlan(selectedPlan.id)}
+        paystackLoading={loadingPlan === selectedPlan.id}
+        onTransferSubmitted={() => setPendingTransfer((p) => ({ ...p, plan: true }))}
+      />
+    </div>
+  ) : null;
+
+  // ── Never subscribed: Billing opens like a pricing page ─────────────────────
+  if (!hasEverPaid && !hasActivePlan && planState !== "review" && plans.length > 0) {
+    return (
+      <div className="mx-auto max-w-6xl pb-10">
+        <header className="mx-auto mb-6 max-w-2xl text-center">
+          <span className="mb-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold text-black" style={{ background: "var(--accent-light, #fde68a)" }}>
+            You&apos;re on the Free plan
+          </span>
+          <h1 className="text-3xl font-black tracking-tight sm:text-4xl" style={{ color: "var(--text-primary)" }}>
+            Grow {store.name} with the right plan
+          </h1>
+          <p className="mt-2 text-sm leading-relaxed sm:text-base" style={{ color: "var(--text-secondary)" }}>
+            List more products, use your own domain, see your analytics and win back abandoned carts. Upgrade any time.
+          </p>
+          <div className="mt-5 flex flex-col items-center gap-2">
+            <CycleToggle cycle={cycle} onChange={setCycle} discount={yearlyDiscount} yearlyAvailable={yearlyReady} />
+            {yearlyReady && yearlyDiscount > 0 && (
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                Pay for a year upfront and get {yearlyDiscount}% off, about {Math.round(((12 * yearlyDiscount) / 100) * 10) / 10} months free.
+              </p>
+            )}
+          </div>
+        </header>
+
+        <PlanPricing
+          variant="hero"
+          plans={plans}
+          freePlan={freePlan}
+          cycle={cycle}
+          discount={yearlyDiscount}
+          currentPlanId={store.currentPlanId}
+          selectedPlanId={selectedPlanId}
+          onSelect={setSelectedPlanId}
+        />
+
+        {checkoutBox && (
+          <section className="mx-auto mt-8 max-w-2xl rounded-2xl border p-5 sm:p-6" style={{ background: "var(--bg)", borderColor: "var(--border)" }}>
+            {checkoutBox}
+          </section>
+        )}
+
+        <ul className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-medium" style={{ color: "var(--text-muted)" }}>
+          {["Secure payment by Paystack", "Card, transfer or USSD", "Your plan starts as soon as payment is confirmed", "Cancel anytime"].map((t) => (
+            <li key={t} className="inline-flex items-center gap-1.5">
+              <Check className="h-3.5 w-3.5" style={{ color: "#16a34a" }} /> {t}
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl">
@@ -737,6 +862,7 @@ export default function BillingClient({
                   style={{ color: "var(--text-muted)" }}
                 >
                   until {planExpiresAt ? fmtDate(planExpiresAt) : "-"}
+                  {currentCycle && <> · billed {currentCycle}</>}
                 </p>
                 <p
                   className="mt-3 text-xs"
@@ -874,142 +1000,23 @@ export default function BillingClient({
                       </p>
                     ) : (
                       <div className="space-y-5">
-                        <div
-                          role="radiogroup"
-                          aria-label="Choose a plan"
-                          className="grid gap-3 sm:grid-cols-2"
-                        >
-                          {plans.map((plan) => {
-                            const selected = plan.id === selectedPlanId;
-                            const isCurrent = plan.id === store.currentPlanId;
-                            return (
-                              <button
-                                key={plan.id}
-                                type="button"
-                                role="radio"
-                                aria-checked={selected}
-                                onClick={() => setSelectedPlanId(plan.id)}
-                                className="rounded-xl border p-4 text-left transition-colors"
-                                style={{
-                                  background: selected
-                                    ? "var(--bg-secondary, #f9fafb)"
-                                    : "var(--bg)",
-                                  borderColor: selected
-                                    ? "var(--accent)"
-                                    : "var(--border)",
-                                  boxShadow: selected
-                                    ? "0 0 0 1px var(--accent)"
-                                    : "none",
-                                }}
-                              >
-                                <div className="flex items-start justify-between gap-2">
-                                  <p
-                                    className="text-sm font-bold"
-                                    style={{ color: "var(--text-primary)" }}
-                                  >
-                                    {plan.name}
-                                  </p>
-                                  {isCurrent && (
-                                    <span
-                                      className="rounded-full px-2 py-0.5 text-xs font-semibold"
-                                      style={{
-                                        background: "#16a34a14",
-                                        color: "#16a34a",
-                                      }}
-                                    >
-                                      Current
-                                    </span>
-                                  )}
-                                </div>
-                                <p
-                                  className="mt-1 text-xl font-black tabular-nums"
-                                  style={{ color: "var(--text-primary)" }}
-                                >
-                                  {fmt(plan.price_monthly)}
-                                  <span
-                                    className="text-xs font-medium"
-                                    style={{ color: "var(--text-muted)" }}
-                                  >
-                                    {" "}
-                                    /month
-                                  </span>
-                                </p>
-                                {plan.description && (
-                                  <p
-                                    className="mt-2 text-xs leading-relaxed"
-                                    style={{ color: "var(--text-muted)" }}
-                                  >
-                                    {plan.description}
-                                  </p>
-                                )}
-                                <ul
-                                  className="mt-3 space-y-1 text-xs"
-                                  style={{ color: "var(--text-secondary)" }}
-                                >
-                                  <li className="flex items-center gap-1.5">
-                                    <Check
-                                      className="h-3 w-3"
-                                      style={{ color: "#16a34a" }}
-                                    />
-                                    Up to {plan.max_products.toLocaleString()}{" "}
-                                    products
-                                  </li>
-                                  <li className="flex items-center gap-1.5">
-                                    <Check
-                                      className="h-3 w-3"
-                                      style={{ color: "#16a34a" }}
-                                    />
-                                    {plan.max_reels.toLocaleString()} reels a
-                                    month
-                                  </li>
-                                </ul>
-                              </button>
-                            );
-                          })}
-                        </div>
-
-                        {selectedPlan ? (
-                          <div
-                            className="border-t pt-5"
-                            style={{ borderColor: "var(--border)" }}
-                          >
-                            <p
-                              className="mb-3 text-sm font-semibold"
-                              style={{ color: "var(--text-primary)" }}
-                            >
-                              Pay for {selectedPlan.name}
-                            </p>
-                            <PaymentSection
-                              key={selectedPlan.id}
-                              type="plan"
-                              planId={selectedPlan.id}
-                              amount={selectedPlan.price_monthly}
-                              bankAccounts={bankAccounts}
-                              canPayPaystack
-                              paystackLabel={
-                                selectedPlan.id === store.currentPlanId
-                                  ? `Renew for ${fmt(selectedPlan.price_monthly)}`
-                                  : `Subscribe for ${fmt(selectedPlan.price_monthly)}`
-                              }
-                              onPaystack={() =>
-                                subscribeToPlan(selectedPlan.id)
-                              }
-                              paystackLoading={loadingPlan === selectedPlan.id}
-                              onTransferSubmitted={() =>
-                                setPendingTransfer((p) => ({
-                                  ...p,
-                                  plan: true,
-                                }))
-                              }
-                            />
+                        <CycleToggle size="sm" cycle={cycle} onChange={setCycle} discount={yearlyDiscount} yearlyAvailable={yearlyReady} />
+                        <PlanPricing
+                          variant="compact"
+                          plans={plans}
+                          cycle={cycle}
+                          discount={yearlyDiscount}
+                          currentPlanId={store.currentPlanId}
+                          selectedPlanId={selectedPlanId}
+                          onSelect={setSelectedPlanId}
+                        />
+                        {checkoutBox ? (
+                          <div className="border-t pt-5" style={{ borderColor: "var(--border)" }}>
+                            {checkoutBox}
                           </div>
                         ) : (
-                          <p
-                            className="flex items-center gap-1.5 text-xs"
-                            style={{ color: "var(--text-muted)" }}
-                          >
-                            <Info className="h-3.5 w-3.5" /> Select a plan to
-                            see payment options.
+                          <p className="flex items-center gap-1.5 text-xs" style={{ color: "var(--text-muted)" }}>
+                            <Info className="h-3.5 w-3.5" /> Pick a plan to see payment options.
                           </p>
                         )}
                       </div>
@@ -1069,8 +1076,9 @@ export default function BillingClient({
                           className="text-sm font-semibold"
                           style={{ color: "var(--text-primary)" }}
                         >
-                          {PAYMENT_TYPE_LABEL[p.type] ??
-                            p.type.replace(/_/g, " ")}
+                          {p.type === "plan"
+                            ? `${p.plan_name ?? "Plan"} · ${p.billing_cycle === "yearly" ? "yearly" : "monthly"}`
+                            : PAYMENT_TYPE_LABEL[p.type] ?? p.type.replace(/_/g, " ")}
                         </p>
                         <p
                           className="text-xs"

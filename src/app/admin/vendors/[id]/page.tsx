@@ -74,8 +74,13 @@ export default async function VendorDetailPage({ params }: RouteParams) {
   const payments = await query<{
     id: string; type: string; amount: number; payment_status: string
     period_start: string | null; period_end: string | null; created_at: string
-  }>(`SELECT id, type, amount, payment_status, period_start, period_end, created_at
-      FROM subscription_payments WHERE store_id = $1 ORDER BY created_at DESC LIMIT 20`, [id])
+    billing_cycle: string; plan_name: string | null
+  }>(`SELECT sp.id, sp.type, sp.amount, sp.payment_status, sp.period_start, sp.period_end, sp.created_at,
+             COALESCE(to_jsonb(sp) ->> 'billing_cycle', 'monthly') AS billing_cycle, pl.name AS plan_name
+      FROM subscription_payments sp LEFT JOIN plans pl ON pl.id = sp.plan_id
+      WHERE sp.store_id = $1 ORDER BY sp.created_at DESC LIMIT 20`, [id])
+  // Billing cycle of the plan the store is on now (latest paid plan payment)
+  const currentCycle = payments.find((p) => p.type === 'plan' && p.payment_status === 'paid')?.billing_cycle ?? null
 
   const auditLog = await query<{
     action: string; admin_email: string | null; details: unknown; created_at: string
@@ -145,7 +150,13 @@ export default async function VendorDetailPage({ params }: RouteParams) {
                     style={{ background: 'var(--bg-tertiary)' }}>
                     <div>
                       <p className="text-sm font-semibold capitalize" style={{ color: 'var(--text-primary)' }}>
-                        {p.type.replace('_', ' ')}
+                        {p.type === 'plan' ? `${p.plan_name ?? 'Plan'} plan` : p.type.replace('_', ' ')}
+                        {p.type === 'plan' && (
+                          <span className="ml-2 rounded-full px-1.5 py-0.5 text-[10px] font-black uppercase normal-case"
+                            style={p.billing_cycle === 'yearly' ? { background: '#16a34a1f', color: '#15803d' } : { background: 'var(--bg-secondary)', color: 'var(--text-muted)' }}>
+                            {p.billing_cycle === 'yearly' ? 'Yearly' : 'Monthly'}
+                          </span>
+                        )}
                       </p>
                       <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                         {new Date(p.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -174,7 +185,7 @@ export default async function VendorDetailPage({ params }: RouteParams) {
             storeId={store.id}
             plans={paidPlans}
             currentPlanId={store.current_plan_id}
-            currentPlanName={currentPlanName}
+            currentPlanName={currentCycle && store.plan_expires_at && new Date(store.plan_expires_at) > new Date() ? `${currentPlanName} · billed ${currentCycle}` : currentPlanName}
             expiresAt={store.plan_expires_at ? new Date(store.plan_expires_at).toISOString() : null}
           />
 

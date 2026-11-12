@@ -13,7 +13,8 @@ export async function GET() {
        s.name  AS store_name,
        s.slug  AS store_slug,
        s.id    AS store_id,
-       p.name  AS plan_name
+       p.name  AS plan_name,
+       COALESCE(to_jsonb(sp) ->> 'billing_cycle', 'monthly') AS billing_cycle
      FROM subscription_payments sp
      JOIN stores s ON s.id = sp.store_id
      LEFT JOIN plans p ON p.id = sp.plan_id
