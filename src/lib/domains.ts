@@ -109,6 +109,44 @@ export async function slugForHostname(hostname: string): Promise<string | null> 
 }
 
 /**
+ * A visitor opened a domain we still have as pending: Cloudflare may have
+ * finished since anyone last checked (the merchant only re-checks when they
+ * click "Check status"). Ask it now — at most once a minute per domain — so
+ * the first visit after activation already works.
+ */
+export async function refreshPendingForHost(hostname: string): Promise<boolean> {
+  const h = hostname.toLowerCase();
+  const row = await queryOne<{ store_id: string; slug: string }>(
+    `SELECT d.store_id, s.slug FROM store_domains d JOIN stores s ON s.id = d.store_id
+     WHERE d.hostname IN ($1, $2) AND d.status = 'pending' AND d.cf_hostname_id IS NOT NULL
+       AND (d.last_checked_at IS NULL OR d.last_checked_at < NOW() - INTERVAL '1 minute')
+     LIMIT 1`,
+    [h, h.replace(/^www\./, "")]
+  );
+  if (!row) return false;
+  const d = await refreshStoreDomain(row.store_id, row.slug);
+  return d?.status === "active";
+}
+
+/** Scheduled job: re-check every domain still waiting on DNS / its certificate. */
+export async function refreshPendingDomains(limit = 50): Promise<{ checked: number; activated: number }> {
+  const rows = await query<{ store_id: string; slug: string }>(
+    `SELECT d.store_id, s.slug FROM store_domains d JOIN stores s ON s.id = d.store_id
+     WHERE d.status = 'pending' AND d.cf_hostname_id IS NOT NULL AND s.is_active = true
+       AND (d.last_checked_at IS NULL OR d.last_checked_at < NOW() - INTERVAL '5 minutes')
+     ORDER BY d.last_checked_at NULLS FIRST
+     LIMIT $1`,
+    [limit]
+  );
+  let activated = 0;
+  for (const r of rows) {
+    const d = await refreshStoreDomain(r.store_id, r.slug).catch(() => null);
+    if (d?.status === "active") activated++;
+  }
+  return { checked: rows.length, activated };
+}
+
+/**
  * Keep stores.custom_domain (used to build every store link) in step with
  * the plan: a lapsed plan falls back to the free subdomain, and a renewed
  * plan gets its still-live domain back without the merchant doing anything.

@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { slugForHostname } from "@/lib/domains";
+import { refreshPendingForHost, slugForHostname } from "@/lib/domains";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +19,8 @@ export async function GET(req: NextRequest) {
   if (!authorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const host = (req.nextUrl.searchParams.get("host") ?? "").trim().toLowerCase();
   if (!/^[a-z0-9.-]{3,253}$/.test(host)) return NextResponse.json({ slug: null }, { status: 400 });
-  const slug = await slugForHostname(host);
+  let slug = await slugForHostname(host);
+  // Still marked pending here but maybe live at Cloudflare: check, then retry
+  if (!slug && (await refreshPendingForHost(host).catch(() => false))) slug = await slugForHostname(host);
   return NextResponse.json({ slug }, { status: slug ? 200 : 404 });
 }

@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { sendDueCartReminders } from "@/lib/notify/cart-reminders";
 import { sendDueBookingReminders } from "@/lib/notify/booking-reminders";
-import { syncCustomDomainsWithPlans } from "@/lib/domains";
+import { refreshPendingDomains, syncCustomDomainsWithPlans } from "@/lib/domains";
 import { reconcilePendingPayments } from "@/lib/payments";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +25,8 @@ async function run(req: NextRequest) {
   const [carts, bookings, domains, payments] = await Promise.all([
     sendDueCartReminders(),
     sendDueBookingReminders(),
-    syncCustomDomainsWithPlans(),
+    // Domains Cloudflare has verified since we last looked, then plan sync
+    refreshPendingDomains().then(async (pending) => ({ pending, ...(await syncCustomDomainsWithPlans()) })),
     // Paystack checkouts still pending: settle missed webhooks, close abandoned ones
     reconcilePendingPayments(),
   ]);
