@@ -2,7 +2,18 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
-import { AlertTriangle, CheckCircle2, Copy, Loader2, MessageCircle, Pause, Play, RefreshCw, ShoppingBag, Unplug } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Copy,
+  Loader2,
+  MessageCircle,
+  Pause,
+  Play,
+  RefreshCw,
+  ShoppingBag,
+  Unplug,
+} from "lucide-react";
 
 // Dashboard -> Channels -> WhatsApp shop. Shoppers browse, add to cart and
 // check out inside WhatsApp; the vendor connects their number with Meta's
@@ -17,15 +28,29 @@ interface Status {
   hostedSignup: string | null;
   admin: { missing: string[]; testNumber: boolean } | null;
   connection: {
-    display_name: string | null; display_phone: string | null; status: "active" | "paused" | "error"; token_source: string; connected_at: string; last_error: string | null;
-    catalog_id: string | null; catalog_synced_at: string | null; catalog_error: string | null; catalog_items: number;
+    display_name: string | null;
+    display_phone: string | null;
+    status: "active" | "paused" | "error";
+    token_source: string;
+    connected_at: string;
+    last_error: string | null;
+    catalog_id: string | null;
+    catalog_synced_at: string | null;
+    catalog_error: string | null;
+    catalog_items: number;
   } | null;
   stats: { chats: number; carts: number; orders: number } | null;
 }
 
 declare global {
   interface Window {
-    FB?: { init: (o: Record<string, unknown>) => void; login: (cb: (r: { authResponse?: { code?: string } }) => void, o: Record<string, unknown>) => void };
+    FB?: {
+      init: (o: Record<string, unknown>) => void;
+      login: (
+        cb: (r: { authResponse?: { code?: string } }) => void,
+        o: Record<string, unknown>,
+      ) => void;
+    };
     fbAsyncInit?: () => void;
   }
 }
@@ -42,7 +67,12 @@ function loadFacebookSdk(appId: string, version: string): Promise<void> {
     s.async = true;
     s.defer = true;
     s.crossOrigin = "anonymous";
-    s.onerror = () => reject(new Error("Couldn't load Facebook. Check your connection or ad blocker."));
+    s.onerror = () =>
+      reject(
+        new Error(
+          "Couldn't load Facebook. Check your connection or ad blocker.",
+        ),
+      );
     document.body.appendChild(s);
   });
 }
@@ -57,7 +87,11 @@ const FEATURES = [
 export default function WhatsAppChannel() {
   const [s, setS] = useState<Status | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const signup = useRef<{ wabaId?: string; phoneNumberId?: string; businessId?: string }>({});
+  const signup = useRef<{
+    wabaId?: string;
+    phoneNumberId?: string;
+    businessId?: string;
+  }>({});
 
   const load = useCallback(async () => {
     const res = await fetch("/api/dashboard/whatsapp").catch(() => null);
@@ -72,11 +106,22 @@ export default function WhatsAppChannel() {
     const sp = new URLSearchParams(window.location.search);
     const r = sp.get("whatsapp");
     if (!r) return;
-    if (r === "connected") toast.success("WhatsApp connected 🎉 Send your number a 'Hi' to try it.");
-    else toast.error(sp.get("message") ?? (r === "cancelled" ? "WhatsApp signup was cancelled." : "Couldn't connect WhatsApp."));
+    if (r === "connected")
+      toast.success("WhatsApp connected 🎉 Send your number a 'Hi' to try it.");
+    else
+      toast.error(
+        sp.get("message") ??
+          (r === "cancelled"
+            ? "WhatsApp signup was cancelled."
+            : "Couldn't connect WhatsApp."),
+      );
     sp.delete("whatsapp");
     sp.delete("message");
-    window.history.replaceState(null, "", `${window.location.pathname}${sp.toString() ? `?${sp}` : ""}`);
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${sp.toString() ? `?${sp}` : ""}`,
+    );
   }, []);
 
   // Meta's popup (Embedded Signup v4) reports the chosen account and number by postMessage:
@@ -88,9 +133,16 @@ export default function WhatsAppChannel() {
         const d = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
         if (d?.type !== "WA_EMBEDDED_SIGNUP") return;
         if (String(d.event).startsWith("FINISH") && d.data) {
-          signup.current = { wabaId: d.data.waba_id, phoneNumberId: d.data.phone_number_id, businessId: d.data.business_id };
+          signup.current = {
+            wabaId: d.data.waba_id,
+            phoneNumberId: d.data.phone_number_id,
+            businessId: d.data.business_id,
+          };
         } else if (d.event === "ERROR") {
-          toast.error(d.data?.error_message ?? "Meta couldn't finish connecting your WhatsApp.");
+          toast.error(
+            d.data?.error_message ??
+              "Meta couldn't finish connecting your WhatsApp.",
+          );
         }
       } catch {
         /* not ours */
@@ -103,7 +155,11 @@ export default function WhatsAppChannel() {
   async function call(method: string, body?: unknown, label = method) {
     setBusy(label);
     try {
-      const res = await fetch("/api/dashboard/whatsapp", { method, headers: { "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+      const res = await fetch("/api/dashboard/whatsapp", {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: body ? JSON.stringify(body) : undefined,
+      });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "Something went wrong");
       await load();
@@ -119,7 +175,9 @@ export default function WhatsAppChannel() {
   async function syncNow() {
     setBusy("sync");
     try {
-      const res = await fetch("/api/dashboard/whatsapp/catalog", { method: "POST" });
+      const res = await fetch("/api/dashboard/whatsapp/catalog", {
+        method: "POST",
+      });
       const r = await res.json().catch(() => ({}));
       if (!res.ok || !r.ok) throw new Error(r.error ?? "Sync failed");
       const parts = [
@@ -130,7 +188,11 @@ export default function WhatsAppChannel() {
         r.hidden && `${r.hidden} hidden (deleted in WhatsApp)`,
         r.skipped && `${r.skipped} skipped (plan limit or missing price)`,
       ].filter(Boolean);
-      toast.success(parts.length ? `Synced: ${parts.join(", ")}` : "Everything's already in sync");
+      toast.success(
+        parts.length
+          ? `Synced: ${parts.join(", ")}`
+          : "Everything's already in sync",
+      );
       await load();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Sync failed");
@@ -163,19 +225,38 @@ export default function WhatsAppChannel() {
             : "Connection wasn't finished. Try again and tap Finish on the last step.",
         );
       }
-      if (await call("POST", { action: "embedded_signup", code, wabaId, phoneNumberId, ...(businessId ? { businessId } : {}) }, "connect")) toast.success("WhatsApp connected 🎉 Send your number a 'Hi' to try it.");
+      if (
+        await call(
+          "POST",
+          {
+            action: "embedded_signup",
+            code,
+            wabaId,
+            phoneNumberId,
+            ...(businessId ? { businessId } : {}),
+          },
+          "connect",
+        )
+      )
+        toast.success(
+          "WhatsApp connected 🎉 Send your number a 'Hi' to try it.",
+        );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't open Facebook");
       setBusy(null);
     }
   }
 
-  const card = "rounded-2xl border border-surface-100 bg-white p-5 dark:border-surface-800 dark:bg-surface-900";
-  const btn = "inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold disabled:opacity-50";
+  const card =
+    "rounded-2xl border border-surface-100 bg-white p-5 dark:border-surface-800 dark:bg-surface-900";
+  const btn =
+    "inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold disabled:opacity-50";
 
   if (!s) {
     return (
-      <div className={`${card} flex items-center gap-2 text-sm text-surface-500`}>
+      <div
+        className={`${card} flex items-center gap-2 text-sm text-surface-500`}
+      >
         <Loader2 className="h-4 w-4 animate-spin" /> Loading WhatsApp…
       </div>
     );
@@ -187,8 +268,12 @@ export default function WhatsAppChannel() {
         <MessageCircle className="h-5 w-5" />
       </span>
       <div className="min-w-0">
-        <p className="font-semibold text-surface-900 dark:text-white">WhatsApp shop</p>
-        <p className="text-sm text-surface-500 dark:text-surface-400">Let customers shop and check out inside WhatsApp.</p>
+        <p className="font-semibold text-surface-900 dark:text-white">
+          WhatsApp shop
+        </p>
+        <p className="text-sm text-surface-500 dark:text-surface-400">
+          Let customers shop and check out inside WhatsApp.
+        </p>
       </div>
     </div>
   );
@@ -196,8 +281,12 @@ export default function WhatsAppChannel() {
   const list = (
     <ul className="mt-4 space-y-1.5">
       {FEATURES.map((f) => (
-        <li key={f} className="flex gap-2 text-sm text-surface-700 dark:text-surface-300">
-          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#25D366]" /> {f}
+        <li
+          key={f}
+          className="flex gap-2 text-sm text-surface-700 dark:text-surface-300"
+        >
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#25D366]" />{" "}
+          {f}
         </li>
       ))}
     </ul>
@@ -209,12 +298,16 @@ export default function WhatsAppChannel() {
       <div className={card}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           {title}
-          <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">Coming soon</span>
+          <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+            Coming soon
+          </span>
         </div>
         {list}
         {s.admin && (
           <p className="mt-4 rounded-xl bg-surface-50 p-3 text-xs text-surface-500 dark:bg-surface-800">
-            <strong>Admin:</strong> add {s.admin.missing.join(", ") || "the Meta keys"} to the server environment to switch this on.
+            <strong>Admin:</strong> add{" "}
+            {s.admin.missing.join(", ") || "the Meta keys"} to the server
+            environment to switch this on.
           </p>
         )}
       </div>
@@ -228,60 +321,109 @@ export default function WhatsAppChannel() {
         {title}
         {list}
         {!s.included && (
-          <a href="/dashboard/billing" className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-            <span>The WhatsApp shop add-on isn't active for your store yet.</span>
+          <a
+            href="/dashboard/billing"
+            className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
+          >
+            <span>
+              The WhatsApp shop add-on isn&apos;t active for your store yet.
+            </span>
             <span className="shrink-0 font-bold underline">See plans</span>
           </a>
         )}
         <div className="mt-5 flex flex-wrap gap-2">
           {s.embeddedSignup && (
-            <button type="button" onClick={connect} disabled={!!busy || !s.included} className={`${btn} bg-[#25D366] text-white hover:bg-[#1ebe5a]`}>
-              {busy === "connect" ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />} Connect WhatsApp
+            <button
+              type="button"
+              onClick={connect}
+              disabled={!!busy || !s.included}
+              className={`${btn} bg-[#25D366] text-white hover:bg-[#1ebe5a]`}
+            >
+              {busy === "connect" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <MessageCircle className="h-4 w-4" />
+              )}{" "}
+              Connect WhatsApp
             </button>
           )}
           {s.hostedSignup && s.included && (
-            <a href={s.hostedSignup} className={`${btn} ${s.embeddedSignup ? "border border-surface-200 text-surface-700 dark:border-surface-700 dark:text-surface-200" : "bg-[#25D366] text-white hover:bg-[#1ebe5a]"}`}>
-              <MessageCircle className="h-4 w-4" /> {s.embeddedSignup ? "Connect on Meta's page" : "Connect WhatsApp"}
+            <a
+              href={s.hostedSignup}
+              className={`${btn} ${s.embeddedSignup ? "border border-surface-200 text-surface-700 dark:border-surface-700 dark:text-surface-200" : "bg-[#25D366] text-white hover:bg-[#1ebe5a]"}`}
+            >
+              <MessageCircle className="h-4 w-4" />{" "}
+              {s.embeddedSignup ? "Connect on Meta's page" : "Connect WhatsApp"}
             </a>
           )}
           {s.admin?.testNumber && (
-            <button type="button" onClick={() => call("POST", { action: "test_number" }, "test").then((ok) => ok && toast.success("Test number connected"))} disabled={!!busy} className={`${btn} border border-surface-200 text-surface-700 dark:border-surface-700 dark:text-surface-200`}>
-              {busy === "test" && <Loader2 className="h-4 w-4 animate-spin" />} Use Meta test number (admin)
+            <button
+              type="button"
+              onClick={() =>
+                call("POST", { action: "test_number" }, "test").then(
+                  (ok) => ok && toast.success("Test number connected"),
+                )
+              }
+              disabled={!!busy}
+              className={`${btn} border border-surface-200 text-surface-700 dark:border-surface-700 dark:text-surface-200`}
+            >
+              {busy === "test" && <Loader2 className="h-4 w-4 animate-spin" />}{" "}
+              Use Meta test number (admin)
             </button>
           )}
         </div>
         {s.embeddedSignup && (
           <p className="mt-3 text-xs text-surface-500">
-            You&apos;ll log in with Facebook and pick (or create) a WhatsApp Business account and number. A number already on the WhatsApp Business app can be connected too.
+            You&apos;ll log in with Facebook and pick (or create) a WhatsApp
+            Business account and number. A number already on the WhatsApp
+            Business app can be connected too.
           </p>
         )}
-        {!s.embeddedSignup && !s.admin && <p className="mt-3 text-xs text-surface-500">Connecting your own number is opening soon.</p>}
+        {!s.embeddedSignup && !s.admin && (
+          <p className="mt-3 text-xs text-surface-500">
+            Connecting your own number is opening soon.
+          </p>
+        )}
       </div>
     );
   }
 
   const digits = (c.display_phone ?? "").replace(/\D/g, "");
-  const shopLink = digits ? `https://wa.me/${digits}?text=${encodeURIComponent("Hi")}` : null;
+  const shopLink = digits
+    ? `https://wa.me/${digits}?text=${encodeURIComponent("Hi")}`
+    : null;
   const paused = c.status === "paused";
 
   return (
     <div className={card}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         {title}
-        <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${paused ? "bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-300" : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"}`}>
+        <span
+          className={`rounded-full px-2.5 py-1 text-xs font-bold ${paused ? "bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-300" : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"}`}
+        >
           {paused ? "Paused" : "Live"}
         </span>
       </div>
 
       <div className="mt-4 rounded-xl bg-surface-50 p-4 dark:bg-surface-800/60">
-        <p className="text-sm font-semibold text-surface-900 dark:text-white">{c.display_name ?? "WhatsApp Business"}</p>
-        <p className="text-sm text-surface-500">{c.display_phone ?? "Number connected"}</p>
-        {c.token_source === "env_test" && <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">Meta test number: only phone numbers added in the Meta app can message it.</p>}
+        <p className="text-sm font-semibold text-surface-900 dark:text-white">
+          {c.display_name ?? "WhatsApp Business"}
+        </p>
+        <p className="text-sm text-surface-500">
+          {c.display_phone ?? "Number connected"}
+        </p>
+        {c.token_source === "env_test" && (
+          <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
+            Meta test number: only phone numbers added in the Meta app can
+            message it.
+          </p>
+        )}
       </div>
 
       {c.last_error && (
         <p className="mt-3 flex gap-2 rounded-xl bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
-          <AlertTriangle className="h-4 w-4 shrink-0" /> Meta said: {c.last_error}
+          <AlertTriangle className="h-4 w-4 shrink-0" /> Meta said:{" "}
+          {c.last_error}
         </p>
       )}
 
@@ -292,8 +434,13 @@ export default function WhatsAppChannel() {
             ["Checkouts", s.stats.carts],
             ["Orders", s.stats.orders],
           ].map(([l, n]) => (
-            <div key={l} className="rounded-xl border border-surface-100 p-3 dark:border-surface-800">
-              <p className="text-lg font-black text-surface-900 dark:text-white">{Number(n).toLocaleString()}</p>
+            <div
+              key={l}
+              className="rounded-xl border border-surface-100 p-3 dark:border-surface-800"
+            >
+              <p className="text-lg font-black text-surface-900 dark:text-white">
+                {Number(n).toLocaleString()}
+              </p>
               <p className="text-xs text-surface-500">{l}</p>
             </div>
           ))}
@@ -313,12 +460,24 @@ export default function WhatsAppChannel() {
                 : "Not synced yet"}
             </p>
           </div>
-          <button type="button" onClick={syncNow} disabled={!!busy} className={`${btn} border border-surface-200 text-surface-700 dark:border-surface-700 dark:text-surface-200`}>
-            {busy === "sync" ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} Sync now
+          <button
+            type="button"
+            onClick={syncNow}
+            disabled={!!busy}
+            className={`${btn} border border-surface-200 text-surface-700 dark:border-surface-700 dark:text-surface-200`}
+          >
+            {busy === "sync" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}{" "}
+            Sync now
           </button>
         </div>
         <p className="mt-2 text-xs text-surface-500">
-          Your products show in WhatsApp&apos;s own shop (the 🛍️ icon in your chat), with cart. It works both ways: products you add or edit in your WhatsApp catalog come into Duka too. Syncs every 30 minutes.
+          Your products show in WhatsApp&apos;s own shop (the 🛍️ icon in your
+          chat), with cart. It works both ways: products you add or edit in your
+          WhatsApp catalog come into Duka too. Syncs every 30 minutes.
         </p>
         {c.catalog_error && (
           <p className="mt-2 flex gap-2 rounded-lg bg-amber-50 p-2.5 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
@@ -329,10 +488,22 @@ export default function WhatsAppChannel() {
 
       {shopLink && (
         <div className="mt-4">
-          <p className="mb-1.5 text-sm font-medium text-surface-700 dark:text-surface-300">Your WhatsApp shop link: share it on Instagram, TikTok and flyers</p>
+          <p className="mb-1.5 text-sm font-medium text-surface-700 dark:text-surface-300">
+            Your WhatsApp shop link: share it on Instagram, TikTok and flyers
+          </p>
           <div className="flex items-center gap-2">
-            <code className="min-w-0 flex-1 truncate rounded-lg bg-surface-50 px-2.5 py-2 text-xs text-surface-700 dark:bg-surface-800 dark:text-surface-300">{shopLink}</code>
-            <button type="button" onClick={() => navigator.clipboard.writeText(shopLink).then(() => toast.success("Copied"))} className="flex shrink-0 items-center gap-1 rounded-lg border border-surface-200 px-2.5 py-2 text-xs font-semibold text-surface-700 dark:border-surface-700 dark:text-surface-200">
+            <code className="min-w-0 flex-1 truncate rounded-lg bg-surface-50 px-2.5 py-2 text-xs text-surface-700 dark:bg-surface-800 dark:text-surface-300">
+              {shopLink}
+            </code>
+            <button
+              type="button"
+              onClick={() =>
+                navigator.clipboard
+                  .writeText(shopLink)
+                  .then(() => toast.success("Copied"))
+              }
+              className="flex shrink-0 items-center gap-1 rounded-lg border border-surface-200 px-2.5 py-2 text-xs font-semibold text-surface-700 dark:border-surface-700 dark:text-surface-200"
+            >
               <Copy className="h-3.5 w-3.5" /> Copy
             </button>
           </div>
@@ -340,16 +511,39 @@ export default function WhatsAppChannel() {
       )}
 
       <div className="mt-5 flex flex-wrap gap-2">
-        <button type="button" onClick={() => call("PATCH", { status: paused ? "active" : "paused" }, "pause")} disabled={!!busy} className={`${btn} border border-surface-200 text-surface-700 dark:border-surface-700 dark:text-surface-200`}>
-          {busy === "pause" ? <Loader2 className="h-4 w-4 animate-spin" /> : paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />} {paused ? "Turn on replies" : "Pause replies"}
+        <button
+          type="button"
+          onClick={() =>
+            call("PATCH", { status: paused ? "active" : "paused" }, "pause")
+          }
+          disabled={!!busy}
+          className={`${btn} border border-surface-200 text-surface-700 dark:border-surface-700 dark:text-surface-200`}
+        >
+          {busy === "pause" ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : paused ? (
+            <Play className="h-4 w-4" />
+          ) : (
+            <Pause className="h-4 w-4" />
+          )}{" "}
+          {paused ? "Turn on replies" : "Pause replies"}
         </button>
         <button
           type="button"
-          onClick={() => confirm("Disconnect WhatsApp? Shoppers' messages will stop getting replies.") && call("DELETE", undefined, "disconnect")}
+          onClick={() =>
+            confirm(
+              "Disconnect WhatsApp? Shoppers' messages will stop getting replies.",
+            ) && call("DELETE", undefined, "disconnect")
+          }
           disabled={!!busy}
           className={`${btn} text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30`}
         >
-          {busy === "disconnect" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unplug className="h-4 w-4" />} Disconnect
+          {busy === "disconnect" ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Unplug className="h-4 w-4" />
+          )}{" "}
+          Disconnect
         </button>
       </div>
     </div>
