@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import DukaLogo from "@/components/DukaLogo";
 
 export const metadata: Metadata = {
   title: "Terms of Use & Privacy Policy",
@@ -88,15 +89,12 @@ export default function TermsPage() {
       {/* Top bar */}
       <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="w-8 h-8 rounded-lg bg-amber-400 flex items-center justify-center text-zinc-900 font-black text-sm">
-              D
-            </span>
-            <span className="font-extrabold text-zinc-900 dark:text-white">DUKA</span>
+          <div className="flex items-center gap-2">
+            <DukaLogo size={28} />
             <span className="text-zinc-400 text-sm font-medium hidden sm:block">
               by Awarizon
             </span>
-          </Link>
+          </div>
           <div className="flex items-center gap-3 text-sm">
             <a href="#terms"   className="text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors">Terms</a>
             <span className="text-zinc-300 dark:text-zinc-700">·</span>

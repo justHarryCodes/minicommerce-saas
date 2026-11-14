@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CheckCircle2, Clock, Loader, XCircle } from "lucide-react";
 import { DELETION_DAYS, getDeletionRequest, normaliseCode } from "@/lib/data-deletion";
 import DeletionForm from "./DeletionForm";
+import DukaLogo from "@/components/DukaLogo";
 
 export const dynamic = "force-dynamic";
 
@@ -63,10 +64,7 @@ export default async function DataDeletionPage({ searchParams }: { searchParams:
     <div className="min-h-screen bg-white dark:bg-zinc-950">
       <header className="border-b border-zinc-200 dark:border-zinc-800">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="w-8 h-8 rounded-lg bg-amber-400 flex items-center justify-center text-zinc-900 font-black text-sm">D</span>
-            <span className="font-extrabold text-zinc-900 dark:text-white">DUKA</span>
-          </Link>
+          <DukaLogo size={28} />
           <Link href="/terms#privacy" className="text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-white">Privacy policy</Link>
         </div>
       </header>
