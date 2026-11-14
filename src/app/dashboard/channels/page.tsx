@@ -5,6 +5,7 @@ import { query, queryOne } from "@/lib/db";
 import { getAppUrl } from "@/lib/paystack";
 import { getStoreUrl } from "@/lib/utils";
 import ChannelsClient from "./ChannelsClient";
+import WhatsAppChannel from "@/components/dashboard/WhatsAppChannel";
 
 export const dynamic = "force-dynamic";
 
@@ -44,9 +45,10 @@ export default async function ChannelsPage() {
       <div>
         <h1 className="text-xl font-bold text-surface-900 dark:text-white">Sales channels</h1>
         <p className="text-sm text-surface-500 dark:text-surface-400">
-          Show your products on Google Shopping, Facebook and Instagram. Your catalog stays in sync automatically — prices, stock and photos update on their own.
+          Sell inside WhatsApp, and show your products on Google Shopping, Facebook and Instagram. Everything stays in sync with your store automatically: prices, stock and photos.
         </p>
       </div>
+      <WhatsAppChannel />
       <ChannelsClient
         feedsEnabled={settings?.feeds_enabled !== false}
         feeds={{

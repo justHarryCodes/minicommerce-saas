@@ -136,6 +136,7 @@ export function storeRobots(store: Store): string {
     "Disallow: /track",
     "Disallow: /saved",
     "Disallow: /search",
+    "Disallow: /cart-link/",
     "Disallow: /*?*theme_preview=",
     "",
     `Sitemap: ${base}/sitemap.xml`,

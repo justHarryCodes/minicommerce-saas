@@ -23,6 +23,7 @@ import {
   Gift,
 } from "lucide-react";
 import { useCart } from "@/components/storefront/CartProvider";
+import { socialRefKey } from "@/lib/meta/social-ref";
 import { useStore } from "@/lib/store-context";
 import { formatCurrency } from "@/lib/utils";
 import { clThumb } from "@/lib/cloudinary";
@@ -369,6 +370,8 @@ export default function CheckoutClient({
           couponCode: appliedCoupon?.code ?? null,
           giftCardCode: appliedGift?.code ?? null,
           checkoutToken,
+          // Came from a WhatsApp chat: order updates go back to that chat
+          socialRef: (() => { try { return localStorage.getItem(socialRefKey(storeSlug)); } catch { return null; } })(),
         }),
       });
 
@@ -382,7 +385,7 @@ export default function CheckoutClient({
       setOrderNumber(data.orderNumber);
       setAccessToken(data.accessToken ?? null);
       // This checkout converted — start fresh next time.
-      try { localStorage.removeItem(tokenKey); } catch {}
+      try { localStorage.removeItem(tokenKey); localStorage.removeItem(socialRefKey(storeSlug)); } catch {}
 
       if (data.paysOnlineNow) {
         const initRes = await fetch("/api/paystack/initialize", {

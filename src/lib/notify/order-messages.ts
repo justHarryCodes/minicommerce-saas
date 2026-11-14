@@ -155,8 +155,50 @@ async function record(orderId: string, event: string, channel: "sms" | "email", 
  * channel. Never throws — call it fire-and-forget after the DB write.
  */
 export async function notifyCustomer(orderId: string, event: OrderEvent): Promise<void> {
+  // Orders placed from a WhatsApp chat also get their updates in that chat
+  void notifyWhatsAppChat(orderId, event);
   try {
     if (!smsConfigured() && !emailConfigured()) return;
+    const loaded = await loadOrderMessage(orderId);
+    if (!loaded) return;
+    const { o, data } = loaded;
+    if (!(await hasFeature(o.store_id, "customer_messages"))) return;
+    const msg = buildOrderMessage(event, data);
+
+    if (smsConfigured() && (await claim(orderId, event, "sms"))) {
+      await record(orderId, event, "sms", await sendSms(o.customer_phone, msg.text));
+    }
+    if (emailConfigured() && o.customer_email && (await claim(orderId, event, "email"))) {
+      const r = await sendEmail(o.customer_email, `${msg.subject} · ${o.store_name}`, emailHtml(o.store_name, msg.text, receiptUrl(data)), o.store_email ?? undefined);
+      await record(orderId, event, "email", r);
+    }
+  } catch (err) {
+    console.error("[notifyCustomer] failed:", err instanceof Error ? err.message : err);
+  }
+}
+
+/**
+ * The same update in the WhatsApp chat the order came from (WhatsApp
+ * selling is its own feature, so this doesn't depend on SMS/email or the
+ * customer-messages plan feature). Never throws.
+ */
+async function notifyWhatsAppChat(orderId: string, event: OrderEvent): Promise<void> {
+  try {
+    const { whatsappAvailable } = await import("@/lib/meta/config");
+    if (!whatsappAvailable()) return;
+    const loaded = await loadOrderMessage(orderId);
+    if (!loaded) return;
+    const { claimOrderUpdate, sendOrderUpdateToChat } = await import("@/lib/meta/order-updates");
+    if (!(await claimOrderUpdate(orderId, event))) return;
+    const msg = buildOrderMessage(event, loaded.data);
+    await sendOrderUpdateToChat(orderId, `*${msg.subject}*\n\n${msg.text}`, receiptUrl(loaded.data));
+  } catch {
+    /* WhatsApp tables not set up yet: nothing to send */
+  }
+}
+
+/** The order + store fields every customer message needs, or null to send nothing. */
+async function loadOrderMessage(orderId: string) {
     const o = await queryOne<{
       order_number: string; access_token: string | null; customer_name: string; customer_phone: string;
       customer_email: string | null; total_amount: number | null; total: number; deposit_amount: number;
@@ -173,8 +215,7 @@ export async function notifyCustomer(orderId: string, event: OrderEvent): Promis
        FROM orders o JOIN stores s ON s.id = o.store_id WHERE o.id = $1`,
       [orderId]
     );
-    if (!o || !o.notifications || !o.access_token) return;
-    if (!(await hasFeature(o.store_id, "customer_messages"))) return;
+    if (!o || !o.notifications || !o.access_token) return null;
 
     const data: OrderMessageData = {
       storeName: o.store_name,
@@ -192,16 +233,5 @@ export async function notifyCustomer(orderId: string, event: OrderEvent): Promis
       appointment: o.first_booking ? formatAppointment(o.first_booking) : null,
       scheduledLabel: o.scheduled_for ? describeInstant(new Date(o.scheduled_for), new Date()) : null,
     };
-    const msg = buildOrderMessage(event, data);
-
-    if (smsConfigured() && (await claim(orderId, event, "sms"))) {
-      await record(orderId, event, "sms", await sendSms(o.customer_phone, msg.text));
-    }
-    if (emailConfigured() && o.customer_email && (await claim(orderId, event, "email"))) {
-      const r = await sendEmail(o.customer_email, `${msg.subject} · ${o.store_name}`, emailHtml(o.store_name, msg.text, receiptUrl(data)), o.store_email ?? undefined);
-      await record(orderId, event, "email", r);
-    }
-  } catch (err) {
-    console.error("[notifyCustomer] failed:", err instanceof Error ? err.message : err);
-  }
+    return { o, data };
 }

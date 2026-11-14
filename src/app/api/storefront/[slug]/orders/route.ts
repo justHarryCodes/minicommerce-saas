@@ -17,6 +17,7 @@ import { loyaltyDiscount, loyaltyFor } from "@/lib/loyalty";
 import { newOrderNumber } from "@/lib/order-number";
 import { checkoutMethods, dukaPayActive } from "@/lib/duka-pay";
 import { getPlatformSettings } from "@/lib/admin-auth";
+import { linkOrder } from "@/lib/meta/cart-links";
 import { z } from "zod";
 
 // Thrown from inside the order transaction when a size's stock was raced
@@ -42,6 +43,8 @@ const OrderSchema = z.object({
   couponCode: z.string().max(40).optional().nullable(),
   giftCardCode: z.string().max(40).optional().nullable(),
   checkoutToken: z.string().max(64).optional().nullable(),
+  /** The WhatsApp cart link this order came from (see src/lib/meta/cart-links.ts) */
+  socialRef: z.string().max(64).optional().nullable(),
   items: z
     .array(
       z.object({
@@ -429,6 +432,7 @@ export async function POST(
     });
 
     void alertLowStock(store.id, lowStock);
+    if (d.socialRef) await linkOrder(store.id, d.socialRef, result.id);
     invalidateStoreSoon(store.id, slug); // stock changed
 
     // Fire-and-forget — don't await so push never delays the response.
