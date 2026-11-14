@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Users, Settings, LogOut, CreditCard, ArrowLeftRight, Wallet, UserCheck, Megaphone } from "lucide-react";
+import { LayoutDashboard, Users, Settings, LogOut, CreditCard, ArrowLeftRight, Wallet, UserCheck, Megaphone, ShieldCheck } from "lucide-react";
 import { auth } from "@/lib/firebase-client";
 import { signOut } from "firebase/auth";
 import type { AdminUser } from "@/lib/admin-auth";
@@ -17,6 +17,7 @@ const navItems = [
   { href: "/admin/duka-pay",    label: "Duka Pay",  icon: Wallet,  exact: false },
   { href: "/admin/transfers",   label: "Transfers",  icon: ArrowLeftRight,  exact: false },
   { href: "/admin/campaigns", label: "Campaigns", icon: Megaphone, exact: false },
+  { href: "/admin/data-requests", label: "Data requests", icon: ShieldCheck, exact: false },
   { href: "/admin/settings",    label: "Settings",   icon: Settings,        exact: false },
 ];
 

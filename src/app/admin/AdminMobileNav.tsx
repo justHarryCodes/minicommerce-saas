@@ -12,6 +12,7 @@ import {
   LogOut,
   Menu,
   Settings,
+  ShieldCheck,
   UserCheck,
   Users,
   X,
@@ -30,6 +31,7 @@ const ALL_NAV = [
   { href: "/admin/campaigns", label: "Campaigns",  icon: Megaphone,       exact: false },
   { href: "/admin/settings",  label: "Settings",   icon: Settings,        exact: false },
   { href: "/admin/affiliates",label: "Affiliates", icon: UserCheck,       exact: false },
+  { href: "/admin/data-requests", label: "Data requests", icon: ShieldCheck, exact: false },
 ];
 
 // Only 5 items fit cleanly in the bottom bar — Affiliates lives in the drawer only
