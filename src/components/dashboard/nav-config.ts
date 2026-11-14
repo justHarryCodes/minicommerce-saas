@@ -2,7 +2,7 @@
 // and the ⌘K palette all read from here.
 import {
   BarChart3, Boxes, CalendarDays, CreditCard, FileText, Film, FolderTree, Gift, Layout, LayoutDashboard, Package, Palette,
-  ScanBarcode, Settings, Share2, ShoppingBag, ShoppingCart, Star, Tag, Ticket, UserCog, Users, Wallet, type LucideIcon,
+  MessageCircle, ScanBarcode, Settings, Share2, ShoppingBag, ShoppingCart, Star, Tag, Ticket, UserCog, Users, Wallet, type LucideIcon,
 } from "lucide-react";
 
 export interface NavItem {
@@ -13,6 +13,10 @@ export interface NavItem {
   keywords?: string;
   /** Legacy Pro badge for items with no plan feature mapping */
   pro?: boolean;
+  /** A small highlight label, e.g. "New" */
+  tag?: string;
+  /** Brand colour for the icon (add-ons) */
+  color?: string;
 }
 
 export interface NavGroup {
@@ -21,6 +25,13 @@ export interface NavGroup {
 }
 
 export const NAV_GROUPS: NavGroup[] = [
+  {
+    // First thing in the sidebar: add-ons vendors switch on
+    label: "Add-ons",
+    items: [
+      { href: "/dashboard/whatsapp", label: "WhatsApp shop", icon: MessageCircle, tag: "New", color: "#25D366", keywords: "whatsapp chat bot sell catalog messages wa" },
+    ],
+  },
   {
     label: "Sell",
     items: [

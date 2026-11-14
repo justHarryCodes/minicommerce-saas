@@ -278,3 +278,12 @@ describe("incoming webhooks", () => {
     expect(notifyStoreEvent).toHaveBeenCalledWith("s1", expect.objectContaining({ type: "whatsapp_message", body: expect.stringContaining("Is the red one available?") }));
   });
 });
+
+describe("the add-on", () => {
+  it("is free for every store for now (no plan check)", async () => {
+    const { whatsappAddonActive } = await import("@/lib/meta/addon");
+    expect(await whatsappAddonActive("any-store")).toBe(true);
+    const { featureForPath } = await import("@/lib/features-shared");
+    expect(featureForPath("/dashboard/whatsapp")).toBeNull(); // no "Pro" lock in the sidebar
+  });
+});

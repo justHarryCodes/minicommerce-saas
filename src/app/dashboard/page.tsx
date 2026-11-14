@@ -1,4 +1,5 @@
 import Link from "next/link";
+import WhatsAppHomeBanner from "@/components/dashboard/WhatsAppHomeBanner";
 import Image from "next/image";
 import { AlertTriangle, ArrowRight, CalendarDays, Clock, CreditCard, Lock, PackageX, ShoppingBag, ShoppingCart, TrendingDown } from "lucide-react";
 import { verifySession } from "@/lib/auth";
@@ -132,6 +133,9 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-3 pt-1 lg:pt-0">
       <OnboardingChecklist items={checklist} storeUrl={getStoreUrl(store.slug, store.customDomain ?? store.custom_domain)} />
+
+      {/* Add-on #1, where every vendor sees it */}
+      <WhatsAppHomeBanner storeId={store.id} />
 
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">

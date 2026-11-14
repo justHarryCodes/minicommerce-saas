@@ -17,7 +17,9 @@ describe("navigation", () => {
     const hrefs = NAV_ITEMS.map((i) => i.href);
     expect(new Set(hrefs).size).toBe(hrefs.length);
     for (const h of ["/dashboard", "/dashboard/orders", "/dashboard/products", "/dashboard/settings", "/dashboard/pos", "/dashboard/themes"]) expect(hrefs).toContain(h);
-    expect(NAV_GROUPS.map((g) => g.label)).toEqual(["Sell", "Catalog", "Customers", "Store", "Account"]);
+    // Add-ons come first so vendors see them without scrolling
+    expect(NAV_GROUPS.map((g) => g.label)).toEqual(["Add-ons", "Sell", "Catalog", "Customers", "Store", "Account"]);
+    expect(hrefs).toContain("/dashboard/whatsapp");
   });
 
   it("titles the page from the most specific match", () => {

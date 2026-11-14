@@ -78,7 +78,7 @@ describe("callback", () => {
       }),
     );
     const res = await call(`code=abc&state=${encodeURIComponent(signupState(STORE))}`);
-    expect(where(res).pathname).toBe("/dashboard/channels");
+    expect(where(res).pathname).toBe("/dashboard/whatsapp");
     expect(where(res).searchParams.get("whatsapp")).toBe("connected");
     const exchange = new URL(calls.find((c) => c.includes("oauth/access_token"))!);
     expect(exchange.searchParams.get("redirect_uri")).toBe("https://dukanigeria.com/api/meta/es-callback");

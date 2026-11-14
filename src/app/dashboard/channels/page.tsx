@@ -5,7 +5,8 @@ import { query, queryOne } from "@/lib/db";
 import { getAppUrl } from "@/lib/paystack";
 import { getStoreUrl } from "@/lib/utils";
 import ChannelsClient from "./ChannelsClient";
-import WhatsAppChannel from "@/components/dashboard/WhatsAppChannel";
+import Link from "next/link";
+import { ArrowRight, MessageCircle } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -48,7 +49,11 @@ export default async function ChannelsPage() {
           Sell inside WhatsApp, and show your products on Google Shopping, Facebook and Instagram. Everything stays in sync with your store automatically: prices, stock and photos.
         </p>
       </div>
-      <WhatsAppChannel />
+      <Link href="/dashboard/whatsapp" className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-[#075e54] to-[#25D366] p-4 text-white">
+        <MessageCircle className="h-6 w-6 shrink-0" />
+        <span className="min-w-0 flex-1"><strong>WhatsApp shop</strong><span className="block text-sm text-white/85">Sell inside WhatsApp: catalog, cart and checkout in the chat.</span></span>
+        <ArrowRight className="h-5 w-5 shrink-0" />
+      </Link>
       <ChannelsClient
         feedsEnabled={settings?.feeds_enabled !== false}
         feeds={{

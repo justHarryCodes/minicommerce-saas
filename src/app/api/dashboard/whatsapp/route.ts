@@ -3,7 +3,7 @@ import { z } from "zod";
 import { verifySession, getUserStore } from "@/lib/auth";
 import { verifyAdminSession } from "@/lib/admin-auth";
 import { query, queryOne } from "@/lib/db";
-import { hasFeature } from "@/lib/plan";
+import { whatsappAddonActive } from "@/lib/meta/addon";
 import { storeCanonicalBase } from "@/lib/seo";
 import { embeddedSignupConfigId, embeddedSignupReady, GRAPH_VERSION, hostedSignupUrl, metaAppId, testNumber, whatsappSetupStatus } from "@/lib/meta/config";
 
@@ -49,7 +49,7 @@ export async function GET() {
   const admin = await verifyAdminSession().catch(() => null);
   const base = {
     available: setup.available,
-    included: await hasFeature(o.store.id, "sales_channels"),
+    included: await whatsappAddonActive(o.store.id),
     embeddedSignup: setup.embeddedSignup ? { appId: metaAppId(), configId: embeddedSignupConfigId(), version: GRAPH_VERSION() } : null,
     // Meta's hosted signup page, tagged with this store (signed) so the callback knows whose number it is
     hostedSignup: hostedSignupUrl() ? withState(hostedSignupUrl()!, signupState(o.store.id)) : null,
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
   const o = await owner();
   if ("error" in o) return o.error;
   if (!whatsappSetupStatus().available) return unavailable();
-  if (!(await hasFeature(o.store.id, "sales_channels"))) return NextResponse.json({ error: "WhatsApp selling is part of a paid plan" }, { status: 403 });
+  if (!(await whatsappAddonActive(o.store.id))) return NextResponse.json({ error: "The WhatsApp shop add-on isn't active for your store" }, { status: 403 });
   const parsed = PostSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Invalid request" }, { status: 422 });
   await ensureSocialTables();

@@ -87,7 +87,7 @@ function SidebarContent({
               ) : (
                 <p className="px-2 pb-0.5 pt-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400 dark:text-zinc-500">{group.label}</p>
               )}
-              {items.map(({ href, label, icon: Icon, pro }) => {
+              {items.map(({ href, label, icon: Icon, pro, tag, color }) => {
                 const active = isActiveHref(pathname, href) || (href !== "/dashboard" && pathname.startsWith(href));
                 const needs = featureForPath(href);
                 const locked = features ? !!needs && !features.includes(needs) : pro && !isPro;
@@ -107,9 +107,13 @@ function SidebarContent({
                         : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100",
                     )}
                   >
-                    <Icon className="h-4 w-4 shrink-0" />
+                    <Icon className="h-4 w-4 shrink-0" style={color && !active ? { color } : undefined} />
                     {!rail && <span className="truncate">{label}</span>}
-                    {!rail && locked && (
+                    {!rail && tag && !badge && (
+                      <span className={cn("ml-auto rounded-full px-1.5 py-px text-[9px] font-bold uppercase tracking-wide", active ? "bg-white/20" : "bg-[#25D366] text-white")}>{tag}</span>
+                    )}
+                    {rail && tag && <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-[#25D366]" />}
+                    {!rail && locked && !tag && (
                       <span className="ml-auto rounded px-1 py-px text-[9px] font-bold uppercase tracking-wide text-amber-700 ring-1 ring-amber-300 dark:text-amber-400 dark:ring-amber-700">Pro</span>
                     )}
                     {badge > 0 &&

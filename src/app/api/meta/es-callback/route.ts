@@ -1,6 +1,6 @@
 import { after, NextRequest, NextResponse } from "next/server";
 import { verifySession, getUserStore } from "@/lib/auth";
-import { hasFeature } from "@/lib/plan";
+import { whatsappAddonActive } from "@/lib/meta/addon";
 import { getAppUrl } from "@/lib/paystack";
 import { hostedSignupUrl, webhookReady } from "@/lib/meta/config";
 import { discoverAccount, exchangeCode, onboard, readSignupState } from "@/lib/meta/connect";
@@ -9,13 +9,13 @@ export const dynamic = "force-dynamic";
 
 // Redirect URI for Meta-hosted Embedded Signup:
 //   https://dukanigeria.com/api/meta/es-callback?code=...&state=...
-// Which store: the signed "state" Duka adds to the link (Channels page), or
+// Which store: the signed "state" Duka adds to the link (WhatsApp shop page), or
 // else whoever is signed in to Duka in this browser. Then the same steps as
 // the popup: code -> token, find the WhatsApp account + number, link to our
-// webhook, register, save, first catalog sync. Always ends on Channels.
+// webhook, register, save, first catalog sync. Always ends on /dashboard/whatsapp.
 
 const back = (status: string, message?: string) => {
-  const u = new URL("/dashboard/channels", getAppUrl());
+  const u = new URL("/dashboard/whatsapp", getAppUrl());
   u.searchParams.set("whatsapp", status);
   if (message) u.searchParams.set("message", message.slice(0, 200));
   return NextResponse.redirect(u, 303);
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
     storeId = store?.id ?? null;
   }
   if (!storeId) return back("error", "Open the link from Dashboard -> Channels while signed in to Duka.");
-  if (!(await hasFeature(storeId, "sales_channels"))) return back("error", "WhatsApp selling is part of a paid plan.");
+  if (!(await whatsappAddonActive(storeId))) return back("error", "The WhatsApp shop add-on isn't active for your store.");
 
   // The code must be exchanged with exactly the redirect URI Meta used
   const redirectUri = `${getAppUrl()}/api/meta/es-callback`;

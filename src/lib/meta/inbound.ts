@@ -3,7 +3,7 @@
 // may deliver twice), answered by the bot, and the conversation's state saved.
 
 import { query, queryOne } from "@/lib/db";
-import { hasFeature } from "@/lib/plan";
+import { whatsappAddonActive } from "@/lib/meta/addon";
 import { ensureSocialTables } from "./db";
 import { handleMessage, type BotState, type BotStore, type Inbound } from "./bot";
 import { connectionForPhoneId, markRead, sendWhatsApp, type WaConnection } from "./whatsapp";
@@ -96,8 +96,8 @@ async function handleOne(conn: WaConnection, m: WaMessage, name: string | null):
   );
   if (!fresh.length) return false;
 
-  // The plan lapsed: stay quiet rather than half-work
-  if (!(await hasFeature(store.id, "sales_channels"))) return false;
+  // Add-on not active (once it's priced): stay quiet rather than half-work
+  if (!(await whatsappAddonActive(store.id))) return false;
 
   void markRead(conn, m.id);
   let inbound = parseInbound(m);

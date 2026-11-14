@@ -227,6 +227,12 @@ export default function WhatsAppChannel() {
       <div className={card}>
         {title}
         {list}
+        {!s.included && (
+          <a href="/dashboard/billing" className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+            <span>The WhatsApp shop add-on isn't active for your store yet.</span>
+            <span className="shrink-0 font-bold underline">See plans</span>
+          </a>
+        )}
         <div className="mt-5 flex flex-wrap gap-2">
           {s.embeddedSignup && (
             <button type="button" onClick={connect} disabled={!!busy || !s.included} className={`${btn} bg-[#25D366] text-white hover:bg-[#1ebe5a]`}>
