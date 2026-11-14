@@ -3,6 +3,7 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Terms of Use & Privacy Policy",
+  alternates: { canonical: "/terms" },
   description:
     "DUKA Terms of Use and Privacy Policy — Powered by Awarizon. Review our platform rules, vendor responsibilities, and data practices.",
 };
@@ -483,6 +484,10 @@ export default function TermsPage() {
             ]} />
             <P>
               Certain information may still be retained where legally required.
+            </P>
+            <P>
+              To delete your account or data, see{" "}
+              <Link href="/data-deletion" className="font-semibold underline">dukanigeria.com/data-deletion</Link>.
             </P>
 
             <H2 id="p10">10. Children&apos;s Privacy</H2>

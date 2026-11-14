@@ -5,6 +5,7 @@ import StorefrontFooter from "@/components/storefront/StorefrontFooter";
 import { loadStoreChrome } from "@/lib/storefront-page";
 import { publishedPage } from "@/lib/store-pages";
 import { plainText } from "@/lib/rich-text";
+import { storeCanonicalBase } from "@/lib/seo";
 
 interface Props {
   params: Promise<{ slug: string; pageSlug: string }>;
@@ -17,7 +18,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const page = await publishedPage(ctx.store.id, "page", pageSlug);
   if (!page) return {};
   const description = plainText(page.body);
-  return { title: page.title, description, openGraph: { title: page.title, description } };
+  const url = `${storeCanonicalBase(ctx.store)}/pages/${pageSlug}`;
+  return { title: page.title, description, alternates: { canonical: url }, openGraph: { title: page.title, description, url } };
 }
 
 export default async function StorePageView({ params }: Props) {

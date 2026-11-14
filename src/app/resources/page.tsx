@@ -4,7 +4,8 @@ import { ArrowRight, Sparkles, CreditCard, Film, LayoutDashboard, TrendingUp, Sh
 import HomeNav from "../HomeNav";
 
 export const metadata = {
-  title: "Resources · Duka by Awarizon",
+  title: "Resources",
+  alternates: { canonical: "/resources" },
   description: "Guides and articles to help you set up, run, and grow your store on Duka.",
 };
 

@@ -40,33 +40,8 @@ export interface ProductPageProps {
   stockAlertsEnabled?: boolean;
 }
 
-/** "2-5 days", "24-48 hours", "3 working days" → whole days [min, max]. */
-export function deliveryDays(frame: string | null | undefined): [number, number] | null {
-  if (!frame) return null;
-  const t = frame.toLowerCase();
-  const range = t.match(/(\d+)\s*(?:-|–|to)\s*(\d+)\s*(h(?:ou)?rs?|days?|working days?|business days?)/);
-  const single = t.match(/(\d+)\s*(h(?:ou)?rs?|days?|working days?|business days?)/);
-  const m = range ?? single;
-  if (!m) return /same.?day|today/.test(t) ? [0, 0] : /next.?day|tomorrow/.test(t) ? [1, 1] : null;
-  const a = Number(m[1]);
-  const b = range ? Number(m[2]) : a;
-  const unit = (range ? m[3] : m[2]) ?? "";
-  const toDays = (n: number) => (unit.startsWith("h") ? Math.ceil(n / 24) : n);
-  const lo = toDays(Math.min(a, b));
-  const hi = toDays(Math.max(a, b));
-  return hi > 60 ? null : [lo, hi];
-}
-
-/** Calendar date `days` from now, counted in working days (Mon–Sat). */
-export function arrivalDate(days: number, from = new Date()): Date {
-  const d = new Date(from);
-  let left = days;
-  while (left > 0) {
-    d.setDate(d.getDate() + 1);
-    if (d.getDay() !== 0) left--;
-  }
-  return d;
-}
+// Shared with the server (structured data for Google), so it lives in lib.
+export { deliveryDays, arrivalDate } from "@/lib/delivery-estimate";
 
 export function useProductPage({ product, storeSlug }: ProductPageProps) {
   const { addItem } = useCart();
@@ -87,6 +62,7 @@ export function useProductPage({ product, storeSlug }: ProductPageProps) {
   const sizes = useMemo(
     () =>
       (product.sizes ?? []).map((s) => ({
+        id: s.id ?? null,
         label: s.label,
         stockQuantity: s.stockQuantity ?? s.stock_quantity ?? 0,
         options: optionsOf(rawOptionNames, s),
@@ -97,6 +73,13 @@ export function useProductPage({ product, storeSlug }: ProductPageProps) {
   );
   const hasSizes = sizes.length > 0;
   const [picked, setPicked] = useState<Record<string, string>>({});
+  // ?variant=<id> (the link Google shows for one variant) opens with it chosen
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("variant");
+    const v = id ? sizes.find((s) => s.id === id) : null;
+    if (v && Object.keys(v.options).length) setPicked({ ...v.options });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const selectedVariant =
     hasSizes && optionNames.every((n) => picked[n])
       ? sizes.find((s) => optionNames.every((n) => s.options[n] === picked[n])) ?? null

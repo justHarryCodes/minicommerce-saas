@@ -35,6 +35,8 @@ import { deliverySettingsOf, podSettingsOf } from "@/lib/delivery";
 import { CustomerMessagesEditor, DeliveryOptionsEditor } from "@/components/dashboard/CheckoutSettings";
 import { paymentSwitches } from "@/lib/duka-pay-shared";
 import CustomDomainSettings from "@/components/dashboard/CustomDomainSettings";
+import GoogleSearchSettings from "@/components/dashboard/GoogleSearchSettings";
+import { getStoreUrl } from "@/lib/utils";
 import DukaPaySettings from "@/components/dashboard/DukaPaySettings";
 import StoreHoursSettings from "@/components/dashboard/StoreHoursSettings";
 import { parseHours } from "@/lib/hours";
@@ -390,6 +392,13 @@ export default function SettingsClient({ store: initial, messaging = { sms: fals
       </section>
 
       <div id="domain" className="scroll-mt-28 xl:scroll-mt-16 min-w-0"><CustomDomainSettings freeAddress={`${store.slug}.${(process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "dukanigeria.com").replace(/^www\./, "")}`} /></div>
+
+      <div id="google" className="scroll-mt-28 xl:scroll-mt-16 min-w-0">
+        <GoogleSearchSettings
+          storeUrl={absoluteStoreUrl(store.slug, store.custom_domain ?? null)}
+          initialCode={(store as { google_site_verification?: string | null }).google_site_verification ?? null}
+        />
+      </div>
 
       {/* Storefront Theme */}
       <section id="appearance" className="scroll-mt-28 xl:scroll-mt-16 bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800 p-6 space-y-5 ">
@@ -820,9 +829,16 @@ export default function SettingsClient({ store: initial, messaging = { sms: fals
   );
 }
 
+/** The store's public address, always absolute (what Search Console needs). */
+function absoluteStoreUrl(slug: string, customDomain: string | null): string {
+  const url = getStoreUrl(slug, customDomain);
+  return url.startsWith("http") ? url : `${(process.env.NEXT_PUBLIC_APP_URL ?? "https://dukanigeria.com").replace(/\/$/, "")}${url}`;
+}
+
 const SETTINGS_SECTIONS: { id: string; label: string }[] = [
   { id: "store", label: "Store info" },
   { id: "domain", label: "Domain" },
+  { id: "google", label: "Google Search" },
   { id: "appearance", label: "Appearance" },
   { id: "payments", label: "Payments" },
   { id: "delivery", label: "Delivery" },

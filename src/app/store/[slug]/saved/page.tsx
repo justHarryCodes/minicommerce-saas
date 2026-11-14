@@ -19,7 +19,7 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
-export const metadata: Metadata = { title: "Saved items", robots: { index: false } };
+export const metadata: Metadata = { title: "Saved items", robots: { index: false, follow: true } };
 
 export default async function StoreSavedPage({ params }: Props) {
   const { slug: paramSlug } = await params;

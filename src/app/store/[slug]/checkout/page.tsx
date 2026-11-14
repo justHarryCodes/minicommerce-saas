@@ -3,11 +3,14 @@ import { getStoreFeatures } from "@/lib/plan";
 import { queryOne } from "@/lib/db";
 import { getOrSet, cacheKey, TTL } from "@/lib/redis";
 import CheckoutClient from "./CheckoutClient";
+import type { Metadata } from "next";
 import { deliverySettingsOf, podSettingsOf } from "@/lib/delivery";
 import { parseHours } from "@/lib/hours";
 import type { Store } from "@/types";
 import { checkoutMethods, dukaPayActive } from "@/lib/duka-pay";
 import { getPlatformSettings } from "@/lib/admin-auth";
+
+export const metadata: Metadata = { title: "Checkout", robots: { index: false, follow: false } };
 
 interface Props {
   params: Promise<{ slug: string }>;

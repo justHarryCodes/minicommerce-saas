@@ -12,6 +12,9 @@ import { footerPages, pageLinksFor } from "@/lib/store-pages";
 import { isSoldOutToday } from "@/lib/hours";
 import type { Testimonial } from "@/lib/themes/types";
 import type { Product, Category, Store } from "@/types";
+import type { Metadata } from "next";
+import { breadcrumbLd, jsonLd, metaText, storeCanonicalBase, storeLd } from "@/lib/seo";
+import { clCrawler } from "@/lib/cloudinary";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -81,6 +84,43 @@ async function getTestimonials(storeId: string) {
 }
 
 /* ───────────────────────────── Page ───────────────────────────── */
+
+async function storeCategories(storeId: string): Promise<Category[]> {
+  return (
+    (await getOrSet<Category[]>(
+      cacheKey.storeCategories(storeId),
+      () => query<Category>("SELECT * FROM categories WHERE store_id = $1 ORDER BY sort_order ASC, name ASC", [storeId]) as Promise<Category[]>,
+      TTL.CATEGORY_LIST
+    )) ?? []
+  );
+}
+
+/**
+ * The homepage, and each category view (?category=shoes) as its own
+ * indexable page with its own title, so "<store> shoes" can rank.
+ */
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const { category, sub } = await searchParams;
+  const store = await getCachedStore(slug);
+  if (!store) return {};
+  const base = storeCanonicalBase(store);
+  const og = { type: "website" as const, siteName: store.name, locale: "en_NG", images: store.logo_url ? [{ url: clCrawler(store.logo_url), alt: store.name }] : [] };
+  if (!category) {
+    const title = store.description ? `${store.name} - ${metaText(store.description, 50)}` : `${store.name} - Shop online`;
+    return { title: { absolute: title }, alternates: { canonical: `${base}/` }, openGraph: { ...og, url: `${base}/`, title } };
+  }
+  const cats = await storeCategories(store.id);
+  const cat = cats.find((c) => c.slug === category && !c.parent_id);
+  // Unknown category: say so to Google rather than index an empty page
+  // (and the built-in "Uncategorized" bucket isn't a page worth ranking)
+  if (!cat || cat.slug === "uncategorized") return { title: { absolute: store.name }, robots: { index: false, follow: true }, alternates: { canonical: `${base}/` } };
+  const subCat = sub ? cats.find((c) => c.slug === sub && c.parent_id === cat.id) : undefined;
+  const name = subCat ? `${subCat.name} - ${cat.name}` : cat.name;
+  const url = `${base}/?category=${encodeURIComponent(cat.slug)}${subCat ? `&sub=${encodeURIComponent(subCat.slug)}` : ""}`;
+  const description = metaText(`Shop ${subCat?.name ?? cat.name} at ${store.name}. Browse prices, order online and get delivery across Nigeria.`);
+  return { title: name, description, alternates: { canonical: url }, openGraph: { ...og, url, title: `${name} | ${store.name}`, description } };
+}
 
 export default async function StorefrontPage({ params, searchParams }: Props) {
   const { slug: paramSlug } = await params;
@@ -181,7 +221,23 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
   const cardFeatured = forCards(featuredProducts);
   const cardRails = forCards(railRows);
 
+  // The store as an online shop (name, logo, contact, returns) and, on a
+  // category view, its breadcrumb trail
+  const base = storeCanonicalBase(store);
+  const ld: unknown[] = storeLd(store);
+  if (activeCategory) {
+    ld.push(
+      breadcrumbLd([
+        { name: store.name, url: `${base}/` },
+        { name: activeCategory.name, url: `${base}/?category=${encodeURIComponent(activeCategory.slug)}` },
+        ...(activeSub ? [{ name: activeSub.name, url: `${base}/?category=${encodeURIComponent(activeCategory.slug)}&sub=${encodeURIComponent(activeSub.slug)}` }] : []),
+      ])
+    );
+  }
+
   return (
+    <>
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(ld) }} />
     <StorefrontHome
       store={store}
       theme={theme}
@@ -200,5 +256,6 @@ export default async function StorefrontPage({ params, searchParams }: Props) {
       testimonials={testimonials}
       footerLinks={footerLinks}
     />
+    </>
   );
 }

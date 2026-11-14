@@ -9,6 +9,7 @@ import StorefrontFooter from "@/components/storefront/StorefrontFooter";
 import { loadStoreChrome } from "@/lib/storefront-page";
 import { blogEnabled, publishedPage } from "@/lib/store-pages";
 import { plainText } from "@/lib/rich-text";
+import { storeCanonicalBase } from "@/lib/seo";
 
 interface Props {
   params: Promise<{ slug: string; postSlug: string }>;
@@ -21,11 +22,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const post = await publishedPage(ctx.store.id, "post", postSlug);
   if (!post) return {};
   const description = post.excerpt || plainText(post.body);
+  const url = `${storeCanonicalBase(ctx.store)}/blog/${postSlug}`;
   return {
     title: post.title,
     description,
+    alternates: { canonical: url },
     openGraph: {
       type: "article",
+      url,
       title: post.title,
       description,
       publishedTime: post.published_at ? new Date(post.published_at).toISOString() : undefined,

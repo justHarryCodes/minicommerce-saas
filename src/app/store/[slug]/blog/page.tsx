@@ -7,6 +7,7 @@ import StorefrontFooter from "@/components/storefront/StorefrontFooter";
 import { loadStoreChrome } from "@/lib/storefront-page";
 import { blogEnabled, publishedPosts } from "@/lib/store-pages";
 import { plainText } from "@/lib/rich-text";
+import { storeCanonicalBase } from "@/lib/seo";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -16,7 +17,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const ctx = await loadStoreChrome(slug);
   if (!ctx) return {};
-  return { title: "Blog", description: `News and stories from ${ctx.store.name}` };
+  const url = `${storeCanonicalBase(ctx.store)}/blog`;
+  return { title: "Blog", description: `News and stories from ${ctx.store.name}`, alternates: { canonical: url }, openGraph: { url } };
 }
 
 export default async function BlogIndex({ params }: Props) {

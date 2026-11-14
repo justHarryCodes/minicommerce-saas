@@ -4,14 +4,20 @@ import { queryOne, query } from "@/lib/db";
 import { getOrSet, reelKey, TTL } from "@/lib/redis";
 import ReelFeed from "@/components/storefront/ReelFeed";
 import type { Reel } from "@/types";
+import type { Metadata } from "next";
+import { getCachedStore } from "@/lib/storefront-page";
+import { storeCanonicalBase } from "@/lib/seo";
 
 interface Props {
   params: Promise<{ slug: string }>;
 }
 
-export async function generateMetadata({ params }: Props) {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  return { title: `Reels — ${slug}` };
+  const store = await getCachedStore(slug);
+  if (!store) return {};
+  const url = `${storeCanonicalBase(store)}/reels`;
+  return { title: "Reels", description: `Watch and shop videos from ${store.name}`, alternates: { canonical: url }, openGraph: { url } };
 }
 
 export default async function StoreReelsPage({ params }: Props) {

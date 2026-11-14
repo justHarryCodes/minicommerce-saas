@@ -8,7 +8,8 @@ interface DiscoverPageProps {
 }
 
 export const metadata = {
-  title: "Discover",
+  title: "Discover Nigerian vendors and products",
+  alternates: { canonical: "/discover" },
   description: "Browse verified vendors and products on Duka across fashion, electronics, food, and more.",
 };
 

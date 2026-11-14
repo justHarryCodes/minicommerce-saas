@@ -11,6 +11,8 @@ import VisitTracker from "@/components/storefront/VisitTracker";
 import AssistantWidget from "@/components/storefront/AssistantWidget";
 import type { Store, Category } from "@/types";
 import type { Metadata } from "next";
+import { metaText, storeCanonicalBase } from "@/lib/seo";
+import { clCrawler } from "@/lib/cloudinary";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -41,14 +43,29 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const store = await getStore(slug);
   if (!store) return {};
+  // Each store is its own site to Google: its own address, name, logo
+  // (favicon in search results) and Search Console verification.
+  // No canonical here: a layout's canonical would be inherited by every
+  // page under it. Pages set their own.
+  const base = storeCanonicalBase(store);
+  const description = metaText(store.description) || metaText(`Shop ${store.name} online. Order easily, pay securely and get delivery across Nigeria.`);
+  const verification = (store as { google_site_verification?: string | null }).google_site_verification;
   return {
+    metadataBase: new URL(`${base}/`),
     title: { default: store.name, template: `%s | ${store.name}` },
-    description: store.description ?? `Shop at ${store.name}`,
+    description,
+    applicationName: store.name,
+    ...(store.logo_url ? { icons: { icon: store.logo_url, apple: store.logo_url } } : {}),
+    ...(verification ? { verification: { google: verification } } : {}),
     openGraph: {
+      type: "website",
+      siteName: store.name,
+      locale: "en_NG",
       title: store.name,
-      description: store.description ?? "",
-      images: store.logo_url ? [store.logo_url] : [],
+      description,
+      images: store.logo_url ? [{ url: clCrawler(store.logo_url), alt: store.name }] : [],
     },
+    twitter: { card: "summary", title: store.name, description, images: store.logo_url ? [clCrawler(store.logo_url)] : [] },
   };
 }
 

@@ -5,9 +5,18 @@ import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { InstallPWAPrompt } from "@/components/InstallPWAPrompt";
 import "./globals.css";
 
+const SITE = (process.env.NEXT_PUBLIC_APP_URL || "https://dukanigeria.com").replace(/\/$/, "");
+
 export const metadata: Metadata = {
+  // Relative canonicals / OG images resolve against this (stores override it with their own address)
+  metadataBase: new URL(`${SITE}/`),
   title: { default: "Duka by Awarizon", template: "%s | Duka" },
-  description: "Discover and shop from verified Nigerian vendors — Duka by Awarizon",
+  description: "Create your online store in Nigeria, or discover and shop from verified Nigerian vendors on Duka.",
+  applicationName: "Duka",
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 } },
+  openGraph: { type: "website", siteName: "Duka", locale: "en_NG", images: [{ url: "/icons/icon-512.png", width: 512, height: 512, alt: "Duka" }] },
+  twitter: { card: "summary" },
+  formatDetection: { telephone: false },
   // Next auto-generates the <link rel="manifest"> from src/app/manifest.ts,
   // and the favicon/apple-touch-icon <link> tags from src/app/icon.png and
   // src/app/apple-icon.png — no manual wiring needed for those.
@@ -15,6 +24,10 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "default",
     title: "Duka",
+  },
+  // Meta Business Manager domain verification for dukanigeria.com
+  other: {
+    "facebook-domain-verification": "zsugitxafytfx03zaswx9pfwhbs1cp",
   },
 };
 
@@ -42,7 +55,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en-NG" suppressHydrationWarning>
       <head>
         {APPLE_SPLASH_SCREENS.map((screen) => (
           <link key={screen.href} rel="apple-touch-startup-image" href={screen.href} media={screen.media} />

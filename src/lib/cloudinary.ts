@@ -58,6 +58,27 @@ export const clThumb = (url: string | null | undefined) =>
 export const clMedium = (url: string | null | undefined) =>
   cl(url, 'f_auto,q_auto:good,c_fill,w_640,h_640');
 
+const WEB_SAFE_EXT = /\.(jpe?g|png|webp|gif)$/i;
+
+/**
+ * For crawlers and link previews (Google, WhatsApp, Facebook): a fixed URL
+ * in a format they all read. f_auto can't be used (they get whatever
+ * Cloudinary picks for *their* user agent), and uploads like .jxl / .heic /
+ * .avif aren't indexed by Google Images, so those are delivered as JPG.
+ * Capped at 1600 px: big enough for Google's large previews.
+ */
+export function clCrawler(url: string | null | undefined): string {
+  if (!url) return '';
+  if (!url.includes(CLOUDINARY_ORIGIN)) return url;
+  const t = cl(url, 'q_auto:good,c_limit,w_1600');
+  const [path, query = ''] = t.split('?');
+  const last = path.slice(path.lastIndexOf('/') + 1);
+  if (WEB_SAFE_EXT.test(last)) return t;
+  const dot = last.lastIndexOf('.');
+  const jpg = `${path.slice(0, path.length - last.length)}${dot > 0 ? last.slice(0, dot) : last}.jpg`;
+  return query ? `${jpg}?${query}` : jpg;
+}
+
 /**
  * True for hosts that already resize/compress via URL params (Unsplash demo
  * photography) — pass as next/image `unoptimized` to skip a pointless

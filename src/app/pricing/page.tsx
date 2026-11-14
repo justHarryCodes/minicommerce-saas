@@ -21,7 +21,8 @@ import HomeNav from "../HomeNav";
 import Footer from "@/components/Footer";
 
 export const metadata = {
-  title: "Pricing · Duka by Awarizon",
+  title: "Pricing",
+  alternates: { canonical: "/pricing" },
   description:
     "Simple, transparent pricing for Nigerian vendors — start free, upgrade when you grow.",
 };

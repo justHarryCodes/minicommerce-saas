@@ -21,7 +21,7 @@ interface Props {
   searchParams: Promise<{ q?: string }>;
 }
 
-export const metadata: Metadata = { title: "Search", robots: { index: false } };
+export const metadata: Metadata = { title: "Search", robots: { index: false, follow: true } };
 
 export default async function StoreSearchPage({ params, searchParams }: Props) {
   const { slug: paramSlug } = await params;

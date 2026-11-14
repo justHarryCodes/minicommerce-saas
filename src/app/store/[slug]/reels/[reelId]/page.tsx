@@ -6,6 +6,8 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import type { Reel } from "@/types";
+import { getCachedStore } from "@/lib/storefront-page";
+import { storeCanonicalBase } from "@/lib/seo";
 
 interface Props {
   params: Promise<{ slug: string; reelId: string }>;
@@ -58,11 +60,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description =
     reel.description ?? `Watch and shop this reel from ${name}`;
   const images = reel.thumbnail_url ? [reel.thumbnail_url] : [];
+  const store = await getCachedStore(slug);
+  const url = store ? `${storeCanonicalBase(store)}/reels/${reelId}` : undefined;
 
   return {
     title,
     description,
+    ...(url ? { alternates: { canonical: url } } : {}),
     openGraph: {
+      ...(url ? { url } : {}),
       title,
       description,
       images,

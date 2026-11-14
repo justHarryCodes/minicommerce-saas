@@ -27,6 +27,16 @@ import HomeNav from "./HomeNav";
 import Footer from "@/components/Footer";
 import GooglePlayBadge from "@/components/GooglePlayBadge";
 import { Bell, Camera, CreditCard } from "lucide-react";
+import type { Metadata } from "next";
+import { jsonLd, platformLd } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: { absolute: "Duka - Create your online store in Nigeria | Sell on WhatsApp & Instagram" },
+  description:
+    "Start your online store free in minutes. Get your own website, take payments by card, transfer and USSD, manage orders and deliveries, and sell on WhatsApp, Instagram and Google.",
+  alternates: { canonical: "/" },
+  keywords: ["online store Nigeria", "ecommerce website Nigeria", "sell on WhatsApp", "sell on Instagram", "Shopify alternative Nigeria", "create online shop", "Duka"],
+};
 
 const CATEGORY_META: Record<string, { icon: string; color: string }> = {
   "Fashion and Clothing": { icon: "👗", color: "#ec4899" },
@@ -306,6 +316,7 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(platformLd()) }} />
       <HomeNav />
 
       {/* ═════════════ HERO ═════════════ */}

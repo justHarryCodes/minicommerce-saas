@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import TrackClient from "./TrackClient";
 
-export const metadata: Metadata = { title: "Track Order" };
+export const metadata: Metadata = { title: "Track Order", robots: { index: false, follow: true } };
 
 interface Props {
   params: Promise<{ slug: string }>;
