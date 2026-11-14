@@ -19,7 +19,9 @@ import {
   Store as StoreIcon,
   ArrowUpRight,
   SlidersHorizontal,
+  Sparkles,
 } from "lucide-react";
+import DiscoverFeed from "@/components/discover/DiscoverFeed";
 import { formatPrice } from "@/lib/utils";
 import ReelStoryStrip from "@/components/discover/ReelStoryStrip";
 import type { Reel } from "@/types";
@@ -74,7 +76,7 @@ interface Props {
   reels: Reel[];
 }
 
-type Tab = "stores" | "products";
+type Tab = "feed" | "stores" | "products";
 type StoreSort = "newest" | "name";
 type ProductSort = "relevance" | "price-asc" | "price-desc";
 
@@ -170,6 +172,7 @@ function TabSwitch({
   onChange: (t: Tab) => void;
 }) {
   const items: { id: Tab; label: string; Icon: typeof StoreIcon }[] = [
+    { id: "feed", label: "For you", Icon: Sparkles },
     { id: "stores", label: "Stores", Icon: StoreIcon },
     { id: "products", label: "Products", Icon: ShoppingBag },
   ];
@@ -177,7 +180,7 @@ function TabSwitch({
     <div
       role="tablist"
       aria-label="Browse by"
-      className="grid w-full grid-cols-2 gap-1 rounded-full p-1 sm:inline-grid sm:w-auto"
+      className="grid w-full grid-cols-3 gap-1 rounded-full p-1 sm:inline-grid sm:w-auto"
       style={{ background: "var(--bg-tertiary)" }}
     >
       {items.map(({ id, label, Icon }) => {
@@ -188,7 +191,7 @@ function TabSwitch({
             role="tab"
             aria-selected={active}
             onClick={() => onChange(id)}
-            className="flex items-center justify-center gap-2 rounded-full px-6 py-2 text-sm font-semibold transition-all"
+            className="flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-sm font-semibold transition-all sm:gap-2 sm:px-5"
             style={{
               background: active ? "var(--accent)" : "transparent",
               color: active ? "#000" : "var(--text-secondary)",
@@ -503,8 +506,8 @@ export default function DiscoverClient({
   reels,
 }: Props) {
   const searchParamsHook = useSearchParams();
-  const tab: Tab =
-    searchParamsHook.get("tab") === "products" ? "products" : "stores";
+  const tabParam = searchParamsHook.get("tab");
+  const tab: Tab = tabParam === "products" ? "products" : tabParam === "stores" ? "stores" : "feed";
   const router = useRouter();
   const [, startTransition] = useTransition();
 
@@ -527,7 +530,7 @@ export default function DiscoverClient({
       const t = opts.tab ?? tab;
       const q = opts.q ?? debouncedSearch;
       if (cat && cat !== "all") params.set("category", cat);
-      if (t === "products") params.set("tab", "products");
+      if (t === "products" || t === "stores") params.set("tab", t);
       if (q.trim()) params.set("q", q.trim());
       const s = params.toString();
       return `/discover${s ? "?" + s : ""}`;
@@ -757,8 +760,39 @@ export default function DiscoverClient({
           </div>
         </div>
 
+        {/* ── For you: the social feed ── */}
+        {tab === "feed" && (
+          <div className="lg:grid lg:grid-cols-[minmax(0,470px)_300px] lg:justify-center lg:gap-10">
+            <DiscoverFeed category={activeCategory} q={debouncedSearch.trim()} onEmptyReset={hasFilters ? resetFilters : undefined} />
+            <aside className="hidden lg:block">
+              <div className="sticky top-24 rounded-xl border p-4" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
+                <p className="mb-3 text-sm font-bold" style={{ color: "var(--text-primary)" }}>Stores to visit</p>
+                <ul className="space-y-3">
+                  {stores.slice(0, 6).map((s) => (
+                    <li key={s.id}>
+                      <Link href={discoverStoreUrl(s.slug)} className="flex items-center gap-3">
+                        <span className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-black" style={{ background: "var(--bg-tertiary)", color: "var(--text-primary)" }}>
+                          {s.logo_url ? <Image src={s.logo_url} alt="" fill sizes="40px" className="object-cover" /> : s.name.charAt(0).toUpperCase()}
+                        </span>
+                        <span className="min-w-0 flex-1 leading-tight">
+                          <span className="block truncate text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{s.name}</span>
+                          <span className="block truncate text-xs" style={{ color: "var(--text-muted)" }}>{s.primary_category && s.primary_category !== "Other" ? s.primary_category : "Store"}</span>
+                        </span>
+                        <span className="text-xs font-bold" style={{ color: "var(--accent-dark, var(--text-primary))" }}>Visit</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+                <button type="button" onClick={() => handleTabChange("stores")} className="mt-4 w-full rounded-lg py-2 text-xs font-bold" style={{ background: "var(--bg-tertiary)", color: "var(--text-primary)" }}>
+                  See all stores
+                </button>
+              </div>
+            </aside>
+          </div>
+        )}
+
         {/* Results bar */}
-        <div className="mb-5 flex items-center justify-between gap-3">
+        <div className={`mb-5 items-center justify-between gap-3 ${tab === "feed" ? "hidden" : "flex"}`}>
           <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
             {tab === "products" && productsLoading ? (
               "Searching…"

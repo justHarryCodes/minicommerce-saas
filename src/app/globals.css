@@ -179,3 +179,16 @@ html {
 :root { color-scheme: light; }
 .dark { color-scheme: dark; }
 .dark select option { background-color: #18181b; color: #fafafa; }
+
+/* Discover feed: double-tap heart */
+@keyframes feed-heart {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+  15% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+  30% { transform: translate(-50%, -50%) scale(0.95); }
+  45% { transform: translate(-50%, -50%) scale(1); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-\[feed-heart_\.8s_ease-out_forwards\] { animation-duration: 0.01s !important; }
+}
