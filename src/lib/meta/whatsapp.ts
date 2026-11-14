@@ -55,7 +55,11 @@ export type WaOutgoing =
   | { kind: "buttons"; body: string; buttons: WaButton[]; header?: { text?: string; image?: string }; footer?: string }
   | { kind: "list"; body: string; button: string; sections: { title?: string; rows: WaRow[] }[]; header?: string; footer?: string }
   | { kind: "cta"; body: string; label: string; url: string; header?: string; footer?: string }
-  | { kind: "image"; image: string; caption?: string };
+  | { kind: "image"; image: string; caption?: string }
+  // Native catalog messages (the store's Meta catalog must be linked)
+  | { kind: "product_list"; catalogId: string; header: string; body: string; sections: { title: string; ids: string[] }[]; footer?: string }
+  | { kind: "product"; catalogId: string; id: string; body?: string; footer?: string }
+  | { kind: "catalog"; body: string; thumbnailId?: string; footer?: string };
 
 /** The Cloud API payload for one message (exported for tests). */
 export function waPayload(to: string, m: WaOutgoing): Record<string, unknown> {
@@ -103,6 +107,35 @@ export function waPayload(to: string, m: WaOutgoing): Record<string, unknown> {
         },
       };
     }
+    case "product_list": {
+      // 30 products max across up to 10 sections
+      let left = 30;
+      const sections = m.sections
+        .slice(0, 10)
+        .map((s) => {
+          const ids = s.ids.slice(0, Math.max(0, left));
+          left -= ids.length;
+          return { title: cut(s.title, 24), product_items: ids.map((id) => ({ product_retailer_id: id })) };
+        })
+        .filter((s) => s.product_items.length);
+      return {
+        ...base,
+        type: "interactive",
+        interactive: { type: "product_list", header: { type: "text", text: cut(m.header, 60) }, body: { text: cut(m.body, 1024) }, ...footer(m.footer), action: { catalog_id: m.catalogId, sections } },
+      };
+    }
+    case "product":
+      return {
+        ...base,
+        type: "interactive",
+        interactive: { type: "product", ...(m.body ? { body: { text: cut(m.body, 1024) } } : {}), ...footer(m.footer), action: { catalog_id: m.catalogId, product_retailer_id: m.id } },
+      };
+    case "catalog":
+      return {
+        ...base,
+        type: "interactive",
+        interactive: { type: "catalog_message", body: { text: cut(m.body, 1024) }, ...footer(m.footer), action: { name: "catalog_message", ...(m.thumbnailId ? { parameters: { thumbnail_product_retailer_id: m.thumbnailId } } : {}) } },
+      };
     case "cta":
       return {
         ...base,

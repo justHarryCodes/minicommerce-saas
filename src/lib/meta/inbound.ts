@@ -7,6 +7,7 @@ import { hasFeature } from "@/lib/plan";
 import { ensureSocialTables } from "./db";
 import { handleMessage, type BotState, type BotStore, type Inbound } from "./bot";
 import { connectionForPhoneId, markRead, sendWhatsApp, type WaConnection } from "./whatsapp";
+import { resolveRetailerIds } from "./catalog";
 
 interface WaMessage {
   id: string;
@@ -99,9 +100,23 @@ async function handleOne(conn: WaConnection, m: WaMessage, name: string | null):
   if (!(await hasFeature(store.id, "sales_channels"))) return false;
 
   void markRead(conn, m.id);
+  let inbound = parseInbound(m);
+  // WhatsApp cart orders name items by catalog retailer ID: map them to Duka products
+  if (inbound.kind === "order") {
+    const ids = await resolveRetailerIds(store.id, inbound.items.map((i) => i.product_retailer_id));
+    inbound = {
+      kind: "order",
+      items: inbound.items
+        .filter((i) => ids.has(i.product_retailer_id))
+        .map((i) => {
+          const r = ids.get(i.product_retailer_id)!;
+          return { product_retailer_id: r.v ? `${r.p}:${r.v}` : r.p, quantity: i.quantity };
+        }),
+    };
+  }
   const result = await handleMessage(
-    { store, state: conv.state ?? {}, conversationId: conv.id, customer: { ref: m.from, name } },
-    parseInbound(m),
+    { store, catalogId: conn.catalog_id, state: conv.state ?? {}, conversationId: conv.id, customer: { ref: m.from, name } },
+    inbound,
   );
   for (const reply of result.replies) await sendWhatsApp(conn, m.from, reply, conv.id);
   await query(`UPDATE social_conversations SET state = $2, updated_at = NOW() WHERE id = $1`, [conv.id, JSON.stringify(result.state)]);

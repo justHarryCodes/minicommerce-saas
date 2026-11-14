@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
-import { AlertTriangle, CheckCircle2, Copy, Loader2, MessageCircle, Pause, Play, Unplug } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Copy, Loader2, MessageCircle, Pause, Play, RefreshCw, ShoppingBag, Unplug } from "lucide-react";
 
 // Dashboard -> Channels -> WhatsApp shop. Shoppers browse, add to cart and
 // check out inside WhatsApp; the vendor connects their number with Meta's
@@ -13,8 +13,13 @@ interface Status {
   available: boolean;
   included: boolean;
   embeddedSignup: { appId: string; configId: string; version: string } | null;
+  /** Meta's hosted signup page (link), when configured */
+  hostedSignup: string | null;
   admin: { missing: string[]; testNumber: boolean } | null;
-  connection: { display_name: string | null; display_phone: string | null; status: "active" | "paused" | "error"; token_source: string; connected_at: string; last_error: string | null } | null;
+  connection: {
+    display_name: string | null; display_phone: string | null; status: "active" | "paused" | "error"; token_source: string; connected_at: string; last_error: string | null;
+    catalog_id: string | null; catalog_synced_at: string | null; catalog_error: string | null; catalog_items: number;
+  } | null;
   stats: { chats: number; carts: number; orders: number } | null;
 }
 
@@ -52,7 +57,7 @@ const FEATURES = [
 export default function WhatsAppChannel() {
   const [s, setS] = useState<Status | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const signup = useRef<{ wabaId?: string; phoneNumberId?: string }>({});
+  const signup = useRef<{ wabaId?: string; phoneNumberId?: string; businessId?: string }>({});
 
   const load = useCallback(async () => {
     const res = await fetch("/api/dashboard/whatsapp").catch(() => null);
@@ -61,6 +66,18 @@ export default function WhatsAppChannel() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Back from Meta's hosted signup page (/api/meta/es-callback -> ?whatsapp=...)
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search);
+    const r = sp.get("whatsapp");
+    if (!r) return;
+    if (r === "connected") toast.success("WhatsApp connected 🎉 Send your number a 'Hi' to try it.");
+    else toast.error(sp.get("message") ?? (r === "cancelled" ? "WhatsApp signup was cancelled." : "Couldn't connect WhatsApp."));
+    sp.delete("whatsapp");
+    sp.delete("message");
+    window.history.replaceState(null, "", `${window.location.pathname}${sp.toString() ? `?${sp}` : ""}`);
+  }, []);
 
   // Meta's popup (Embedded Signup v4) reports the chosen account and number by postMessage:
   // FINISH {waba_id, phone_number_id}, FINISH_ONLY_WABA (no number), CANCEL, ERROR
@@ -71,7 +88,7 @@ export default function WhatsAppChannel() {
         const d = typeof e.data === "string" ? JSON.parse(e.data) : e.data;
         if (d?.type !== "WA_EMBEDDED_SIGNUP") return;
         if (String(d.event).startsWith("FINISH") && d.data) {
-          signup.current = { wabaId: d.data.waba_id, phoneNumberId: d.data.phone_number_id };
+          signup.current = { wabaId: d.data.waba_id, phoneNumberId: d.data.phone_number_id, businessId: d.data.business_id };
         } else if (d.event === "ERROR") {
           toast.error(d.data?.error_message ?? "Meta couldn't finish connecting your WhatsApp.");
         }
@@ -99,6 +116,30 @@ export default function WhatsAppChannel() {
     }
   }
 
+  async function syncNow() {
+    setBusy("sync");
+    try {
+      const res = await fetch("/api/dashboard/whatsapp/catalog", { method: "POST" });
+      const r = await res.json().catch(() => ({}));
+      if (!res.ok || !r.ok) throw new Error(r.error ?? "Sync failed");
+      const parts = [
+        r.pushed && `${r.pushed} sent to WhatsApp`,
+        r.imported && `${r.imported} new from WhatsApp`,
+        r.pulled && `${r.pulled} updated from WhatsApp`,
+        r.removed && `${r.removed} removed`,
+        r.hidden && `${r.hidden} hidden (deleted in WhatsApp)`,
+        r.skipped && `${r.skipped} skipped (plan limit or missing price)`,
+      ].filter(Boolean);
+      toast.success(parts.length ? `Synced: ${parts.join(", ")}` : "Everything's already in sync");
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Sync failed");
+      await load();
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function connect() {
     if (!s?.embeddedSignup) return;
     setBusy("connect");
@@ -113,7 +154,7 @@ export default function WhatsAppChannel() {
           extras: { setup: {} },
         }),
       );
-      const { wabaId, phoneNumberId } = signup.current;
+      const { wabaId, phoneNumberId, businessId } = signup.current;
       if (!code || !wabaId || !phoneNumberId) {
         setBusy(null);
         return toast.error(
@@ -122,7 +163,7 @@ export default function WhatsAppChannel() {
             : "Connection wasn't finished. Try again and tap Finish on the last step.",
         );
       }
-      if (await call("POST", { action: "embedded_signup", code, wabaId, phoneNumberId }, "connect")) toast.success("WhatsApp connected 🎉 Send your number a 'Hi' to try it.");
+      if (await call("POST", { action: "embedded_signup", code, wabaId, phoneNumberId, ...(businessId ? { businessId } : {}) }, "connect")) toast.success("WhatsApp connected 🎉 Send your number a 'Hi' to try it.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't open Facebook");
       setBusy(null);
@@ -192,6 +233,11 @@ export default function WhatsAppChannel() {
               {busy === "connect" ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />} Connect WhatsApp
             </button>
           )}
+          {s.hostedSignup && s.included && (
+            <a href={s.hostedSignup} className={`${btn} ${s.embeddedSignup ? "border border-surface-200 text-surface-700 dark:border-surface-700 dark:text-surface-200" : "bg-[#25D366] text-white hover:bg-[#1ebe5a]"}`}>
+              <MessageCircle className="h-4 w-4" /> {s.embeddedSignup ? "Connect on Meta's page" : "Connect WhatsApp"}
+            </a>
+          )}
           {s.admin?.testNumber && (
             <button type="button" onClick={() => call("POST", { action: "test_number" }, "test").then((ok) => ok && toast.success("Test number connected"))} disabled={!!busy} className={`${btn} border border-surface-200 text-surface-700 dark:border-surface-700 dark:text-surface-200`}>
               {busy === "test" && <Loader2 className="h-4 w-4 animate-spin" />} Use Meta test number (admin)
@@ -247,6 +293,33 @@ export default function WhatsAppChannel() {
           ))}
         </div>
       )}
+
+      {/* Catalog: Duka products <-> the WhatsApp shop, both ways */}
+      <div className="mt-4 rounded-xl border border-surface-100 p-4 dark:border-surface-800">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="flex items-center gap-1.5 text-sm font-semibold text-surface-900 dark:text-white">
+              <ShoppingBag className="h-4 w-4" /> WhatsApp catalog
+            </p>
+            <p className="mt-0.5 text-xs text-surface-500">
+              {c.catalog_synced_at
+                ? `${c.catalog_items} product${c.catalog_items === 1 ? "" : "s"} in sync · last synced ${new Date(c.catalog_synced_at).toLocaleString("en-NG", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`
+                : "Not synced yet"}
+            </p>
+          </div>
+          <button type="button" onClick={syncNow} disabled={!!busy} className={`${btn} border border-surface-200 text-surface-700 dark:border-surface-700 dark:text-surface-200`}>
+            {busy === "sync" ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} Sync now
+          </button>
+        </div>
+        <p className="mt-2 text-xs text-surface-500">
+          Your products show in WhatsApp&apos;s own shop (the 🛍️ icon in your chat), with cart. It works both ways: products you add or edit in your WhatsApp catalog come into Duka too. Syncs every 30 minutes.
+        </p>
+        {c.catalog_error && (
+          <p className="mt-2 flex gap-2 rounded-lg bg-amber-50 p-2.5 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+            <AlertTriangle className="h-4 w-4 shrink-0" /> {c.catalog_error}
+          </p>
+        )}
+      </div>
 
       {shopLink && (
         <div className="mt-4">

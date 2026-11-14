@@ -62,3 +62,23 @@ CREATE TABLE IF NOT EXISTS social_cart_links (
   expires_at      TIMESTAMPTZ NOT NULL DEFAULT NOW() + INTERVAL '7 days'
 );
 CREATE INDEX IF NOT EXISTS social_cart_links_order ON social_cart_links (order_id) WHERE order_id IS NOT NULL;
+
+-- Catalog sync (Duka <-> the store's Meta catalog behind WhatsApp)
+ALTER TABLE social_connections ADD COLUMN IF NOT EXISTS business_id TEXT;
+ALTER TABLE social_connections ADD COLUMN IF NOT EXISTS catalog_synced_at TIMESTAMPTZ;
+ALTER TABLE social_connections ADD COLUMN IF NOT EXISTS catalog_error TEXT;
+
+-- One row per catalog item: which Duka product/variant it is, and what each
+-- side looked like at the last sync (to tell who changed what)
+CREATE TABLE IF NOT EXISTS social_catalog_items (
+  store_id     UUID NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+  retailer_id  TEXT NOT NULL,
+  product_id   UUID REFERENCES products(id) ON DELETE SET NULL,  -- kept so the item is removed from Meta too
+  variant_id   UUID,
+  meta_item_id TEXT,
+  local_hash   TEXT,
+  remote_hash  TEXT,
+  synced_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (store_id, retailer_id)
+);
+CREATE INDEX IF NOT EXISTS social_catalog_items_product ON social_catalog_items (product_id);

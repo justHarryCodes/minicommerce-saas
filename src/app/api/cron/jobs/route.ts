@@ -10,6 +10,7 @@ import { refreshPendingDomains, syncCustomDomainsWithPlans } from "@/lib/domains
 import { reconcilePendingPayments } from "@/lib/payments";
 import { getPlatformSettings } from "@/lib/admin-auth";
 import { sendDueSetupReminders } from "@/lib/notify/setup-reminders";
+import { syncAllCatalogs } from "@/lib/meta/catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,7 @@ async function run(req: NextRequest) {
   if (!process.env.CRON_SECRET) return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 503 });
   if (!authorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const settings = await getPlatformSettings().catch(() => null);
-  const [carts, bookings, domains, payments, setupReminders] = await Promise.all([
+  const [carts, bookings, domains, payments, setupReminders, catalogs] = await Promise.all([
     sendDueCartReminders(),
     sendDueBookingReminders(),
     // Domains Cloudflare has verified since we last looked, then plan sync
@@ -38,8 +39,10 @@ async function run(req: NextRequest) {
       signups: 0,
       skipped: err instanceof Error ? err.message : "failed",
     })),
+    // WhatsApp / Meta catalogs <-> Duka products, both ways (does nothing without Meta keys)
+    syncAllCatalogs().catch((err) => ({ stores: 0, failed: 0, error: err instanceof Error ? err.message : "failed" })),
   ]);
-  return NextResponse.json({ ok: true, carts, bookings, domains, payments, setupReminders });
+  return NextResponse.json({ ok: true, carts, bookings, domains, payments, setupReminders, catalogs });
 }
 
 export const GET = run;

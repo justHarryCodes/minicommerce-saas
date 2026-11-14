@@ -38,7 +38,7 @@ export function testNumberReady(): boolean {
 
 /** WhatsApp selling can be offered at all on this deployment. */
 export function whatsappAvailable(): boolean {
-  return webhookReady() && (embeddedSignupReady() || testNumberReady());
+  return webhookReady() && (embeddedSignupReady() || testNumberReady() || !!hostedSignupUrl());
 }
 
 export function metaAppId(): string {
@@ -53,7 +53,15 @@ export function webhookVerifyToken(): string {
 export function embeddedSignupConfigId(): string {
   return env("META_ES_CONFIG_ID");
 }
-export function testNumber(): { phoneNumberId: string; wabaId: string; token: string } | null {
+/**
+ * Meta-hosted Embedded Signup link (App Dashboard -> WhatsApp -> Embedded
+ * Signup -> "Generate link"), with redirect URI https://<site>/api/meta/es-callback.
+ */
+export function hostedSignupUrl(): string | null {
+  const u = env("META_ES_HOSTED_URL");
+  return /^https:\/\/[^\s]+$/.test(u) && !!env("META_APP_SECRET") && tokenCryptoReady() ? u : null;
+}
+export function testNumber():{ phoneNumberId: string; wabaId: string; token: string } | null {
   return testNumberReady()
     ? { phoneNumberId: env("WHATSAPP_TEST_PHONE_NUMBER_ID"), wabaId: env("WHATSAPP_TEST_WABA_ID"), token: env("WHATSAPP_TEST_ACCESS_TOKEN") }
     : null;

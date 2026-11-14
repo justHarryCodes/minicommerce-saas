@@ -31,6 +31,8 @@ export interface BotState {
   cart?: ChatCartLine[];
   /** What the next free-text message means */
   await?: "search" | "message" | null;
+  /** The last product page shown, so "more" opens the next one */
+  last?: { cat: string | null; page: number } | null;
 }
 
 export type Inbound =
@@ -41,6 +43,8 @@ export type Inbound =
 
 export interface BotContext {
   store: BotStore;
+  /** The store's synced Meta catalog: products are shown with WhatsApp's own product cards */
+  catalogId?: string | null;
   state: BotState;
   conversationId: string | null;
   customer: { ref: string; name?: string | null };
@@ -130,6 +134,17 @@ async function product(storeId: string, id: string) {
   return queryOne<ProductRow>(`SELECT ${PRODUCT_COLS} FROM products p WHERE p.store_id = $1 AND p.id = $2 AND p.is_active = true`, [storeId, id]);
 }
 
+/** Retailer IDs of products already live in the store's Meta catalog (simple products only). */
+async function catalogIds(storeId: string, productIds: string[]): Promise<Map<string, string>> {
+  if (!productIds.length) return new Map();
+  const rows = await query<{ product_id: string; retailer_id: string }>(
+    `SELECT product_id, retailer_id FROM social_catalog_items
+      WHERE store_id = $1 AND product_id = ANY($2::uuid[]) AND variant_id IS NULL AND meta_item_id IS NOT NULL`,
+    [storeId, productIds],
+  ).catch(() => []);
+  return new Map(rows.map((r) => [r.product_id, r.retailer_id]));
+}
+
 async function variants(productId: string) {
   return query<{ id: string; label: string; price: string | null; stock_quantity: number | null }>(
     `SELECT id, label, price, stock_quantity FROM product_sizes WHERE product_id = $1 ORDER BY sort_order, created_at`,
@@ -159,7 +174,8 @@ function menu(ctx: BotContext, intro?: string): WaOutgoing {
       {
         title: "Shop",
         rows: [
-          { id: "cats", title: "🛍️ Browse products", description: "See everything by category" },
+          ...(ctx.catalogId ? [{ id: "catalog", title: "🛍️ View catalog", description: "Our full shop with photos and prices" }] : []),
+          { id: "cats", title: ctx.catalogId ? "📂 Browse by category" : "🛍️ Browse products", description: "See everything by category" },
           { id: "search", title: "🔍 Search", description: "Find something specific" },
           { id: "cart", title: `🛒 My cart${n ? ` (${n})` : ""}`, description: n ? "Review and check out" : "Your cart is empty" },
         ],
@@ -306,6 +322,7 @@ export async function handleMessage(ctx: BotContext, msg: Inbound): Promise<BotR
     if (/^(cart|my cart|basket)$/.test(lower)) return done(await cartView(c));
     if (/^(checkout|check out|pay|buy)$/.test(lower)) return done(await checkout(c));
     if (/^(orders?|track|track order|my orders?)$/.test(lower)) return done(await recentOrders(c));
+    if (/^(more|next|next page|see more)$/.test(lower) && state.last) return done(await listProducts(c, state.last.cat, state.last.page + 1));
     // Anything else is a search
     state.await = null;
     const found = await search(ctx.store.id, text.slice(0, 60));
@@ -343,6 +360,9 @@ export async function handleMessage(ctx: BotContext, msg: Inbound): Promise<BotR
     case "clear":
       state.cart = [];
       return done({ kind: "buttons", body: "🧹 Cart cleared.", buttons: [{ id: "cats", title: "Browse products" }, { id: "menu", title: "Menu" }] });
+    case "catalog":
+      if (ctx.catalogId) return done({ kind: "catalog", body: `🛍️ Here's the full *${ctx.store.name}* catalog. Add items to your cart, then tap *Send* and I'll take you to checkout.` });
+      return done(await listProducts(c, null, 1));
     case "cats": {
       const cats = await categories(ctx.store.id);
       if (cats.length <= 1) return done(await listProducts(c, null, 1));
@@ -361,6 +381,10 @@ export async function handleMessage(ctx: BotContext, msg: Inbound): Promise<BotR
       const p = await product(ctx.store.id, a ?? "");
       if (!p) return done(menu(c, "That product isn't available any more. 😔"));
       const vs = p.has_sizes ? await variants(p.id) : [];
+      if (!vs.length && ctx.catalogId && Number(p.stock_quantity ?? 0) > 0) {
+        const id = (await catalogIds(ctx.store.id, [p.id])).get(p.id);
+        if (id) return done({ kind: "product", catalogId: ctx.catalogId, id, body: `Tap the product to see photos, then *Add to cart* 🛒` });
+      }
       return done(productCard(p, { variantsCount: vs.length }));
     }
     case "opts": {
@@ -412,7 +436,21 @@ export async function handleMessage(ctx: BotContext, msg: Inbound): Promise<BotR
 
 async function listProducts(c: BotContext, categoryId: string | null, page: number): Promise<WaOutgoing> {
   const { rows, more } = await productPage(c.store.id, categoryId, page);
+  c.state.last = rows.length ? { cat: categoryId, page } : null;
   if (!rows.length) return menu(c, page > 1 ? "That's everything! 🎉" : `${c.store.name} hasn't added products here yet. Check back soon!`);
+  // Native product cards when every product on this page is in the synced catalog
+  if (c.catalogId && !rows.some((r) => r.has_sizes)) {
+    const ids = await catalogIds(c.store.id, rows.map((r) => r.id));
+    if (ids.size === rows.length) {
+      return {
+        kind: "product_list",
+        catalogId: c.catalogId,
+        header: c.store.name,
+        body: `Tap a product for photos and details, add to cart, then tap *Send* to check out 🛒${more ? "\n\nType *more* for the next page." : ""}`,
+        sections: [{ title: page > 1 ? `Page ${page}` : "Products", ids: rows.map((r) => ids.get(r.id)!) }],
+      };
+    }
+  }
   return {
     kind: "list",
     body: page > 1 ? `More products (page ${page}) 👇` : "Tap a product to see photos and price 👇",
