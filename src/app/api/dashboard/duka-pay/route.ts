@@ -4,6 +4,7 @@ import { verifySession } from "@/lib/auth";
 import { getStoreFor } from "@/lib/access";
 import { query, queryOne } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { getPlatformSettings } from "@/lib/admin-auth";
 import { invalidateStore } from "@/lib/store-cache";
 import { listBanks, platformFeePercent, resolveAccount, upsertSubaccount } from "@/lib/duka-pay";
 
@@ -54,9 +55,10 @@ export async function GET() {
   const store = await getStoreFor(user, "owner");
   if (!store) return NextResponse.json({ error: "Only the store owner can manage payouts" }, { status: 403 });
 
-  const [row, banks] = await Promise.all([payoutRow(store.id), listBanks()]);
+  const [row, banks, settings] = await Promise.all([payoutRow(store.id), listBanks(), getPlatformSettings()]);
   if (!row) return NextResponse.json({ error: "No store" }, { status: 404 });
-  return NextResponse.json({ data: view(row), banks });
+  // allowManualTransfers: whether Duka currently lets stores take manual bank transfers (the app hides the switch if not)
+  return NextResponse.json({ data: view(row), banks, allowManualTransfers: settings.allow_manual_transfers });
 }
 
 const ConnectSchema = z.object({
