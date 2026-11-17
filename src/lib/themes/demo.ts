@@ -75,6 +75,154 @@ const FOOD: DemoSeed = {
   ],
 };
 
+const STREETWEAR: DemoSeed = {
+  name: "Kicks & Co.",
+  description: "Authentic sneakers and streetwear, delivered across Nigeria. New drops every week.",
+  banners: ["1597045566677-8cf032ed6634", "1552346154-21d32810aba3", "1514989940723-e8e51635b782"],
+  categories: ["Sneakers", "Basketball", "Running", "Apparel", "Accessories"],
+  products: [
+    ["Retro High OG", "1597045566677-8cf032ed6634", 185000, "Basketball", "Premium leather high-top with the classic colour blocking.", 210000],
+    ["Retro Low Court", "1552346154-21d32810aba3", 165000, "Basketball", "Low-cut court icon in black, red and white."],
+    ["Triple White Low", "1600269452121-4f2416e55c28", 95000, "Sneakers", "Clean all-white leather. Goes with everything."],
+    ["Air Cushion Runner", "1600185365483-26d7a4cc7519", 78000, "Running", "Visible cushioning and a soft mesh upper.", 90000],
+    ["Volt Trainer", "1606107557195-0e29a4b5b4aa", 72000, "Running", "Bright, light and grippy. Made for the gym and the streets."],
+    ["Knit Speed Runner", "1542291026-7eec264c27ff", 68000, "Running", "Sock-like knit upper with a springy sole."],
+    ["Canvas Skate Low", "1525966222134-fcfa99b8ae77", 45000, "Sneakers", "Durable canvas skate shoe with the side stripe."],
+    ["Heritage 90 Runner", "1514989940723-e8e51635b782", 98000, "Sneakers", "Suede and mesh retro runner in a bold colourway.", 115000],
+    ["Workwear Court", "1549298916-b41d501d3772", 110000, "Sneakers", "Rugged canvas court shoe with a gum-coloured sole."],
+    ["Street Trainer", "1595341888016-a392ef81b7de", 62000, "Sneakers", "Chunky trainer with layered overlays."],
+    ["Phantom Trainer", "1491553895911-0055eca6402d", 88000, "Running", "Sleek black trainer with a sculpted midsole."],
+    ["Heavyweight Hoodie", "1556821840-3a63f95609a7", 35000, "Apparel", "450gsm brushed fleece with a relaxed fit.", 42000],
+    ["Graphic Tee", "1503342217505-b0a15ec3261c", 15000, "Apparel", "Boxy fit, heavyweight cotton, screen-printed front."],
+    ["Rib-Knit Beanie", "1576871337632-b9aef4c17ab9", 9500, "Accessories", "Soft rib knit with a woven label."],
+    ["Trucker Cap", "1588850561407-ed78c282e89b", 8500, "Accessories", "Foam front, mesh back, snapback fit."],
+  ],
+  reviews: [
+    ["Chidi A.", "100% authentic, came with the original box and receipt. Delivery to Abuja took two days.", 0],
+    ["Tolu B.", "The hoodie is so thick and the fit is perfect. Already ordered a second colour.", 11],
+    ["Musa K.", "Sized up on their advice on WhatsApp and the runners fit perfectly.", 3],
+  ],
+};
+
+const FITNESS: DemoSeed = {
+  name: "Peak Athletics",
+  description: "Gym equipment, activewear and supplements for every fitness journey. Delivered nationwide.",
+  banners: ["1581009146145-b5ef050c2e1e", "1599058917212-d750089bc07e", "1594381898411-846e7d193883"],
+  categories: ["Equipment", "Activewear", "Footwear", "Nutrition", "Accessories", "Sports"],
+  products: [
+    ["Hex Dumbbell Pair (10kg)", "1638536532686-d610adfc8e5c", 38000, "Equipment", "Rubber-coated hex heads that don't roll, with knurled chrome handles.", 45000],
+    ["Dumbbell Rack Set", "1576678927484-cc907957088c", 320000, "Equipment", "Ten pairs from 2.5kg to 25kg with a two-tier steel rack."],
+    ["Olympic Weight Plates", "1620188467120-5042ed1eb5da", 85000, "Equipment", "Bumper plates with steel inserts. Sold as a 2 x 20kg pair."],
+    ["Competition Kettlebell 16kg", "1601422407692-ec4eeec1d9b3", 32000, "Equipment", "Single-cast steel bell with a smooth, wide handle."],
+    ["Neoprene Dumbbells (2kg)", "1586401100295-7a8096fd231a", 9500, "Equipment", "Soft-grip pair for toning, pilates and home workouts."],
+    ["Resistance Band Kit", "1584735935682-2f2b69dff9d2", 12000, "Accessories", "Five bands, handles, ankle straps and a door anchor.", 15000],
+    ["Premium Yoga Mat", "1592432678016-e910b452f9a2", 18000, "Accessories", "6mm non-slip mat with alignment lines and a carry strap."],
+    ["Smart Fitness Band", "1575311373937-040b8e1fd5b6", 35000, "Accessories", "Heart rate, steps, sleep and workouts. Seven-day battery."],
+    ["Gym Backpack", "1553062407-98eeb64c6a62", 28000, "Accessories", "Shoe compartment, laptop sleeve and water-resistant base."],
+    ["Whey Protein Shake (2lb)", "1579722821273-0f6c7d44362f", 42000, "Nutrition", "24g protein per scoop. Strawberry, chocolate or vanilla.", 48000],
+    ["Training Sneakers", "1556906781-9a412961c28c", 78000, "Footwear", "Stable heel for lifting, flexible forefoot for cardio.", 92000],
+    ["Sculpt Sports Bra", "1594381898411-846e7d193883", 15000, "Activewear", "Medium support, sweat-wicking and squat-proof."],
+    ["DryFit Training Tee", "1521572163474-6864f9cf17ab", 12000, "Activewear", "Lightweight, quick-dry fabric that moves with you."],
+    ["Match Football", "1614632537190-23e4146777db", 22000, "Sports", "Thermo-bonded panels for a true flight. Size 5.", 26000],
+    ["Pro Basketball", "1519861531473-9200262188bf", 25000, "Sports", "Indoor/outdoor composite leather with deep channels."],
+  ],
+  reviews: [
+    ["Ahmed R.", "Fast delivery and the dumbbells are solid. My home workouts are a different level now.", 0],
+    ["Sara K.", "Great products and support. The yoga mat grips perfectly, even in a hot room.", 6],
+    ["Usman T.", "The protein mixes smooth and tastes great. Already on my second tub.", 9],
+  ],
+};
+
+const LIFESTYLE: DemoSeed = {
+  name: "Nova Trend",
+  description: "Trending fashion, tech, beauty and home picks, curated for modern lifestyles.",
+  banners: ["1515886657613-9f3515b0c78f", "1503342217505-b0a15ec3261c", "1517841905240-472988babdf9"],
+  categories: ["Fashion", "Shoes", "Electronics", "Beauty", "Accessories", "Home"],
+  products: [
+    ["Essential Hoodie", "1556821840-3a63f95609a7", 28000, "Fashion", "Soft brushed fleece with a relaxed, everyday fit."],
+    ["Bomber Jacket", "1591047139829-d91aecb6caea", 45000, "Fashion", "Lightweight satin bomber in a warm rust tone.", 52000],
+    ["Logo Tee", "1618354691373-d851c5c3a990", 12000, "Fashion", "Heavyweight cotton tee with a small chest print."],
+    ["Knit Poncho", "1434389677669-e08b4cac3105", 22000, "Fashion", "Open-knit cotton poncho with a fringed hem."],
+    ["Air Cushion Sneakers", "1600185365483-26d7a4cc7519", 78000, "Shoes", "Visible air cushioning and a breathable upper.", 90000],
+    ["Colour Pop Runners", "1560769629-975ec94e6a86", 65000, "Shoes", "Bold colour blocking on a light, springy sole."],
+    ["Wireless Headphones", "1505740420928-5e560c06d30e", 39000, "Electronics", "Thirty-hour battery and deep, punchy bass."],
+    ["Studio Headphones", "1583394838336-acd977736f90", 55000, "Electronics", "Noise cancelling with plush memory-foam cushions.", 65000],
+    ["Smart Watch Series", "1546868871-7041f2a55e12", 120000, "Electronics", "Heart rate, calls and notifications on your wrist.", 140000],
+    ["Hydrating Face Cream", "1620916566398-39f1143ab7be", 14000, "Beauty", "Lightweight daily moisturiser with hyaluronic acid."],
+    ["Glow Serum", "1608571423902-eed4a5ad8108", 18000, "Beauty", "Vitamin C serum for a brighter, even tone.", 21000],
+    ["Self-care Ritual Set", "1612817288484-6f916006741a", 32000, "Beauty", "Cleanser, toner, serum and balm in one gift box."],
+    ["Classic Sunglasses", "1572635196237-14b3f281503f", 25000, "Accessories", "Polarised lenses in a timeless square frame.", 30000],
+    ["Canvas Day Pack", "1491637639811-60e2756cc1c7", 35000, "Accessories", "Waxed canvas backpack with leather trims."],
+    ["Stainless Steel Bottle", "1602143407151-7111542de6e8", 9000, "Accessories", "Keeps drinks cold for 24 hours, hot for 12."],
+    ["Velvet Lounge Sofa", "1555041469-a586c61ea9bc", 450000, "Home", "Three-seater in deep green velvet with oak legs."],
+  ],
+  reviews: [
+    ["Amaka O.", "The hoodie is so soft and it arrived in two days. Already eyeing the jacket.", 0],
+    ["Daniel E.", "Headphones sound amazing for the price. Packaging was really neat too.", 7],
+    ["Zainab M.", "The serum has made such a difference. Will definitely order again.", 10],
+  ],
+};
+
+const SKINCARE: DemoSeed = {
+  name: "Dew Botanics",
+  description: "Natural skincare made with botanicals and science. Gentle, dermatologist-tested and cruelty free.",
+  banners: ["1531123897727-8f129e1688ce", "1515377905703-c4788e51af15", "1570172619644-dfd03ed5d881"],
+  categories: ["Serums", "Moisturisers", "Cleansers", "Toners", "Sun care", "Body", "Sets"],
+  products: [
+    ["Radiance Boost Serum", "1608571423902-eed4a5ad8108", 18000, "Serums", "Vitamin C and niacinamide for brighter, even-toned skin.", 21000],
+    ["Botanical Face Oil", "1617897903246-719242758050", 22000, "Serums", "Rosehip, jojoba and squalane to nourish dry skin overnight."],
+    ["Hyaluronic Hydra Serum", "1576426863848-c21f53c60b19", 16000, "Serums", "Multi-weight hyaluronic acid for plump, dewy skin."],
+    ["Hydra Glow Gel Cream", "1619451334792-150fd785ee74", 19000, "Moisturisers", "Weightless gel moisturiser with aloe and green tea."],
+    ["Nourishing Night Cream", "1601049541289-9b1b7bbbfe19", 24000, "Moisturisers", "Rich, restorative cream with ceramides and peptides.", 28000],
+    ["Green Tea Moisturiser", "1552046122-03184de85e08", 17000, "Moisturisers", "Balancing daily cream for combination skin."],
+    ["Gentle Foam Cleanser", "1620916566398-39f1143ab7be", 9500, "Cleansers", "Low-pH foam that cleans without stripping."],
+    ["Clarifying Clay Mask", "1608248543803-ba4f8c70ae0b", 12000, "Cleansers", "Kaolin and charcoal to draw out impurities."],
+    ["Balancing Toner Trio", "1631729371254-42c2892f0e6e", 15000, "Toners", "Hydrating, exfoliating and soothing toners for every step."],
+    ["Daily UV Defence SPF 50", "1615397349754-cfa2066a298e", 14000, "Sun care", "Invisible, no white cast. Made for melanin-rich skin.", 16500],
+    ["Shea Lip & Body Balm", "1599305090598-fe179d501227", 7500, "Body", "Unrefined Ghanaian shea with a hint of vanilla."],
+    ["Apothecary Jar Trio", "1611930022073-b7a4ba5fcccd", 21000, "Body", "Body butter, scrub and oil in amber glass jars."],
+    ["Botanical Soap Bar", "1590439471364-192aa70c0b53", 4500, "Body", "Cold-process soap with oats and lavender."],
+    ["Glow Essentials Set", "1629198688000-71f23e745b6e", 45000, "Sets", "Cleanser, serum, moisturiser and SPF: a complete routine.", 52000],
+    ["Ritual Gift Box", "1612817288484-6f916006741a", 38000, "Sets", "Our best sellers in a keepsake gift box."],
+  ],
+  reviews: [
+    ["Adaeze N.", "My skin has never felt this soft. The serum has faded my dark spots in a month.", 0],
+    ["Halima S.", "Finally a sunscreen with no white cast! I wear it every single day.", 9],
+    ["Temi A.", "The night cream is pure luxury. Gentle on my sensitive skin.", 4],
+  ],
+};
+
+const GADGETS_POP: DemoSeed = {
+  name: "Prism Tech",
+  description: "Headphones, wearables, consoles and everyday tech. Original, under warranty and delivered fast.",
+  banners: ["1618366712010-f4ae9c647dcb", "1621259182978-fbf93132d53d", "1622979135225-d2ba269cf1ac"],
+  categories: ["Audio", "Wearables", "Laptops", "Gaming", "VR", "Speakers", "Phones", "Cameras"],
+  products: [
+    ["Noise Cancelling Headphones", "1618366712010-f4ae9c647dcb", 185000, "Audio", "Industry-leading noise cancelling with 30-hour battery and quick charge.", 210000],
+    ["Studio Headphones", "1505740420928-5e560c06d30e", 62000, "Audio", "Punchy bass and soft cushions for long listening sessions."],
+    ["Pro Wireless Earbuds", "1572569511254-d8f925fe2cbb", 145000, "Audio", "Active noise cancelling with spatial audio and a wireless case."],
+    ["Sport Earbuds", "1606220945770-b5b6c2c55bf1", 38000, "Audio", "Sweat-proof fit with 24 hours of playtime.", 45000],
+    ["Smart Watch Series 9", "1579586337278-3befd40fd17a", 320000, "Wearables", "Bright always-on display, health sensors and calls."],
+    ["Fitness Watch", "1546868871-7041f2a55e12", 95000, "Wearables", "Heart rate, sleep and workouts with a week-long battery.", 110000],
+    ["Pro Laptop 14\"", "1517336714731-489689fd1ca8", 1650000, "Laptops", "Pro chip, Liquid Retina display and 18-hour battery."],
+    ["Everyday Laptop 13\"", "1496181133206-80ce9b88a853", 690000, "Laptops", "Thin, light and quiet for work and school."],
+    ["Next-gen Console", "1607853202273-797f1c22a38e", 780000, "Gaming", "4K gaming at up to 120fps with an ultra-fast SSD.", 850000],
+    ["Series X Console", "1621259182978-fbf93132d53d", 720000, "Gaming", "The most powerful console, with a controller included."],
+    ["Wireless Controller", "1592840496694-26d035b52b48", 65000, "Gaming", "Haptic feedback and adaptive triggers."],
+    ["VR Headset 128GB", "1622979135225-d2ba269cf1ac", 420000, "VR", "All-in-one virtual reality. No PC or wires needed.", 480000],
+    ["Portable Speaker", "1608043152269-423dbba4e7e1", 85000, "Speakers", "Waterproof, rugged and loud, with 20-hour battery."],
+    ["Party Light Speaker", "1589003077984-894e133dabab", 120000, "Speakers", "360° sound with a light show that moves to the beat."],
+    ["Flagship Phone 256GB", "1592750475338-74b7b21085ab", 1250000, "Phones", "Pro camera system, titanium design, all-day battery."],
+    ["Android Flagship 256GB", "1610945265064-0e34e5519bbf", 980000, "Phones", "120Hz display, 50MP camera and fast charging.", 1050000],
+    ["Instant Camera", "1526170375885-4d8ecf77b99f", 98000, "Cameras", "Point, shoot and print in seconds. Film sold separately."],
+  ],
+  reviews: [
+    ["Kunle B.", "The headphones are unreal. Sealed, original and delivered the same day.", 0],
+    ["Ifeoma C.", "Got the console for my son's birthday. He has not put it down since!", 8],
+    ["Bayo T.", "Watch arrived in perfect condition and they helped me set it up on WhatsApp.", 4],
+  ],
+};
+
 const FOOD_BAKERY: DemoSeed = {
   name: "Crumbs & Co.",
   description: "Celebration cakes, pastries and sweet treats baked fresh every morning in Ikeja.",
@@ -330,6 +478,7 @@ const INTERIOR: DemoSeed = {
 };
 
 function seedFor(theme: StorefrontTheme): DemoSeed {
+  if (theme.id === "prism") return GADGETS_POP;
   switch (theme.category) {
     case "perfume": return PERFUME;
     case "market": return MARKET;
@@ -342,12 +491,15 @@ function seedFor(theme: StorefrontTheme): DemoSeed {
     if (theme.id === "fresh-bowl") return FOOD_HEALTHY;
     return FOOD;
   }
-  if (theme.category === "clothing") return CLOTHING;
+  if (theme.category === "clothing") return theme.id === "stride" ? STREETWEAR : CLOTHING;
   if (theme.category === "services") {
     if (theme.id === "salon") return SERVICES_SALON;
     if (theme.id === "studio") return SERVICES_CREATIVE;
     return SERVICES_BUSINESS;
   }
+  if (theme.id === "pulse") return FITNESS;
+  if (theme.id === "nova") return LIFESTYLE;
+  if (theme.id === "dew") return SKINCARE;
   return ECOMMERCE;
 }
 

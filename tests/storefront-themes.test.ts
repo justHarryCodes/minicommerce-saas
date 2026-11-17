@@ -19,7 +19,7 @@ describe("theme catalog", () => {
       expect(core.filter((t) => t.category === id)).toHaveLength(limit);
     }
     expect(core).toHaveLength(41);
-    expect(THEMES.filter((t) => t.tier === "signature").map((t) => t.id)).toEqual(["ember", "crave", "nexus", "clarity", "terra"]);
+    expect(THEMES.filter((t) => t.tier === "signature").map((t) => t.id)).toEqual(["ember", "crave", "nexus", "clarity", "terra", "blitz", "stride", "pulse", "nova", "dew", "prism"]);
   });
 
   it("has unique ids and valid accent colors", () => {

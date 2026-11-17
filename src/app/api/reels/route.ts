@@ -6,6 +6,7 @@ import { query, queryOne } from "@/lib/db";
 import { safeRedis, reelKey, cacheDel } from "@/lib/redis";
 import { requireFeature, getEffectivePlan } from "@/lib/plan";
 import type { Reel } from "@/types";
+import { verifyReelUpload } from "@/lib/reel-media";
 
 const MAX_PER_PAGE = 20;
 
@@ -110,7 +111,7 @@ export async function GET(req: NextRequest) {
 // ── POST /api/reels — save reel after Cloudinary upload ───────────────────────
 
 const CreateSchema = z.object({
-  cloudinaryPublicId: z.string().min(1),
+  cloudinaryPublicId: z.string().min(1).max(300),
   videoUrl:           z.string().url(),
   thumbnailUrl:       z.string().url().optional(),
   durationSeconds:    z.number().int().positive().optional(),
@@ -139,13 +140,18 @@ export async function POST(req: NextRequest) {
 
   const d = parsed.data;
 
+  // Only a real video in this store's reels folder becomes a reel (checked
+  // with Cloudinary; anything else is refused and deleted)
+  const media = await verifyReelUpload(store.id, d.cloudinaryPublicId, d.thumbnailUrl);
+  if (!media.ok) return NextResponse.json({ error: media.error }, { status: 400 });
+
   const reel = await queryOne<{ id: string }>(
     `INSERT INTO reels
        (store_id, title, description, cloudinary_public_id, video_url, thumbnail_url, duration_seconds)
      VALUES ($1,$2,$3,$4,$5,$6,$7)
      RETURNING id`,
     [store.id, d.title ?? null, d.description ?? null,
-     d.cloudinaryPublicId, d.videoUrl, d.thumbnailUrl ?? null, d.durationSeconds ?? null]
+     d.cloudinaryPublicId, media.videoUrl, media.thumbnailUrl, media.durationSeconds ?? d.durationSeconds ?? null]
   );
   if (!reel) return NextResponse.json({ error: "Failed to create reel" }, { status: 500 });
 

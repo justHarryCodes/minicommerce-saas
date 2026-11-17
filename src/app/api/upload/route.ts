@@ -15,6 +15,9 @@ export async function POST(req: NextRequest) {
     if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 });
     if (!file.type.startsWith("image/"))
       return NextResponse.json({ error: "Only image files allowed" }, { status: 400 });
+    // SVG can carry scripts that run when the file is opened: such logos are
+    // kept, but stored as a flat PNG (Cloudinary converts on upload)
+    const isSvg = /svg/i.test(file.type) || /\.svgz?$/i.test(file.name);
     if (file.size > MAX_FILE_SIZE)
       return NextResponse.json({ error: "File too large (max 8 MB)" }, { status: 400 });
 
@@ -25,6 +28,7 @@ export async function POST(req: NextRequest) {
         const stream = cloudinary.uploader.upload_stream(
           {
             folder: `duka/${user.firebaseUid}`,
+            ...(isSvg ? { format: "png" } : {}),
             // Cap master at 1600 px — display transforms (clCard/clBanner) derive from this
             transformation: { width: 1600, crop: "limit", quality: "auto:good" },
             // Pre-generate common display sizes in the background

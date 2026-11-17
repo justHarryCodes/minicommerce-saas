@@ -1,6 +1,9 @@
 "use client";
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase-client";
+import DukaLogo from "@/components/DukaLogo";
 import { ImageUpload } from "@/components/ui/ImageUpload";
 import {
   Store,
@@ -8,7 +11,6 @@ import {
   ArrowLeft,
   Check,
   Loader2,
-  ShoppingBag,
   Phone,
   Image as ImageIcon,
   CheckCircle2,
@@ -18,6 +20,7 @@ import {
   X,
   Copy,
   Lock,
+  LogOut,
 } from "lucide-react";
 import { slugify } from "@/lib/utils";
 import { PRIMARY_CATEGORIES } from "@/types";
@@ -179,6 +182,7 @@ function OnboardingPage() {
   const [slugTouched, setSlugTouched] = useState(false);
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     const ref = searchParams.get("ref");
@@ -388,6 +392,30 @@ function OnboardingPage() {
   const current = STEPS[step];
   const storeUrl = `${form.slug}.${ROOT_DOMAIN}`;
 
+  // Not ready to set up a store? Sign out (anything filled in is not saved).
+  async function handleSignOut() {
+    if (signingOut) return;
+    if (!window.confirm("Sign out? Your store setup so far won't be saved.")) return;
+    setSigningOut(true);
+    try {
+      await signOut(auth).catch(() => {});
+      await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    } finally {
+      router.replace("/auth/login");
+    }
+  }
+  const signOutButton = (
+    <button
+      type="button"
+      onClick={handleSignOut}
+      disabled={signingOut}
+      className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-50 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white"
+    >
+      {signingOut ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LogOut className="h-3.5 w-3.5" />}
+      Sign out
+    </button>
+  );
+
   // ── Success screen ──
   if (done) {
     return (
@@ -466,12 +494,7 @@ function OnboardingPage() {
       <aside className="hidden lg:flex flex-col w-[440px] xl:w-[480px] shrink-0 bg-zinc-900 p-10 xl:p-12 justify-between relative overflow-hidden">
         <div className="pointer-events-none absolute -top-32 -right-32 h-80 w-80 rounded-full bg-amber-400 opacity-10 blur-3xl" />
         <div className="relative">
-          <div className="flex items-center gap-3 mb-10">
-            <div className="w-10 h-10 rounded-xl bg-amber-400 flex items-center justify-center">
-              <ShoppingBag className="w-5 h-5 text-black" />
-            </div>
-            <span className="text-white text-xl font-extrabold">Duka</span>
-          </div>
+          <DukaLogo href={null} size={36} className="mb-10 [&>span]:!text-white" />
 
           <h2 className="text-3xl xl:text-4xl font-black text-white leading-tight mb-3">
             Launch your store{" "}
@@ -501,18 +524,17 @@ function OnboardingPage() {
       <main className="flex-1 flex flex-col min-w-0">
         {/* Mobile header */}
         <div className="lg:hidden flex items-center justify-between px-5 py-4 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800">
+          <DukaLogo href={null} size={28} />
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-amber-400 flex items-center justify-center">
-              <ShoppingBag className="w-4 h-4 text-black" />
-            </div>
-            <span className="font-extrabold text-zinc-900 dark:text-white">
-              Duka
+            <span className="text-xs text-zinc-400 font-medium">
+              Step {step + 1} of {STEPS.length}
             </span>
+            {signOutButton}
           </div>
-          <span className="text-xs text-zinc-400 font-medium">
-            Step {step + 1} of {STEPS.length}
-          </span>
         </div>
+
+        {/* Desktop: sign out, top right */}
+        <div className="hidden lg:flex justify-end px-12 pt-6">{signOutButton}</div>
 
         <div className="flex-1 flex justify-center px-5 py-8 sm:px-8 lg:px-12 lg:py-14">
           <div className="w-full max-w-xl">

@@ -12,6 +12,8 @@ export interface SessionUser {
   firebaseUid: string
   email: string
   displayName?: string
+  /** Firebase has confirmed this person controls the email address */
+  emailVerified?: boolean
 }
 
 // Verify session cookie OR Bearer token (mobile app) → returns SessionUser or null
@@ -26,6 +28,7 @@ export async function verifySession(): Promise<SessionUser | null> {
         firebaseUid: decoded.uid,
         email: decoded.email ?? '',
         displayName: decoded.name,
+        emailVerified: decoded.email_verified === true,
       };
     }
   } catch {}
@@ -41,6 +44,7 @@ export async function verifySession(): Promise<SessionUser | null> {
         firebaseUid: decoded.uid,
         email: decoded.email ?? '',
         displayName: decoded.name,
+        emailVerified: decoded.email_verified === true,
       };
     }
   } catch {}
@@ -57,6 +61,8 @@ export async function getUserStore(firebaseUid: string): Promise<Store | null> {
   if (!row) return null
   return toCamel<Store>(row as Record<string, unknown>)
 }
+
+export { RECENT_SIGN_IN_MS, isRecentSignIn } from './session-freshness'
 
 // Create session cookie from ID token
 export async function createSessionCookie(idToken: string): Promise<string> {

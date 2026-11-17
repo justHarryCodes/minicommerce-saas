@@ -1,13 +1,24 @@
 import { safeRedis } from '@/lib/redis'
 import { NextRequest, NextResponse } from 'next/server'
 
-/** Extract the best-available client IP from a Next.js request. */
-export function getClientIp(req: NextRequest): string {
-  return (
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    req.headers.get('x-real-ip') ??
-    '0.0.0.0'
-  )
+/**
+ * The visitor's IP, from headers the visitor cannot forge.
+ *
+ * Traffic reaches the server through Cloudflare, which sets CF-Connecting-IP
+ * to the real client address (overwriting anything the client sent). The
+ * FIRST X-Forwarded-For entry is whatever the client wrote, so trusting it let
+ * anyone dodge every rate limit by sending a new fake IP each request. As a
+ * fallback, use the address our own proxy saw (X-Real-IP) or the last
+ * X-Forwarded-For entry, which is the one added nearest to the server.
+ */
+export function getClientIp(req: NextRequest | Request): string {
+  const h = req.headers
+  const cf = h.get('cf-connecting-ip')?.trim()
+  if (cf) return cf
+  const real = h.get('x-real-ip')?.trim()
+  if (real) return real
+  const chain = h.get('x-forwarded-for')?.split(',').map((x) => x.trim()).filter(Boolean)
+  return chain?.length ? chain[chain.length - 1] : '0.0.0.0'
 }
 
 /**

@@ -1,3 +1,4 @@
+import { fetchAllowedImage } from "@/lib/safe-image-url";
 // ─── Gemini vision analysis ───────────────────────────────────────
 // Plain REST call against Gemini's generateContent endpoint. Used for
 // analysis/classification (e.g. "which category does this product photo
@@ -21,11 +22,9 @@ export interface AnalyzeImageOptions {
   maxTokens?: number;
 }
 
+// Only Duka's own image hosts, no redirects, size-capped (see lib/safe-image-url)
 async function fetchImageAsBase64(imageUrl: string): Promise<{ data: string; mimeType: string }> {
-  const res = await fetch(imageUrl);
-  if (!res.ok) throw new Error(`Could not fetch image for analysis (${res.status})`);
-  const mimeType = res.headers.get("content-type") || "image/jpeg";
-  const buffer = Buffer.from(await res.arrayBuffer());
+  const { buffer, mimeType } = await fetchAllowedImage(imageUrl);
   return { data: buffer.toString("base64"), mimeType };
 }
 

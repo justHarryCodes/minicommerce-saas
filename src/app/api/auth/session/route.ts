@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createSessionCookie } from '@/lib/auth'
+import { createSessionCookie, isRecentSignIn } from '@/lib/auth'
 import { adminAuth } from '@/lib/firebase-admin'
 import { cookies } from 'next/headers'
 import { checkRateLimit } from '@/lib/rate-limit'
@@ -16,12 +16,26 @@ export async function POST(req: NextRequest) {
 
   try {
     const { idToken } = await req.json()
-    if (!idToken) return NextResponse.json({ error: 'Missing token' }, { status: 400 })
+    if (!idToken || typeof idToken !== 'string') return NextResponse.json({ error: 'Missing token' }, { status: 400 })
 
-    await adminAuth.verifyIdToken(idToken)
+    // checkRevoked: a token from a disabled account or a "sign out everywhere"
+    // must not become a fresh session.
+    const decoded = await adminAuth.verifyIdToken(idToken, true)
+    const cookieStore = await cookies()
+
+    // A session is only minted from a sign-in that just happened, or to
+    // refresh a session this browser already holds for the same account
+    // (AuthProvider re-syncs on every page load). A stolen ID token on its
+    // own can no longer be turned into a 14-day session.
+    if (!isRecentSignIn(decoded.auth_time)) {
+      const existing = cookieStore.get('session')?.value
+      const current = existing ? await adminAuth.verifySessionCookie(existing, true).catch(() => null) : null
+      if (current?.uid !== decoded.uid) {
+        return NextResponse.json({ error: 'Please sign in again.', code: 'reauth_required' }, { status: 401 })
+      }
+    }
 
     const sessionCookie = await createSessionCookie(idToken)
-    const cookieStore = await cookies()
     cookieStore.set('session', sessionCookie, {
       httpOnly: true,
       secure: true, // always secure — both prod and dev with HTTPS

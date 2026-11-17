@@ -68,7 +68,9 @@ export async function verifyAdminSession(): Promise<AdminUser | null> {
   ])
 
   // Auto-seed: recognised admin email logging in for the first time
-  if (!row && ADMIN_EMAILS.has(session.email.toLowerCase())) {
+  // Only an email Firebase has verified: anyone can create an (unverified)
+  // account that merely claims the admin's address.
+  if (!row && session.emailVerified && ADMIN_EMAILS.has(session.email.toLowerCase())) {
     await query(
       `INSERT INTO admin_users (firebase_uid, email, name, role)
        VALUES ($1, $2, $3, 'super_admin')

@@ -108,6 +108,12 @@ const KITS: Record<string, Kit> = {
   nexus: { tier: "signature", price: 50_000, nav: "mega", navOptions: { tone: "dark" }, pages: ["showcase", "grid", "spotlight"] },
   clarity: { tier: "signature", price: 40_000, nav: "marketplace", pages: ["split", "catalog", "list"] },
   terra: { tier: "signature", price: 45_000, nav: "overlay", pages: ["split", "grid", "spotlight"] },
+  blitz: { tier: "signature", price: 40_000, nav: "twotier", pages: ["classic", "aisle", "visual"] },
+  stride: { tier: "signature", price: 45_000, nav: "classic", navOptions: { search: "bar" }, pages: ["showcase", "catalog", "spotlight"] },
+  pulse: { tier: "signature", price: 45_000, nav: "classic", navOptions: { search: "bar", tone: "dark" }, pages: ["split", "grid", "list"] },
+  nova: { tier: "signature", price: 40_000, nav: "classic", pages: ["split", "lookbook", "visual"] },
+  dew: { tier: "signature", price: 45_000, nav: "floating", pages: ["split", "lookbook", "visual"] },
+  prism: { tier: "signature", price: 40_000, nav: "chips", pages: ["compact", "lookbook", "visual"] },
 };
 
 export function kitFor(id: string): Kit {

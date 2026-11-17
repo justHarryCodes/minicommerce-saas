@@ -3,6 +3,7 @@ import { adminAuth } from '@/lib/firebase-admin'
 import { queryOne } from '@/lib/db'
 import { createAffiliateSessionCookie, setAffiliateCookieHeader, clearAffiliateCookieHeader } from '@/lib/affiliate-auth'
 import { checkRateLimit } from '@/lib/rate-limit'
+import { isRecentSignIn } from '@/lib/auth'
 
 // POST — exchange Firebase ID token for a session cookie (login)
 export async function POST(req: NextRequest) {
@@ -15,14 +16,20 @@ export async function POST(req: NextRequest) {
   })
   if (limited) return limited
 
-  const { idToken } = await req.json()
-  if (!idToken) return NextResponse.json({ error: 'Missing idToken' }, { status: 400 })
+  const { idToken } = await req.json().catch(() => ({}))
+  if (!idToken || typeof idToken !== 'string') return NextResponse.json({ error: 'Missing idToken' }, { status: 400 })
 
   let decoded: Awaited<ReturnType<typeof adminAuth.verifyIdToken>>
   try {
-    decoded = await adminAuth.verifyIdToken(idToken)
+    decoded = await adminAuth.verifyIdToken(idToken, true)
   } catch {
     return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+  }
+
+  // Only a sign-in that just happened becomes a session (a leaked ID token
+  // can't be replayed into a long-lived affiliate session).
+  if (!isRecentSignIn(decoded.auth_time)) {
+    return NextResponse.json({ error: 'Please sign in again.', code: 'reauth_required' }, { status: 401 })
   }
 
   // Require email verification before issuing a session

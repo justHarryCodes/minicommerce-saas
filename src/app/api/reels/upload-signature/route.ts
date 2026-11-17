@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { verifySession } from "@/lib/auth";
 import { queryOne } from "@/lib/db";
 import cloudinary from "@/lib/cloudinary-server";
+import { reelFolder } from "@/lib/reel-media";
 
 export async function GET() {
   const user = await verifySession();
@@ -14,7 +15,7 @@ export async function GET() {
   if (!store) return NextResponse.json({ error: "Store not found" }, { status: 404 });
 
   const timestamp = Math.round(Date.now() / 1000);
-  const folder = `duka-reels/${store.id}`;
+  const folder = reelFolder(store.id);
 
   const paramsToSign: Record<string, string | number> = {
     folder,

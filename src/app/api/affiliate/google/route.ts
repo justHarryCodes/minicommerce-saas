@@ -6,16 +6,27 @@ import {
   createAffiliateSessionCookie,
   setAffiliateCookieHeader,
 } from '@/lib/affiliate-auth'
+import { checkRateLimit } from '@/lib/rate-limit'
+import { isRecentSignIn } from '@/lib/auth'
 
 export async function POST(req: NextRequest) {
-  const { idToken } = await req.json()
-  if (!idToken) return NextResponse.json({ error: 'Missing idToken' }, { status: 400 })
+  const limited = await checkRateLimit(req, { key: 'rl:affiliate-google', max: 10, window: 900 })
+  if (limited) return limited
+
+  const { idToken } = await req.json().catch(() => ({}))
+  if (!idToken || typeof idToken !== 'string') return NextResponse.json({ error: 'Missing idToken' }, { status: 400 })
 
   let decoded: Awaited<ReturnType<typeof adminAuth.verifyIdToken>>
   try {
-    decoded = await adminAuth.verifyIdToken(idToken)
+    decoded = await adminAuth.verifyIdToken(idToken, true)
   } catch {
     return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+  }
+
+  // Only a sign-in that just happened becomes a session (a leaked ID token
+  // can't be replayed into a long-lived affiliate session).
+  if (!isRecentSignIn(decoded.auth_time)) {
+    return NextResponse.json({ error: 'Please sign in again.', code: 'reauth_required' }, { status: 401 })
   }
 
   if (!decoded.email_verified) {
@@ -23,10 +34,13 @@ export async function POST(req: NextRequest) {
   }
 
   // Find or create affiliate
-  let affiliate = await queryOne<{ id: string }>(
-    'SELECT id FROM affiliates WHERE firebase_uid = $1',
+  let affiliate = await queryOne<{ id: string; is_active: boolean }>(
+    'SELECT id, is_active FROM affiliates WHERE firebase_uid = $1',
     [decoded.uid]
   )
+  if (affiliate && !affiliate.is_active) {
+    return NextResponse.json({ error: 'This affiliate account has been deactivated.' }, { status: 403 })
+  }
 
   if (!affiliate) {
     // Check if email already registered under a different UID (rare edge case)
@@ -48,10 +62,10 @@ export async function POST(req: NextRequest) {
     }
 
     const name = decoded.name ?? decoded.email?.split('@')[0] ?? 'Affiliate'
-    affiliate = await queryOne<{ id: string }>(
+    affiliate = await queryOne<{ id: string; is_active: boolean }>(
       `INSERT INTO affiliates (firebase_uid, email, name, referral_code)
        VALUES ($1, $2, $3, $4)
-       RETURNING id`,
+       RETURNING id, is_active`,
       [decoded.uid, (decoded.email ?? '').toLowerCase(), name, referralCode]
     )
   }

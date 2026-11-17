@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { verifySession } from "@/lib/auth";
+import { isAllowedImageUrl } from "@/lib/safe-image-url";
 import { getStoreFor } from "@/lib/access";
 import { requireFeature } from "@/lib/plan";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -8,7 +9,8 @@ import { isAiEnabled, analyzeImage, logAiUsage } from "@/lib/ai";
 import { query } from "@/lib/db";
 
 const Schema = z.object({
-  imageUrl: z.string().url(),
+  // Duka's own image hosts only (the server downloads it: no SSRF)
+  imageUrl: z.string().url().max(2000).refine(isAllowedImageUrl, "Unsupported image address"),
 });
 
 export async function POST(req: NextRequest) {

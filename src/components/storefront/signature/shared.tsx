@@ -15,8 +15,9 @@ const stockOf = (p: Product) => p.stock_quantity ?? p.stockQuantity ?? 0;
 /**
  * Adds straight to the order (or opens the product when it needs options).
  * "round": a "+" disc. "bar": a full-width "Add to cart" button.
+ * "square": a dark rounded square with a cart icon. "ink": the same, as a disc.
  */
-export function AddButton({ product, size = "md", variant = "round" }: { product: Product; size?: "sm" | "md" | "lg"; variant?: "round" | "bar" }) {
+export function AddButton({ product, size = "md", variant = "round" }: { product: Product; size?: "sm" | "md" | "lg"; variant?: "round" | "bar" | "square" | "ink" }) {
   const { addItem } = useCart();
   const { storeBase, theme } = useStore();
   const [added, setAdded] = useState(false);
@@ -24,14 +25,18 @@ export function AddButton({ product, size = "md", variant = "round" }: { product
   const needsChoice = Boolean(product.has_sizes ?? product.hasSizes) || bookable;
   const soldOut = (stockOf(product) === 0 && !bookable) || Boolean(product.sold_out_today);
   const bar = variant === "bar";
+  const square = variant === "square";
+  const ink = square || variant === "ink";
   const dim = size === "lg" ? "h-12 w-12" : size === "sm" ? "h-8 w-8" : "h-10 w-10";
   const icon = size === "sm" || bar ? "h-4 w-4" : "h-5 w-5";
   const cls = bar
     ? "flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-[13px] font-semibold transition-opacity hover:opacity-90 active:scale-[.98]"
-    : `grid shrink-0 place-items-center rounded-full transition-transform hover:scale-110 active:scale-95 ${dim}`;
+    : `grid shrink-0 place-items-center ${square ? "rounded-md" : "rounded-full"} transition-transform hover:scale-110 active:scale-95 ${dim}`;
   const style = bar
     ? { backgroundColor: "var(--sf-accent)", color: "var(--sf-on-accent)" }
-    : { backgroundColor: "var(--sf-accent)", color: "var(--sf-on-accent)", boxShadow: "0 8px 24px -8px var(--sf-accent)" };
+    : ink
+      ? { backgroundColor: "var(--sf-ink)", color: "var(--sf-page)" }
+      : { backgroundColor: "var(--sf-accent)", color: "var(--sf-on-accent)", boxShadow: "0 8px 24px -8px var(--sf-accent)" };
   const label = theme.copy.addToCart || "Add to cart";
 
   if (soldOut) {
@@ -81,7 +86,7 @@ export function AddButton({ product, size = "md", variant = "round" }: { product
       className={cls}
       style={style}
     >
-      {added ? <Check className={icon} /> : <Plus className={icon} />}
+      {added ? <Check className={icon} /> : ink ? <ShoppingCart className={icon} /> : <Plus className={icon} />}
     </button>
   );
 }
