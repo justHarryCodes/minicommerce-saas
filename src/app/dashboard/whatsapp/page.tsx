@@ -4,6 +4,7 @@ import { CheckCheck, MessageCircle, ShoppingBag, Sparkles, Zap } from "lucide-re
 import { verifySession, getUserStore } from "@/lib/auth";
 import { whatsappAddonActive } from "@/lib/meta/addon";
 import WhatsAppChannel from "@/components/dashboard/WhatsAppChannel";
+import WhatsAppSimulator from "@/components/dashboard/WhatsAppSimulator";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "WhatsApp shop" };
@@ -82,6 +83,28 @@ export default async function WhatsAppPage() {
 
       {/* Connect / status: right under the hero, nothing to scroll for */}
       <WhatsAppChannel />
+
+      {/* Try it: the real bot on this store's products, nothing sent on WhatsApp */}
+      <section className="overflow-hidden rounded-2xl border border-surface-100 bg-white dark:border-surface-800 dark:bg-surface-900">
+        <div className="grid items-center gap-8 p-6 sm:p-8 lg:grid-cols-[1fr_auto]">
+          <div>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#25D366]/15 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-[#128c7e]">
+              <MessageCircle className="h-3.5 w-3.5" /> Try it yourself
+            </span>
+            <h2 className="mt-3 text-xl font-black text-surface-900 dark:text-white sm:text-2xl">Chat with your WhatsApp shop</h2>
+            <p className="mt-2 max-w-md text-sm text-surface-500 dark:text-surface-400">
+              This is exactly what your customers get when they message your number: your real products, prices and stock. Nothing here is sent on WhatsApp, so try anything.
+            </p>
+            <ul className="mt-4 space-y-2 text-sm text-surface-600 dark:text-surface-300">
+              <li>👋 Say <strong>hi</strong> to open the menu</li>
+              <li>🔍 Type a product name, like <strong>shoes</strong>, to search</li>
+              <li>🛒 Add to cart, then <strong>Checkout</strong> opens your real checkout page</li>
+              <li>💬 <strong>Message the seller</strong> shows what you&apos;d be notified about</li>
+            </ul>
+          </div>
+          <WhatsAppSimulator storeName={store.name} />
+        </div>
+      </section>
 
       {/* How it works */}
       <section>
