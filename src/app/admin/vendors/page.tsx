@@ -5,7 +5,7 @@ import { CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 
 export const metadata = { title: 'Vendors' }
 
-interface SearchParams { status?: string }
+interface SearchParams { status?: string; q?: string }
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   active:          { bg: '#22c55e18', text: '#16a34a' },
@@ -28,13 +28,19 @@ export default async function VendorsPage({
   searchParams: Promise<SearchParams>
 }) {
   await verifyAdminSession()
-  const { status } = await searchParams
+  const { status, q: rawQ } = await searchParams
+  const q = (rawQ ?? '').trim().slice(0, 80)
 
   const params: unknown[] = []
   let where = 'WHERE is_active = true'
   if (status && status !== 'all') {
     params.push(status)
     where += ` AND status = $${params.length}`
+  }
+  if (q) {
+    params.push(`%${q.replace(/[%_\\]/g, '')}%`)
+    const n = `$${params.length}`
+    where += ` AND (name ILIKE ${n} OR slug ILIKE ${n} OR owner_email ILIKE ${n} OR primary_category ILIKE ${n})`
   }
 
   const vendors = await query<{
@@ -63,6 +69,14 @@ export default async function VendorsPage({
           </p>
         </div>
       </div>
+
+      <form action="/admin/vendors" className="mb-4 flex gap-2">
+        {status && status !== 'all' && <input type="hidden" name="status" value={status} />}
+        <input name="q" defaultValue={q} placeholder="Search name, link, email or category" aria-label="Search vendors"
+          className="h-10 w-full max-w-md rounded-lg border px-3 text-sm outline-none"
+          style={{ background: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
+        <button className="h-10 rounded-lg px-4 text-sm font-semibold text-black" style={{ background: 'var(--accent)' }}>Search</button>
+      </form>
 
       {/* Status filter tabs */}
       <div className="flex gap-2 mb-6 flex-wrap">

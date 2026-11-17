@@ -70,7 +70,7 @@ export default async function AffiliateDetailPage({ params }: Params) {
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black text-black shrink-0"
             style={{ backgroundColor: "var(--accent)" }}>
-            {affiliate.name[0].toUpperCase()}
+            {(affiliate.name || affiliate.email || "?").trim().charAt(0).toUpperCase() || "?"}
           </div>
           <div>
             <h1 className="text-xl font-black" style={{ color: "var(--text-primary)" }}>{affiliate.name}</h1>
@@ -149,7 +149,7 @@ export default async function AffiliateDetailPage({ params }: Params) {
               <div key={r.id} className="flex items-center gap-3 px-5 py-3">
                 <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-black shrink-0"
                   style={{ backgroundColor: "var(--accent)" }}>
-                  {r.store_name[0].toUpperCase()}
+                  {(r.store_name || "?").trim().charAt(0).toUpperCase() || "?"}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{r.store_name}</p>

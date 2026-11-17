@@ -453,7 +453,7 @@ export default function AffiliateDashboard() {
               {referrals.map((r) => (
                 <div key={r.id} className="flex items-center gap-3 px-6 py-4">
                   <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center text-sm font-black text-amber-700 shrink-0">
-                    {r.store_name[0].toUpperCase()}
+                    {(r.store_name || "?").trim().charAt(0).toUpperCase() || "?"}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900 truncate">{r.store_name}</p>

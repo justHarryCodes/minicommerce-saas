@@ -4,7 +4,8 @@ import ProductDetailClient from "./ProductDetailClient";
 import type { Metadata } from "next";
 import { lagosParts } from "@/lib/hours";
 import { clCrawler } from "@/lib/cloudinary";
-import { breadcrumbLd, jsonLd, metaText, productLd, storeCanonicalBase, type LdReview } from "@/lib/seo";
+import { storeAccent } from "@/lib/store-brand";
+import { breadcrumbLd, CARD_SIZE, jsonLd, metaText, productCardUrl, productLd, storeCanonicalBase, type LdReview } from "@/lib/seo";
 import { getStoreFeatures } from "@/lib/plan";
 import { toCardProduct, toPublicStore } from "@/lib/public-store";
 import { storeCached } from "@/lib/store-cache";
@@ -128,6 +129,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     metaText(product.short_description || product.description) ||
     metaText(`Buy ${product.name} for ${price} at ${store.name}. Secure payment and delivery across Nigeria.`);
   const images = productImages(product).slice(0, 4).map(clCrawler);
+  const card = productCardUrl(store.slug, product, { ...store, accent: await storeAccent(store as never) });
   const url = `${storeCanonicalBase(store)}/products/${product.slug || product.id}`;
   return {
     // "Name - ₦price" reads like a shopping result, so it wins clicks
@@ -141,9 +143,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       siteName: store.name,
       locale: "en_NG",
       url,
-      images: images.map((u) => ({ url: u, alt: product.name })),
+      // The share card first (photo, price, store): it's what WhatsApp and others show
+      images: [{ url: card, ...CARD_SIZE, alt: `${product.name} · ${price} at ${store.name}`, type: "image/jpeg" }, ...images.map((u) => ({ url: u, alt: product.name }))],
     },
-    twitter: { card: images.length ? "summary_large_image" : "summary", title: `${product.name} · ${price}`, description, images },
+    twitter: { card: "summary_large_image", title: `${product.name} · ${price}`, description, images: [card] },
     other: {
       "product:price:amount": String(Number(product.price)),
       "product:price:currency": "NGN",

@@ -58,15 +58,14 @@ export default function Footer() {
               className="max-w-xs text-sm leading-relaxed"
               style={{ color: "var(--text-secondary)" }}
             >
-              Launch your online store in minutes and start selling to customers
-              anywhere.
+              Nigerian online stores, powered by Duka.
             </p>
             <Link
               href="/auth/signup"
               className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-bold transition-opacity hover:opacity-90"
               style={{ background: "var(--accent, #fbbf24)", color: "#000" }}
             >
-              Start selling <ArrowRight className="h-4 w-4" />
+              Start for free <ArrowRight className="h-4 w-4" />
             </Link>
             <GooglePlayBadge size="sm" />
           </div>

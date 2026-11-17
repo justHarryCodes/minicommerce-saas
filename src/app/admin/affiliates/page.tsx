@@ -24,6 +24,8 @@ export default async function AdminAffiliatesPage() {
   const admin = await verifyAdminSession();
   if (!admin) notFound();
 
+  // A missing table / column (migration not run) shows a fix-it message instead of crashing the page
+  let setupError: string | null = null;
   const affiliates = await query<AffiliateRow>(
     `SELECT a.id, a.name, a.email, a.referral_code,
             a.earnings_total, a.payout_balance,
@@ -34,7 +36,10 @@ export default async function AdminAffiliatesPage() {
      LEFT JOIN affiliate_payouts ap ON ap.affiliate_id = a.id
      GROUP BY a.id
      ORDER BY a.created_at DESC`
-  );
+  ).catch((e: unknown) => {
+    setupError = e instanceof Error ? e.message : "Couldn't load affiliates";
+    return [] as AffiliateRow[];
+  });
 
   const totalEarned = affiliates.reduce((s, a) => s + Number(a.earnings_total), 0);
   const pendingTotal = affiliates.reduce((s, a) => s + Number(a.payout_balance), 0);
@@ -48,6 +53,14 @@ export default async function AdminAffiliatesPage() {
           Manage affiliate marketers and payout requests
         </p>
       </div>
+
+      {setupError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-200">
+          <p className="font-bold">Affiliates couldn&apos;t load from the database</p>
+          <p className="mt-1">Run <code>npm run db:migrate</code> on the server (it creates the affiliate tables), then refresh.</p>
+          <p className="mt-2 font-mono text-[12px] opacity-80">{setupError}</p>
+        </div>
+      )}
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -92,10 +105,10 @@ export default async function AdminAffiliatesPage() {
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-black shrink-0"
                           style={{ backgroundColor: "var(--accent)" }}>
-                          {a.name[0].toUpperCase()}
+                          {(a.name || a.email || "?").trim().charAt(0).toUpperCase() || "?"}
                         </div>
                         <div>
-                          <p className="font-semibold" style={{ color: "var(--text-primary)" }}>{a.name}</p>
+                          <p className="font-semibold" style={{ color: "var(--text-primary)" }}>{a.name || "No name"}</p>
                           <p className="text-xs" style={{ color: "var(--text-muted)" }}>{a.email}</p>
                         </div>
                       </div>

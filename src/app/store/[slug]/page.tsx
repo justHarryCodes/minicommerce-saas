@@ -13,7 +13,8 @@ import { isSoldOutToday } from "@/lib/hours";
 import type { Testimonial } from "@/lib/themes/types";
 import type { Product, Category, Store } from "@/types";
 import type { Metadata } from "next";
-import { breadcrumbLd, jsonLd, metaText, storeCanonicalBase, storeLd } from "@/lib/seo";
+import { breadcrumbLd, CARD_SIZE, jsonLd, metaText, storeCanonicalBase, storeCardUrl, storeLd } from "@/lib/seo";
+import { storeAccent } from "@/lib/store-brand";
 import { clCrawler } from "@/lib/cloudinary";
 
 interface Props {
@@ -105,7 +106,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const store = await getCachedStore(slug);
   if (!store) return {};
   const base = storeCanonicalBase(store);
-  const og = { type: "website" as const, siteName: store.name, locale: "en_NG", images: store.logo_url ? [{ url: clCrawler(store.logo_url), alt: store.name }] : [] };
+  const og = { type: "website" as const, siteName: store.name, locale: "en_NG", images: [{ url: storeCardUrl({ ...store, accent: await storeAccent(store as never) }), ...CARD_SIZE, alt: store.name, type: "image/jpeg" }] };
   if (!category) {
     const title = store.description ? `${store.name} - ${metaText(store.description, 50)}` : `${store.name} - Shop online`;
     return { title: { absolute: title }, alternates: { canonical: `${base}/` }, openGraph: { ...og, url: `${base}/`, title } };

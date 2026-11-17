@@ -26,6 +26,7 @@ import { formatPrice } from "@/lib/utils";
 import ReelStoryStrip from "@/components/discover/ReelStoryStrip";
 import type { Reel } from "@/types";
 import Footer from "@/components/Footer";
+import ThemeToggle from "@/components/ThemeToggle";
 
 // Discover is a cross-vendor marketplace page — link within it using the
 // reliable path-based routes (dukanigeria.com/store/[slug]/...) rather than
@@ -652,6 +653,7 @@ export default function DiscoverClient({
             />
 
             <div className="ml-auto flex items-center gap-1.5 sm:gap-3">
+              <ThemeToggle />
               <Link
                 href="/auth/login"
                 className="rounded-full px-3 py-2 text-sm font-medium transition-opacity hover:opacity-70 sm:px-4"

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import AnnouncementBanner from "@/components/dashboard/AnnouncementBanner";
 import { headers } from "next/headers";
 import { verifySession } from "@/lib/auth";
 import { getStoreAccess, pausedMembershipStore } from "@/lib/access";
@@ -76,6 +77,8 @@ export default async function DashboardLayout({
             </p>
           )}
           <AppBanner />
+          {/* Duka announcements (admin campaigns) */}
+          <AnnouncementBanner storeId={store.id} />
           {children}
           <TawkChat />
         </main>

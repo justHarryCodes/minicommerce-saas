@@ -87,6 +87,8 @@ export function platformRobots(): string {
     "Disallow: /admin",
     // Product feeds stay fetchable (Merchant Center); the longer rule wins over /api/
     "Allow: /api/feeds/",
+    // Share-card images: X/Twitter won't show a preview image robots.txt blocks
+    "Allow: /api/og/",
     "Disallow: /api/",
     "Disallow: /auth/",
     "Disallow: /onboarding",

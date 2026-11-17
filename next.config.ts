@@ -39,6 +39,10 @@ const nextConfig: NextConfig = {
   // browser caches, etc.) than it needed to.
   outputFileTracingRoot: path.join(__dirname),
 
+  // A second dev server (e.g. for testing) can use its own build folder so
+  // two servers never write to the same .next at once. Default stays .next.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
+
   experimental: {
     serverActions: {
       allowedOrigins: [

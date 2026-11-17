@@ -11,7 +11,8 @@ import VisitTracker from "@/components/storefront/VisitTracker";
 import AssistantWidget from "@/components/storefront/AssistantWidget";
 import type { Store, Category } from "@/types";
 import type { Metadata } from "next";
-import { metaText, storeCanonicalBase } from "@/lib/seo";
+import { CARD_SIZE, metaText, storeCanonicalBase, storeCardUrl } from "@/lib/seo";
+import { storeAccent } from "@/lib/store-brand";
 import { clCrawler } from "@/lib/cloudinary";
 
 interface Props {
@@ -48,6 +49,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   // No canonical here: a layout's canonical would be inherited by every
   // page under it. Pages set their own.
   const base = storeCanonicalBase(store);
+  const accent = await storeAccent(store as never);
   const description = metaText(store.description) || metaText(`Shop ${store.name} online. Order easily, pay securely and get delivery across Nigeria.`);
   const verification = (store as { google_site_verification?: string | null }).google_site_verification;
   return {
@@ -63,9 +65,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       locale: "en_NG",
       title: store.name,
       description,
-      images: store.logo_url ? [{ url: clCrawler(store.logo_url), alt: store.name }] : [],
+      images: [{ url: storeCardUrl({ ...store, accent }), ...CARD_SIZE, alt: store.name, type: "image/jpeg" }],
     },
-    twitter: { card: "summary", title: store.name, description, images: store.logo_url ? [clCrawler(store.logo_url)] : [] },
+    twitter: { card: "summary_large_image", title: store.name, description, images: [storeCardUrl({ ...store, accent })] },
   };
 }
 

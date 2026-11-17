@@ -1,5 +1,5 @@
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { verifySession } from "@/lib/auth";
@@ -7,35 +7,62 @@ import { verifyAdminSession } from "@/lib/admin-auth";
 import { query } from "@/lib/db";
 import { getOrSet } from "@/lib/redis";
 import { getStoreAccess } from "@/lib/access";
-import {
-  ArrowRight,
-  Check,
-  X,
-  Sparkles,
-  ShieldCheck,
-  MessageCircle,
-  Smartphone,
-  Wallet,
-  LayoutDashboard,
-  Store,
-  Megaphone,
-  Zap,
-  Plus,
-} from "lucide-react";
 import ProductSlider, { type ProductSlide } from "./ProductSlider";
 import HomeNav from "./HomeNav";
+import VideoHero from "./VideoHero";
 import Footer from "@/components/Footer";
 import GooglePlayBadge from "@/components/GooglePlayBadge";
-import { Bell, Camera, CreditCard } from "lucide-react";
+import {
+  ArrowRight,
+  Building2,
+  Check,
+  Clock,
+  LayoutDashboard,
+  MessageCircle,
+  Search,
+  Share2,
+  Smartphone,
+  Store,
+  TrendingUp,
+  Wallet,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
+import CommerceScene from "./landing/CommerceScene";
+import AutomationPanel from "./landing/AutomationPanel";
+import CountUp from "./landing/CountUp";
+import Faq from "./landing/Faq";
+import Icon3D, { type Tone } from "./landing/Icon3D";
+import { PHOTO } from "./landing/media";
+import { Reveal } from "./landing/Reveal";
+import WhatsAppScreen from "./landing/screens/WhatsAppScreen";
+import {
+  CheckoutScreen,
+  DashboardScreen,
+  SearchScreen,
+  ShareScreen,
+  StorefrontScreen,
+} from "./landing/screens/Screens";
 import type { Metadata } from "next";
 import { jsonLd, platformLd } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: { absolute: "Duka - Create your online store in Nigeria | Sell on WhatsApp & Instagram" },
+  title: {
+    absolute:
+      "Duka - Create your online store in Nigeria | Sell on WhatsApp & Instagram",
+  },
   description:
     "Start your online store free in minutes. Get your own website, take payments by card, transfer and USSD, manage orders and deliveries, and sell on WhatsApp, Instagram and Google.",
   alternates: { canonical: "/" },
-  keywords: ["online store Nigeria", "ecommerce website Nigeria", "sell on WhatsApp", "sell on Instagram", "Shopify alternative Nigeria", "create online shop", "Duka"],
+  keywords: [
+    "online store Nigeria",
+    "ecommerce website Nigeria",
+    "sell on WhatsApp",
+    "sell on Instagram",
+    "Shopify alternative Nigeria",
+    "create online shop",
+    "Duka",
+  ],
 };
 
 const CATEGORY_META: Record<string, { icon: string; color: string }> = {
@@ -54,200 +81,6 @@ const CATEGORY_META: Record<string, { icon: string; color: string }> = {
   "Books and Stationery": { icon: "📚", color: "#8b5cf6" },
   Other: { icon: "📦", color: "#71717a" },
 };
-
-const U = (id: string, w = 900, h = 700) =>
-  `https://images.unsplash.com/${id}?w=${w}&h=${h}&fit=crop&q=80`;
-
-const IMG = {
-  fashion: U("photo-1483985988355-763728e1935b", 500, 600),
-  food: U("photo-1567620905732-2d1ec7ab7445", 500, 600),
-  tech: U("photo-1488590528505-98d2b5aba04b", 500, 600),
-  beauty: U("photo-1522335789203-aabd1fc54bc9", 500, 600),
-  owner: U("photo-1556742049-0cfed4f6a45d", 1000, 800),
-  checkout: U("photo-1556742502-ec7c0e9f34b1", 1000, 800),
-  dashboard: U("photo-1551288049-bebda4e38f71", 1000, 800),
-  shop: U("photo-1441986300917-64674bd600d8", 1000, 800),
-  phone: U("photo-1512941937669-90a1b58e7e9c", 1000, 800),
-  cta: U("photo-1607082348824-0a96f2a4b9da", 1600, 900),
-};
-
-const PAINS = [
-  {
-    emoji: "💬",
-    title: "Orders buried in DMs",
-    text: "Prices, sizes, addresses and “is this still available?” scattered across a hundred chats.",
-  },
-  {
-    emoji: "🧾",
-    title: "Chasing payment proof",
-    text: "Screenshots of transfers, fake alerts and customers who go quiet after “I’ll pay tomorrow”.",
-  },
-  {
-    emoji: "🤷",
-    title: "Customers don’t trust you yet",
-    text: "No proper store, no reviews page, no badge. Strangers hesitate to send money.",
-  },
-  {
-    emoji: "📉",
-    title: "Only your followers can find you",
-    text: "If they’re not already in your audience, they will never see what you sell.",
-  },
-];
-
-const BENEFITS = [
-  {
-    eyebrow: "Your store",
-    title: "A real branded store, live in minutes",
-    text: "Get your own storefront with your logo, your products and your own dukanigeria.com link. Put it in your bio, status and every chat. One link replaces every “send me pictures” conversation.",
-    points: [
-      "Custom store URL you can share anywhere",
-      "Looks great on phones, where your customers are",
-      "Categories and subcategories set up by AI",
-    ],
-    image: IMG.shop,
-    icon: Store,
-  },
-  {
-    eyebrow: "Get paid",
-    title: "Checkout that collects the money for you",
-    text: "Customers pick items, enter their details and pay by card or bank transfer through Paystack. No back and forth, no guessing whether the alert is real.",
-    points: [
-      "Paystack and bank transfer built in",
-      "Orders arrive organised, with customer details attached",
-      "Customers can still WhatsApp you with one tap",
-    ],
-    image: IMG.checkout,
-    icon: Wallet,
-  },
-  {
-    eyebrow: "Run it",
-    title: "A dashboard that shows how your business is doing",
-    text: "See orders, revenue and stock in one place instead of in your head or a notebook. Update a price or mark something sold out in seconds.",
-    points: [
-      "Real-time orders and revenue",
-      "Inventory that updates as you sell",
-      "Product and category management tools",
-    ],
-    image: IMG.dashboard,
-    icon: LayoutDashboard,
-  },
-  {
-    eyebrow: "Get found",
-    title: "Be discovered by people who don’t follow you yet",
-    text: "Your store is listed on the Duka marketplace, where shoppers browse vendors and products by category. Post reels, earn the verified badge and get promoted in featured listings and ad campaigns.",
-    points: [
-      "Listed in the Duka vendor directory",
-      "Verified badge builds instant trust",
-      "Featured listings and ad campaigns to boost sales",
-    ],
-    image: IMG.phone,
-    icon: Megaphone,
-  },
-];
-
-const BENTO = [
-  {
-    icon: Sparkles,
-    title: "AI store setup",
-    text: "Describe what you sell in plain language and your categories are built for you.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Verified badge",
-    text: "Show shoppers you’re a real business they can buy from.",
-  },
-  {
-    icon: MessageCircle,
-    title: "WhatsApp contact",
-    text: "Customers reach you directly when they have questions.",
-  },
-  {
-    icon: Smartphone,
-    title: "Mobile first",
-    text: "Fast, clean and easy to shop on any phone.",
-  },
-  {
-    icon: Zap,
-    title: "AI product descriptions",
-    text: "Upload a photo and let AI help you write the copy.",
-  },
-  {
-    icon: Wallet,
-    title: "Free to start",
-    text: "No card required. Upgrade only when you’re ready.",
-  },
-];
-
-const STEPS = [
-  {
-    step: "1",
-    title: "Create your account",
-    text: "Sign up free with your email or phone. It takes under a minute and needs no card.",
-    image: IMG.owner,
-  },
-  {
-    step: "2",
-    title: "Tell AI what you sell",
-    text: "Describe your business and your categories and subcategories are set up for you.",
-    image: IMG.tech,
-  },
-  {
-    step: "3",
-    title: "Add your products",
-    text: "Upload photos, set prices and stock. AI can help write the descriptions.",
-    image: IMG.fashion,
-  },
-  {
-    step: "4",
-    title: "Share your link and sell",
-    text: "Post your store link everywhere, accept Paystack or bank transfer and watch orders arrive.",
-    image: IMG.beauty,
-  },
-];
-
-const COMPARE = [
-  ["Orders", "Scattered across chats", "One organised order list"],
-  [
-    "Payments",
-    "Screenshots and “I’ve sent it”",
-    "Paystack and bank transfer at checkout",
-  ],
-  [
-    "Trust",
-    "Customers have to take your word",
-    "Branded store with a verified badge",
-  ],
-  ["Stock", "Tracked in your head", "Updates as you sell"],
-  ["Reach", "Only people who follow you", "Listed in the Duka marketplace"],
-  ["Sharing", "Send photos one by one", "One link to your whole catalogue"],
-];
-
-const FAQ = [
-  {
-    q: "Is it really free to start?",
-    a: "Yes. You can create your store without a card and start adding products straight away. See the pricing page for plan details when you’re ready to grow.",
-  },
-  {
-    q: "Do I need technical skills?",
-    a: "No. If you can post on WhatsApp or Instagram, you can set up a Duka store. AI helps organise your categories and write product descriptions.",
-  },
-  {
-    q: "How do I get paid?",
-    a: "Customers can pay with Paystack or bank transfer at checkout, so you are not chasing payment proofs in chat.",
-  },
-  {
-    q: "Can customers still chat with me?",
-    a: "Yes. Your store includes direct WhatsApp contact, so shoppers can ask questions and you keep the personal touch.",
-  },
-  {
-    q: "How will customers find my store?",
-    a: "Share your store link anywhere you already sell, and shoppers can also discover you through the Duka marketplace by browsing categories and products.",
-  },
-  {
-    q: "What can I sell?",
-    a: "Fashion, shoes, beauty, hair, food, electronics, phones, furniture, art, jewelry, books and more. There are 14+ categories to choose from.",
-  },
-];
 
 export default async function HomePage() {
   // ── Subdomain guard ──────────────────────────────────────────────────────
@@ -279,22 +112,36 @@ export default async function HomePage() {
     if (admin) redirect("/admin");
     // Owners and team members go to their dashboard
     const access = await getStoreAccess(user);
-    redirect(access ? (access.role === "staff" ? "/dashboard/orders" : "/dashboard") : "/onboarding");
+    redirect(
+      access
+        ? access.role === "staff"
+          ? "/dashboard/orders"
+          : "/dashboard"
+        : "/onboarding",
+    );
   }
 
   // Platform-wide figures: the same for every visitor, so cached briefly
   // (the product query sorts the whole catalogue at random).
   const [categoryStats, products] = await Promise.all([
-    getOrSet("home:categoryStats", () => query<{ primary_category: string; count: string }>(
-      `SELECT primary_category, COUNT(*) as count
+    getOrSet(
+      "home:categoryStats",
+      () =>
+        query<{ primary_category: string; count: string }>(
+          `SELECT primary_category, COUNT(*) as count
        FROM stores
        WHERE is_active = true AND primary_category IS NOT NULL
        GROUP BY primary_category
        ORDER BY count DESC`,
-      [],
-    ), 600).then((r) => r ?? []),
-    getOrSet("home:productSlides", () => query<ProductSlide>(
-      `SELECT p.id, p.name, p.slug, p.price::float AS price,
+          [],
+        ),
+      600,
+    ).then((r) => r ?? []),
+    getOrSet(
+      "home:productSlides",
+      () =>
+        query<ProductSlide>(
+          `SELECT p.id, p.name, p.slug, p.price::float AS price,
               p.compare_price::float AS compare_price, p.image_url,
               s.name AS store_name, s.slug AS store_slug
        FROM products p
@@ -305,1003 +152,435 @@ export default async function HomePage() {
          AND p.image_url IS NOT NULL AND p.image_url <> ''
        ORDER BY RANDOM()
        LIMIT 12`,
-      [],
-    ), 300).then((r) => r ?? []),
+          [],
+        ),
+      300,
+    ).then((r) => r ?? []),
   ]);
+
+  // One chip per category even if stores typed it differently ("Other" / "other")
+  const mergedCategories = Object.values(
+    categoryStats.reduce<
+      Record<string, { primary_category: string; count: number }>
+    >((acc, c) => {
+      const k = c.primary_category.trim().toLowerCase();
+      const name = CATEGORY_META[c.primary_category]
+        ? c.primary_category
+        : (acc[k]?.primary_category ?? c.primary_category.trim());
+      acc[k] = {
+        primary_category: name,
+        count: (acc[k]?.count ?? 0) + parseInt(c.count),
+      };
+      return acc;
+    }, {}),
+  ).sort((a, b) => b.count - a.count);
 
   const totalStores = categoryStats.reduce(
     (sum, c) => sum + parseInt(c.count),
     0,
   );
 
+  const faq = [
+    {
+      q: "Is Duka really free to start?",
+      a: "Yes. Create your store and start taking orders on the Free plan. Upgrade only when you need more.",
+    },
+    {
+      q: "How do my customers pay?",
+      a: "Card, bank transfer, USSD or pay on delivery. Money lands in your bank account.",
+    },
+    {
+      q: "Can I sell on WhatsApp and Instagram?",
+      a: "Yes. Share product links that show a picture card with the price, or connect the WhatsApp shop so customers buy inside the chat.",
+    },
+    {
+      q: "Do I need a website or tech skills?",
+      a: "No. Your store is live on its own link in minutes, and you can connect your own .com later.",
+    },
+  ];
+
+  const stages = [
+    {
+      plan: "Free",
+      tone: "green" as const,
+      icon: Smartphone,
+      title: "Start from your phone",
+      lead: "First sale before lunch.",
+      rest: "Your store, live today, for ₦0.",
+      img: PHOTO.founder,
+    },
+    {
+      plan: "Grow",
+      tone: "amber" as const,
+      icon: TrendingUp,
+      title: "Grow into a brand",
+      lead: "Bring buyers back.",
+      rest: "Discount codes, cart reminders and analytics.",
+      img: PHOTO.boutique,
+    },
+    {
+      plan: "Pro",
+      tone: "violet" as const,
+      icon: Building2,
+      title: "Run it like a company",
+      lead: "Your own .com.",
+      rest: "Staff accounts for your packers, cashiers and managers.",
+      img: PHOTO.team,
+    },
+  ];
+
+  const tools = [
+    {
+      id: "tool-store",
+      eyebrow: "Your store",
+      icon: Store,
+      tone: "pink" as const,
+      title: "A real store, live in minutes.",
+      caption: "One link replaces every “send me pictures”.",
+      points: ["yourbrand.dukanigeria.com", "Made for phones", "AI sets up your categories"],
+      screen: <StorefrontScreen className="w-[250px] sm:w-[270px]" />,
+      glow: "rgba(244,63,94,0.35)",
+    },
+    {
+      id: "tool-pay",
+      eyebrow: "Get paid",
+      icon: Wallet,
+      tone: "green" as const,
+      title: "Checkout that collects the money.",
+      caption: "No more “send proof of payment”.",
+      points: ["Card, transfer, USSD", "Pay on delivery", "Paystack-secured"],
+      screen: <CheckoutScreen className="w-[250px] sm:w-[270px]" />,
+      glow: "rgba(16,185,129,0.35)",
+    },
+    {
+      id: "tool-run",
+      eyebrow: "Run it",
+      icon: LayoutDashboard,
+      tone: "amber" as const,
+      title: "Your whole business, one screen.",
+      caption: "Orders, money and stock. Not in a notebook.",
+      points: ["Live orders & revenue", "Stock that updates itself", "Team accounts"],
+      screen: <DashboardScreen className="w-full max-w-[600px]" />,
+      glow: "rgba(245,158,11,0.35)",
+    },
+    {
+      id: "tool-found",
+      eyebrow: "Get found",
+      icon: Search,
+      tone: "blue" as const,
+      title: "Found on Google. Discovered on Duka.",
+      caption: "Customers who don’t follow you yet.",
+      points: ["Products show on Google", "Listed on Duka Discover", "Verified badge"],
+      screen: <SearchScreen className="w-full max-w-[560px]" />,
+      glow: "rgba(59,130,246,0.35)",
+    },
+  ];
+
+  const steps = [
+    { n: "01", title: "Add your first product", img: PHOTO.maker },
+    { n: "02", title: "Make the store yours", img: PHOTO.rack },
+    { n: "03", title: "Share the link. Get paid.", img: PHOTO.founder },
+  ];
+
+  const H2 = "text-[2.5rem] font-semibold leading-[1.02] tracking-[-0.035em] sm:text-6xl lg:text-7xl";
+
   return (
-    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
+    <div className="min-h-screen overflow-x-hidden" style={{ background: "var(--bg)" }}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(platformLd()) }} />
-      <HomeNav />
+      <HomeNav overlay />
 
-      {/* ═════════════ HERO ═════════════ */}
-      <section className="relative overflow-hidden px-4 pb-20 pt-14 sm:pt-20 lg:pb-28">
-        <div className="pointer-events-none absolute inset-0">
-          <div
-            className="absolute left-1/2 top-[-120px] h-[620px] w-[1000px] -translate-x-1/2 rounded-full opacity-[0.18] blur-3xl"
-            style={{
-              background:
-                "radial-gradient(ellipse, #f59e0b 0%, transparent 70%)",
-            }}
-          />
+      {/* ═════════════ VIDEO HEADER ═════════════ */}
+      <VideoHero storeCount={totalStores} />
+
+      {/* ═════════════ STOP SELLING IN DMs ═════════════ */}
+      <section id="how-duka-works" className="scroll-mt-16 px-4 pb-24 pt-24 sm:pb-32 sm:pt-32">
+        <div className="mx-auto max-w-7xl">
+          <Reveal>
+            <h2 className={`max-w-6xl ${H2}`}>
+              <span style={{ color: "var(--text-muted)" }}>Stop selling in DMs. </span>
+              <span style={{ color: "var(--text-primary)" }}>Start running a real store. </span>
+              <span style={{ color: "var(--text-muted)" }}>On WhatsApp, Instagram, TikTok and Google.</span>
+            </h2>
+          </Reveal>
+
+          <div className="mt-14 grid gap-4 lg:grid-cols-[1.2fr_0.9fr_1.2fr]">
+            <Reveal className="relative flex min-h-[600px] flex-col items-center justify-end overflow-hidden rounded-[2rem] bg-gradient-to-b from-[#0b3d2e] to-[#04130f] px-6 pt-28">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(37,211,102,0.35),transparent_60%)]" />
+              <WhatsAppScreen className="relative w-[270px] translate-y-8" />
+              <PanelLabel icon={MessageCircle} tone="green" title="Shop inside WhatsApp" />
+            </Reveal>
+            <Reveal delay={0.08} className="relative flex min-h-[600px] flex-col items-center justify-end overflow-hidden rounded-[2rem] bg-gradient-to-b from-[#ffe4e6] to-[#fed7aa] px-6 pt-28 dark:from-[#3b0d17] dark:to-[#2a1405]">
+              <StorefrontScreen className="relative w-[250px] translate-y-8" />
+              <PanelLabel icon={Store} tone="pink" title="Your own store link" ink="dark" />
+            </Reveal>
+            <Reveal delay={0.16} className="relative flex min-h-[600px] flex-col items-center justify-center overflow-hidden rounded-[2rem] bg-gradient-to-b from-zinc-800 to-zinc-950 px-8 pb-16 pt-28">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(245,158,11,0.3),transparent_60%)]" />
+              <ShareScreen className="relative w-full max-w-[340px]" />
+              <PanelLabel icon={Share2} tone="amber" title="Links that sell for you" />
+            </Reveal>
+          </div>
         </div>
+      </section>
 
-        <div className="relative mx-auto grid max-w-7xl items-center gap-14 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="text-center lg:text-left">
-            <div
-              className="mb-6 inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-bold text-black"
-              style={{ background: "var(--accent-light)" }}
-            >
-              <span className="h-2 w-2 animate-pulse rounded-full bg-green-600" />
-              {totalStores > 0
-                ? `${totalStores}+ stores already selling on Duka`
-                : "Built for Nigerian sellers"}
-            </div>
-
-            <h1
-              className="mb-6 text-[2.6rem] font-black leading-[1.05] tracking-tight sm:text-6xl xl:text-7xl"
-              style={{ color: "var(--text-primary)" }}
-            >
-              Stop selling in DMs.
+      {/* ═════════════ ENTREPRENEUR TO ENTERPRISE ═════════════ */}
+      <section className="bg-[#05090a] px-4 py-24 text-white sm:py-32">
+        <div className="mx-auto max-w-7xl">
+          <Reveal>
+            <h2 className={H2}>
+              From entrepreneur
               <br />
-              Start running a{" "}
-              <span
-                className="relative inline-block"
-                style={{ color: "var(--accent)" }}
-              >
-                real store
-                <svg
-                  className="absolute -bottom-2 left-0 w-full"
-                  viewBox="0 0 200 12"
-                  fill="none"
-                  aria-hidden
-                >
-                  <path
-                    d="M2 9C50 2 150 2 198 9"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </span>
-              .
-            </h1>
-
-            <p
-              className="mx-auto mb-9 max-w-xl text-lg leading-relaxed sm:text-xl lg:mx-0"
-              style={{ color: "var(--text-secondary)" }}
-            >
-              Give your business a branded online store with built-in checkout,
-              a sales dashboard and a marketplace full of shoppers. Live in 10
-              minutes, no tech skills needed.
-            </p>
-
-            <div className="flex flex-col items-center gap-3 sm:flex-row lg:justify-start sm:justify-center">
-              <Link
-                href="/auth/signup"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl px-8 py-4 text-lg font-bold text-black shadow-lg transition-all hover:scale-[1.02] hover:opacity-95 active:scale-[0.98] sm:w-auto"
-                style={{ background: "var(--accent)" }}
-              >
-                Create your free store
-                <ArrowRight className="h-5 w-5" />
-              </Link>
-              <Link
-                href="/discover"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border px-8 py-4 text-lg font-semibold transition-all hover:opacity-80 sm:w-auto"
-                style={{
-                  color: "var(--text-primary)",
-                  borderColor: "var(--border-strong)",
-                }}
-              >
-                See live stores
-              </Link>
-            </div>
-
-            <ul
-              className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm font-medium lg:justify-start"
-              style={{ color: "var(--text-secondary)" }}
-            >
-              {[
-                "Free to start",
-                "No card required",
-                "Paystack and bank transfer",
-              ].map((t) => (
-                <li key={t} className="inline-flex items-center gap-1.5">
-                  <Check
-                    className="h-4 w-4"
-                    style={{ color: "var(--accent)" }}
-                  />{" "}
-                  {t}
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-7 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
-              <GooglePlayBadge size="sm" />
-              <span className="text-sm" style={{ color: "var(--text-muted)" }}>
-                Manage your store from the Duka app
-              </span>
-            </div>
-          </div>
-
-          {/* Hero visual: storefront mock */}
-          <div className="relative mx-auto w-full max-w-md lg:max-w-none">
-            <div
-              className="relative overflow-hidden rounded-[2rem] border shadow-2xl"
-              style={{ background: "var(--bg)", borderColor: "var(--border)" }}
-            >
-              <div
-                className="flex items-center gap-1.5 border-b px-4 py-3"
-                style={{
-                  borderColor: "var(--border)",
-                  background: "var(--bg-secondary)",
-                }}
-              >
-                <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
-                <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-                <span className="h-2.5 w-2.5 rounded-full bg-green-400" />
-                <div
-                  className="ml-3 flex-1 rounded-full px-3 py-1 text-[11px] font-medium"
-                  style={{
-                    background: "var(--bg)",
-                    color: "var(--text-muted)",
-                  }}
-                >
-                  yourbrand.dukanigeria.com
-                </div>
-              </div>
-
-              <div className="p-5">
-                <div className="mb-5 flex items-center gap-3">
-                  <div
-                    className="flex h-12 w-12 items-center justify-center rounded-2xl text-xl font-black text-black"
-                    style={{ background: "var(--accent)" }}
-                  >
-                    Y
-                  </div>
-                  <div className="flex-1">
-                    <p
-                      className="flex items-center gap-1.5 text-sm font-bold"
-                      style={{ color: "var(--text-primary)" }}
-                    >
-                      Your Brand
-                      <ShieldCheck className="h-4 w-4 text-blue-500" />
-                    </p>
-                    <p
-                      className="text-xs"
-                      style={{ color: "var(--text-muted)" }}
-                    >
-                      Fashion and Clothing
-                    </p>
-                  </div>
-                  <span className="rounded-full bg-green-500/15 px-3 py-1 text-xs font-bold text-green-600">
-                    Open
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    {
-                      src: IMG.fashion,
-                      name: "Ankara co-ord set",
-                      price: "₦28,500",
-                    },
-                    {
-                      src: IMG.beauty,
-                      name: "Glow skincare kit",
-                      price: "₦15,000",
-                    },
-                    {
-                      src: IMG.tech,
-                      name: "Wireless earbuds",
-                      price: "₦22,000",
-                    },
-                    {
-                      src: IMG.food,
-                      name: "Party jollof tray",
-                      price: "₦35,000",
-                    },
-                  ].map((p) => (
-                    <div
-                      key={p.name}
-                      className="overflow-hidden rounded-xl border"
-                      style={{ borderColor: "var(--border)" }}
-                    >
-                      <div
-                        className="relative aspect-[4/3]"
-                        style={{ background: "var(--bg-tertiary)" }}
-                      >
-                        <Image
-                          src={p.src}
-                          alt={p.name}
-                          fill
-                          sizes="200px"
-                          className="object-cover"
-                        />
-                      </div>
-                      <div className="p-2.5">
-                        <p
-                          className="truncate text-xs font-semibold"
-                          style={{ color: "var(--text-primary)" }}
-                        >
-                          {p.name}
-                        </p>
-                        <p
-                          className="text-xs font-bold"
-                          style={{ color: "var(--accent)" }}
-                        >
-                          {p.price}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Floating notifications (illustrative) */}
-            <div
-              className="absolute -left-3 top-24 hidden items-center gap-3 rounded-2xl border p-3 pr-5 shadow-xl sm:flex lg:-left-10"
-              style={{ background: "var(--bg)", borderColor: "var(--border)" }}
-            >
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-500/15 text-lg">
-                🎉
-              </span>
-              <div>
-                <p
-                  className="text-xs font-bold"
-                  style={{ color: "var(--text-primary)" }}
-                >
-                  New order received
-                </p>
-                <p
-                  className="text-[11px]"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  Paid via Paystack
-                </p>
-              </div>
-            </div>
-            <div
-              className="absolute -right-3 bottom-16 hidden items-center gap-3 rounded-2xl border p-3 pr-5 shadow-xl sm:flex lg:-right-8"
-              style={{ background: "var(--bg)", borderColor: "var(--border)" }}
-            >
-              <span
-                className="flex h-10 w-10 items-center justify-center rounded-xl text-lg"
-                style={{ background: "var(--accent-light)" }}
-              >
-                🛍️
-              </span>
-              <div>
-                <p
-                  className="text-xs font-bold"
-                  style={{ color: "var(--text-primary)" }}
-                >
-                  Customer from Discover
-                </p>
-                <p
-                  className="text-[11px]"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  Found you in Fashion
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═════════════ TRUST STRIP ═════════════ */}
-      <section
-        className="border-y px-4 py-8"
-        style={{
-          background: "var(--bg-secondary)",
-          borderColor: "var(--border)",
-        }}
-      >
-        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-6 text-center md:grid-cols-4">
-          {[
-            {
-              v: totalStores > 0 ? `${totalStores}+` : "Growing",
-              l: "Stores on Duka",
-            },
-            { v: "14+", l: "Product categories" },
-            { v: "10 min", l: "To launch your store" },
-            { v: "₦0", l: "To get started" },
-          ].map(({ v, l }) => (
-            <div key={l}>
-              <p
-                className="text-2xl font-black sm:text-3xl"
-                style={{ color: "var(--text-primary)" }}
-              >
-                {v}
-              </p>
-              <p
-                className="text-xs sm:text-sm"
-                style={{ color: "var(--text-muted)" }}
-              >
-                {l}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ═════════════ PROBLEM ═════════════ */}
-      <section className="px-4 py-20 sm:py-28">
-        <div className="mx-auto max-w-6xl">
-          <div className="mx-auto mb-14 max-w-2xl text-center">
-            <p
-              className="mb-3 text-xs font-bold uppercase tracking-widest"
-              style={{ color: "var(--accent)" }}
-            >
-              Sound familiar?
-            </p>
-            <h2
-              className="mb-4 text-3xl font-black tracking-tight sm:text-5xl"
-              style={{ color: "var(--text-primary)" }}
-            >
-              Great products. Messy selling.
+              <span className="text-white/45">to enterprise.</span>
             </h2>
-            <p className="text-lg" style={{ color: "var(--text-secondary)" }}>
-              Social media is great for attention and terrible for running a
-              business. Here’s what it costs you every week.
-            </p>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {PAINS.map((p) => (
-              <div
-                key={p.title}
-                className="rounded-2xl border p-6"
-                style={{
-                  background: "var(--bg)",
-                  borderColor: "var(--border)",
-                }}
-              >
-                <div
-                  className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl text-2xl"
-                  style={{ background: "var(--bg-tertiary)" }}
-                >
-                  {p.emoji}
-                </div>
-                <h3
-                  className="mb-2 text-base font-bold"
-                  style={{ color: "var(--text-primary)" }}
-                >
-                  {p.title}
-                </h3>
-                <p
-                  className="text-sm leading-relaxed"
-                  style={{ color: "var(--text-secondary)" }}
-                >
-                  {p.text}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          <p
-            className="mt-12 text-center text-xl font-black sm:text-2xl"
-            style={{ color: "var(--text-primary)" }}
-          >
-            Duka fixes all four.{" "}
-            <span style={{ color: "var(--accent)" }}>Here’s how ↓</span>
-          </p>
-        </div>
-      </section>
-
-      {/* ═════════════ BENEFITS ═════════════ */}
-      <section
-        id="for-vendors"
-        className="scroll-mt-16 px-4 pb-8 sm:pb-16"
-        style={{ background: "var(--bg)" }}
-      >
-        <div className="mx-auto max-w-7xl space-y-20 sm:space-y-28">
-          {BENEFITS.map((b, i) => {
-            const Icon = b.icon;
-            const flip = i % 2 === 1;
-            return (
-              <div
-                key={b.title}
-                className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16"
-              >
-                <div className={flip ? "lg:order-2" : ""}>
-                  <div
-                    className="mb-5 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wider"
-                    style={{ background: "var(--accent-light)", color: "#000" }}
-                  >
-                    <Icon className="h-3.5 w-3.5" />
-                    {b.eyebrow}
+          </Reveal>
+          <div className="mt-14 grid gap-6 md:grid-cols-3">
+            {stages.map((s, i) => (
+              <Reveal key={s.title} delay={i * 0.08}>
+                <div className="group">
+                  <div className="relative aspect-[4/3] overflow-hidden rounded-3xl bg-zinc-900">
+                    <Image src={s.img} alt="" fill sizes="(min-width: 768px) 33vw, 100vw" className="object-cover transition-transform duration-700 group-hover:scale-105" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                    <span className="absolute left-4 top-4 rounded-full bg-black/50 px-3 py-1 text-xs font-bold backdrop-blur-md">{s.plan}</span>
+                    <span className="absolute bottom-4 left-4">
+                      <Icon3D icon={s.icon} tone={s.tone} size={52} />
+                    </span>
                   </div>
-                  <h2
-                    className="mb-4 text-3xl font-black leading-tight tracking-tight sm:text-4xl"
-                    style={{ color: "var(--text-primary)" }}
-                  >
-                    {b.title}
-                  </h2>
-                  <p
-                    className="mb-6 text-base leading-relaxed sm:text-lg"
-                    style={{ color: "var(--text-secondary)" }}
-                  >
-                    {b.text}
-                  </p>
-                  <ul className="space-y-3">
-                    {b.points.map((pt) => (
-                      <li key={pt} className="flex items-start gap-3">
-                        <span
-                          className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
-                          style={{ background: "var(--accent)" }}
-                        >
-                          <Check className="h-3 w-3 text-black" />
-                        </span>
-                        <span
-                          className="text-sm font-medium sm:text-base"
-                          style={{ color: "var(--text-primary)" }}
-                        >
-                          {pt}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className={flip ? "lg:order-1" : ""}>
-                  <div className="relative">
-                    <div
-                      className="absolute -inset-3 rotate-2 rounded-[2rem] opacity-30"
-                      style={{ background: "var(--accent)" }}
-                      aria-hidden
-                    />
-                    <div
-                      className="relative aspect-[5/4] overflow-hidden rounded-[1.75rem] shadow-2xl"
-                      style={{ background: "var(--bg-tertiary)" }}
-                    >
-                      <Image
-                        src={b.image}
-                        alt={b.title}
-                        fill
-                        sizes="(min-width: 1024px) 45vw, 100vw"
-                        className="object-cover"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* ═════════════ BENTO ═════════════ */}
-      <section
-        className="px-4 py-20 sm:py-28"
-        style={{ background: "var(--bg-secondary)" }}
-      >
-        <div className="mx-auto max-w-6xl">
-          <div className="mx-auto mb-14 max-w-2xl text-center">
-            <p
-              className="mb-3 text-xs font-bold uppercase tracking-widest"
-              style={{ color: "var(--accent)" }}
-            >
-              Everything included
-            </p>
-            <h2
-              className="mb-4 text-3xl font-black tracking-tight sm:text-5xl"
-              style={{ color: "var(--text-primary)" }}
-            >
-              All the tools.{" "}
-              <span style={{ color: "var(--accent)" }}>
-                None of the stress.
-              </span>
-            </h2>
-            <p className="text-lg" style={{ color: "var(--text-secondary)" }}>
-              Everything a growing online business needs, ready from day one.
-            </p>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {BENTO.map(({ icon: Icon, title, text }) => (
-              <div
-                key={title}
-                className="group rounded-2xl border p-6 transition-all hover:-translate-y-1 hover:shadow-lg"
-                style={{
-                  background: "var(--bg)",
-                  borderColor: "var(--border)",
-                }}
-              >
-                <div
-                  className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl transition-transform group-hover:scale-110"
-                  style={{ background: "var(--accent)" }}
-                >
-                  <Icon className="h-5 w-5 text-black" />
-                </div>
-                <h3
-                  className="mb-1.5 text-base font-bold"
-                  style={{ color: "var(--text-primary)" }}
-                >
-                  {title}
-                </h3>
-                <p
-                  className="text-sm leading-relaxed"
-                  style={{ color: "var(--text-secondary)" }}
-                >
-                  {text}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═════════════ COMPARISON ═════════════ */}
-      <section className="px-4 py-20 sm:py-28">
-        <div className="mx-auto max-w-4xl">
-          <div className="mb-12 text-center">
-            <p
-              className="mb-3 text-xs font-bold uppercase tracking-widest"
-              style={{ color: "var(--accent)" }}
-            >
-              The difference
-            </p>
-            <h2
-              className="text-3xl font-black tracking-tight sm:text-5xl"
-              style={{ color: "var(--text-primary)" }}
-            >
-              DMs vs. your Duka store
-            </h2>
-          </div>
-
-          <div
-            className="overflow-hidden rounded-3xl border"
-            style={{ borderColor: "var(--border)" }}
-          >
-            <div
-              className="grid grid-cols-[0.8fr_1fr_1fr] text-xs font-bold uppercase tracking-wider sm:text-sm"
-              style={{ background: "var(--bg-secondary)" }}
-            >
-              <div className="p-4" />
-              <div className="p-4" style={{ color: "var(--text-muted)" }}>
-                Selling in DMs
-              </div>
-              <div
-                className="p-4 text-black"
-                style={{ background: "var(--accent)" }}
-              >
-                With Duka
-              </div>
-            </div>
-            {COMPARE.map(([label, before, after]) => (
-              <div
-                key={label}
-                className="grid grid-cols-[0.8fr_1fr_1fr] border-t text-sm"
-                style={{ borderColor: "var(--border)" }}
-              >
-                <div
-                  className="p-4 font-bold"
-                  style={{ color: "var(--text-primary)" }}
-                >
-                  {label}
-                </div>
-                <div
-                  className="flex items-start gap-2 p-4"
-                  style={{ color: "var(--text-secondary)" }}
-                >
-                  <X className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
-                  {before}
-                </div>
-                <div
-                  className="flex items-start gap-2 p-4 font-medium"
-                  style={{
-                    color: "var(--text-primary)",
-                    background: "var(--accent-light)",
-                  }}
-                >
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-green-700" />
-                  {after}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═════════════ HOW IT WORKS ═════════════ */}
-      <section
-        className="px-4 py-20 sm:py-28"
-        style={{ background: "var(--bg-secondary)" }}
-      >
-        <div className="mx-auto max-w-7xl">
-          <div className="mx-auto mb-14 max-w-2xl text-center">
-            <p
-              className="mb-3 text-xs font-bold uppercase tracking-widest"
-              style={{ color: "var(--accent)" }}
-            >
-              How it works
-            </p>
-            <h2
-              className="mb-4 text-3xl font-black tracking-tight sm:text-5xl"
-              style={{ color: "var(--text-primary)" }}
-            >
-              From idea to first order in 4 steps
-            </h2>
-            <p className="text-lg" style={{ color: "var(--text-secondary)" }}>
-              No developers, no design work, no setup fees to start.
-            </p>
-          </div>
-
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {STEPS.map((s) => (
-              <div
-                key={s.step}
-                className="group overflow-hidden rounded-3xl border"
-                style={{
-                  background: "var(--bg)",
-                  borderColor: "var(--border)",
-                }}
-              >
-                <div
-                  className="relative aspect-[4/3]"
-                  style={{ background: "var(--bg-tertiary)" }}
-                >
-                  <Image
-                    src={s.image}
-                    alt={s.title}
-                    fill
-                    sizes="(min-width: 1024px) 25vw, 50vw"
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  <span
-                    className="absolute left-4 top-4 flex h-10 w-10 items-center justify-center rounded-xl text-base font-black text-black shadow-lg"
-                    style={{ background: "var(--accent)" }}
-                  >
-                    {s.step}
-                  </span>
-                </div>
-                <div className="p-5">
-                  <h3
-                    className="mb-1.5 text-base font-bold"
-                    style={{ color: "var(--text-primary)" }}
-                  >
-                    {s.title}
-                  </h3>
-                  <p
-                    className="text-sm leading-relaxed"
-                    style={{ color: "var(--text-secondary)" }}
-                  >
-                    {s.text}
+                  <h3 className="mt-5 text-2xl font-semibold tracking-tight">{s.title}</h3>
+                  <p className="mt-1.5 text-white/55">
+                    <b className="font-semibold text-white">{s.lead}</b> {s.rest}
                   </p>
                 </div>
-              </div>
+              </Reveal>
             ))}
-          </div>
-
-          <div className="mt-12 text-center">
-            <Link
-              href="/auth/signup"
-              className="inline-flex items-center gap-2 rounded-xl px-8 py-4 text-lg font-bold text-black shadow-lg transition-all hover:scale-[1.02] hover:opacity-95"
-              style={{ background: "var(--accent)" }}
-            >
-              Start your store free
-              <ArrowRight className="h-5 w-5" />
-            </Link>
           </div>
         </div>
       </section>
 
-      {/* ═════════════ MARKETPLACE / LIVE PRODUCTS ═════════════ */}
-      <section className="px-4 py-20 sm:py-28">
+      {/* ═════════════ DUKA TOOLS ═════════════ */}
+      <section id="tools" className="scroll-mt-20 px-4 py-24 sm:py-32">
         <div className="mx-auto max-w-7xl">
-          <div className="mb-10 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-            <div className="max-w-2xl">
-              <p
-                className="mb-3 text-xs font-bold uppercase tracking-widest"
-                style={{ color: "var(--accent)" }}
-              >
-                Shoppers are already here
-              </p>
-              <h2
-                className="mb-3 text-3xl font-black tracking-tight sm:text-5xl"
-                style={{ color: "var(--text-primary)" }}
-              >
-                Your products, in front of new customers
+          <Reveal className="mb-16 sm:mb-24">
+            <h2 className={H2}>
+              <span style={{ color: "var(--text-primary)" }}>Every tool your store needs.</span>
+              <br />
+              <span style={{ color: "var(--text-muted)" }}>Without the tech stress.</span>
+            </h2>
+          </Reveal>
+
+          <div className="space-y-20 sm:space-y-32">
+            {tools.map((t, i) => {
+              const flip = i % 2 === 1;
+              return (
+                <div key={t.title} id={t.id} className="grid scroll-mt-24 items-center gap-10 lg:grid-cols-2 lg:gap-16">
+                  <Reveal className={flip ? "lg:order-2" : ""}>
+                    <Icon3D icon={t.icon} tone={t.tone} size={60} />
+                    <p className="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-amber-500">{t.eyebrow}</p>
+                    <h3 className="mt-2 text-3xl font-semibold leading-[1.05] tracking-[-0.03em] sm:text-5xl" style={{ color: "var(--text-primary)" }}>
+                      {t.title}
+                    </h3>
+                    <p className="mt-3 text-lg" style={{ color: "var(--text-muted)" }}>{t.caption}</p>
+                    <ul className="mt-7 space-y-3">
+                      {t.points.map((p) => (
+                        <li key={p} className="flex items-center gap-3 font-semibold" style={{ color: "var(--text-primary)" }}>
+                          <Icon3D icon={Check} tone="green" size={24} /> {p}
+                        </li>
+                      ))}
+                    </ul>
+                  </Reveal>
+                  <Reveal delay={0.1} className={flip ? "lg:order-1" : ""}>
+                    <div className="relative flex min-h-[460px] items-center justify-center overflow-hidden rounded-[2rem] border px-5 py-12 sm:min-h-[620px]" style={{ borderColor: "var(--border)", background: "var(--bg-secondary)" }}>
+                      {/* Glow + rings */}
+                      <div className="pointer-events-none absolute inset-0" style={{ background: `radial-gradient(circle at 50% 50%, ${t.glow}, transparent 62%)` }} />
+                      {[260, 400, 540, 680].map((d) => (
+                        <span key={d} className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border" style={{ width: d, height: d, borderColor: "var(--border)" }} />
+                      ))}
+                      <div className="relative w-full flex justify-center">{t.screen}</div>
+                    </div>
+                  </Reveal>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ═════════════ SALES ON AUTOPILOT (3D) ═════════════ */}
+      <section id="automation" className="relative scroll-mt-16 overflow-hidden bg-[#05090a] px-4 py-24 text-white sm:py-32">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_70%_40%,rgba(245,158,11,0.22),transparent_55%)]" />
+        <div className="relative mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1fr_1.05fr]">
+          <div className="min-w-0">
+            <Reveal>
+              <h2 className={H2}>
+                Sales on autopilot.
+                <br />
+                <span className="text-white/45">Duka does the busywork.</span>
               </h2>
-              <p className="text-lg" style={{ color: "var(--text-secondary)" }}>
-                Every Duka store is listed in the marketplace. These are real
-                products from real sellers, refreshed every visit.
-              </p>
-            </div>
-            <Link
-              href="/discover"
-              className="inline-flex shrink-0 items-center gap-1.5 text-sm font-bold hover:underline"
-              style={{ color: "var(--accent)" }}
-            >
-              Browse the marketplace <ArrowRight className="h-4 w-4" />
-            </Link>
+            </Reveal>
+            <Reveal delay={0.1} className="mt-10">
+              <AutomationPanel />
+            </Reveal>
           </div>
+          <Reveal delay={0.15}>
+            <CommerceScene className="aspect-square w-full max-w-[640px] justify-self-center lg:ml-auto" />
+          </Reveal>
+        </div>
+      </section>
 
-          {categoryStats.length > 0 && (
-            <div className="-mx-4 mb-10 flex gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:flex-wrap sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {categoryStats.map(({ primary_category, count }) => {
-                const meta =
-                  CATEGORY_META[primary_category] ?? CATEGORY_META["Other"];
+      {/* ═════════════ NUMBERS ═════════════ */}
+      <section className="px-4 py-24 sm:py-32">
+        <div className="mx-auto max-w-7xl">
+          <Reveal>
+            <h2 className={H2} style={{ color: "var(--text-primary)" }}>
+              Built for how
+              <br />
+              Nigeria buys.
+            </h2>
+          </Reveal>
+          <div className="mt-14 grid grid-cols-2 gap-x-6 gap-y-12 lg:grid-cols-4">
+            {[
+              { icon: Wallet, tone: "green" as const, label: "To start", node: <CountUp to={0} prefix="₦" /> },
+              { icon: Zap, tone: "amber" as const, label: "To go live", node: <CountUp to={10} suffix="min" /> },
+              { icon: Clock, tone: "blue" as const, label: "Your store is open", node: <CountUp to={24} suffix="/7" /> },
+              { icon: Store, tone: "pink" as const, label: "Stores powered by Duka", node: <CountUp to={Math.max(totalStores, 1)} suffix="+" /> },
+            ].map((s, i) => (
+              <Reveal key={s.label} delay={i * 0.08} className="border-t pt-6" >
+                <p className="flex items-center gap-2.5 font-mono text-xs font-bold uppercase tracking-[0.15em]" style={{ color: "var(--text-muted)" }}>
+                  <Icon3D icon={s.icon} tone={s.tone} size={26} /> {s.label}
+                </p>
+                <p className="mt-4 text-6xl font-semibold tracking-[-0.05em] sm:text-7xl lg:text-8xl" style={{ color: "var(--text-primary)" }}>
+                  {s.node}
+                </p>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═════════════ LIVE: STORES POWERED BY DUKA ═════════════ */}
+      <section className="px-4 py-24 sm:py-28" style={{ background: "var(--bg-secondary)" }}>
+        <div className="mx-auto max-w-7xl">
+          <Reveal className="mb-10 flex flex-wrap items-end justify-between gap-4">
+            <h2 className={H2} style={{ color: "var(--text-primary)" }}>
+              Stores powered
+              <br />
+              <span style={{ color: "var(--text-muted)" }}>by Duka.</span>
+            </h2>
+            <Link href="/discover" className="inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-bold transition-colors hover:border-amber-400" style={{ borderColor: "var(--border-strong)", color: "var(--text-primary)" }}>
+              Explore stores <ArrowRight className="h-4 w-4" />
+            </Link>
+          </Reveal>
+          {mergedCategories.length > 0 && (
+            <Reveal className="mb-8 flex flex-wrap gap-2">
+              {mergedCategories.slice(0, 10).map(({ primary_category, count }) => {
+                const meta = CATEGORY_META[primary_category] ?? CATEGORY_META["Other"];
                 return (
                   <Link
                     key={primary_category}
                     href={`/discover?category=${encodeURIComponent(primary_category)}`}
-                    className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-semibold transition-all hover:-translate-y-0.5 hover:shadow-md"
-                    style={{
-                      background: "var(--bg)",
-                      borderColor: "var(--border)",
-                      color: "var(--text-primary)",
-                    }}
+                    className="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-transform hover:-translate-y-0.5"
+                    style={{ borderColor: "var(--border)", background: "var(--bg)", color: "var(--text-secondary)" }}
                   >
-                    <span>{meta.icon}</span>
-                    {primary_category}
-                    <span
-                      className="text-xs"
-                      style={{ color: "var(--text-muted)" }}
-                    >
-                      {count}
-                    </span>
+                    {meta.icon} {primary_category} <span className="text-xs opacity-60">{count}</span>
                   </Link>
                 );
               })}
-            </div>
+            </Reveal>
           )}
-
           {products.length > 0 && <ProductSlider products={products} />}
         </div>
       </section>
 
-      {/* ═════════════ AFFILIATE ═════════════ */}
-      {/* <section className="px-4 pb-6">
+      {/* ═════════════ LIVE IN 3 STEPS ═════════════ */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-zinc-900 to-[#05090a] px-4 py-24 text-white sm:py-32">
         <div className="mx-auto max-w-7xl">
-          <div
-            className="flex flex-col items-center gap-6 rounded-3xl border px-8 py-10 sm:flex-row sm:gap-10 sm:px-14"
-            style={{
-              background: "var(--bg-secondary)",
-              borderColor: "var(--border)",
-            }}
-          >
-            <div
-              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-2xl"
-              style={{ background: "var(--accent-light)" }}
-            >
-              💰
+          <Reveal>
+            <h2 className={`text-center ${H2}`}>Live in 3 steps.</h2>
+          </Reveal>
+          <div className="mt-16 grid items-center gap-12 lg:grid-cols-2">
+            <Reveal className="grid grid-cols-2 gap-4">
+              <div className="relative aspect-[3/4] overflow-hidden rounded-3xl">
+                <Image src={steps[0].img} alt="A Nigerian entrepreneur smiling" fill sizes="(min-width: 1024px) 25vw, 50vw" className="object-cover" />
+              </div>
+              <div className="relative mt-16 aspect-[3/4] overflow-hidden rounded-3xl">
+                <Image src={steps[1].img} alt="Clothes on a rail, ready to sell" fill sizes="(min-width: 1024px) 25vw, 50vw" className="object-cover" />
+              </div>
+            </Reveal>
+            <div>
+              {steps.map((s, i) => (
+                <Reveal key={s.n} delay={i * 0.1}>
+                  <div className="group flex items-baseline gap-6 border-b border-white/15 py-6">
+                    <span className="font-mono text-xl font-bold text-amber-400">{s.n}</span>
+                    <span className="text-3xl font-semibold tracking-[-0.03em] transition-transform duration-300 group-hover:translate-x-1 sm:text-5xl">{s.title}</span>
+                  </div>
+                </Reveal>
+              ))}
+              <Reveal delay={0.3}>
+                <Link href="/auth/signup" className="group mt-10 inline-flex items-center gap-2 rounded-full bg-white px-8 py-4 text-base font-bold text-black transition-transform hover:scale-[1.03]">
+                  Start for free <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
+                </Link>
+              </Reveal>
             </div>
-            <div className="flex-1 text-center sm:text-left">
-              <p
-                className="mb-1 text-xs font-bold uppercase tracking-widest"
-                style={{ color: "var(--accent)" }}
-              >
-                Affiliate Program
-              </p>
-              <h3
-                className="mb-1 text-xl font-black sm:text-2xl"
-                style={{ color: "var(--text-primary)" }}
-              >
-                Know a seller? Earn ₦2,000 for every vendor you refer
-              </h3>
-              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-                Share your link. When a vendor activates, you get paid. No cap
-                on earnings.
-              </p>
-            </div>
-            <Link
-              href="/affiliate"
-              className="inline-flex shrink-0 items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-black transition-all hover:scale-[1.02] hover:opacity-90"
-              style={{ background: "var(--accent)" }}
-            >
-              Join free <ArrowRight className="h-4 w-4" />
-            </Link>
           </div>
-        </div>
-      </section> */}
-
-      {/* ═════════════ FAQ ═════════════ */}
-      <section className="px-4 py-20 sm:py-28">
-        <div className="mx-auto max-w-3xl">
-          <div className="mb-12 text-center">
-            <p
-              className="mb-3 text-xs font-bold uppercase tracking-widest"
-              style={{ color: "var(--accent)" }}
-            >
-              FAQ
-            </p>
-            <h2
-              className="text-3xl font-black tracking-tight sm:text-5xl"
-              style={{ color: "var(--text-primary)" }}
-            >
-              Questions sellers ask
-            </h2>
-          </div>
-
-          <div className="space-y-3">
-            {FAQ.map(({ q, a }) => (
-              <details
-                key={q}
-                className="group rounded-2xl border px-6 py-5 open:shadow-md"
-                style={{
-                  background: "var(--bg)",
-                  borderColor: "var(--border)",
-                }}
-              >
-                <summary
-                  className="flex cursor-pointer list-none items-center justify-between gap-4 text-base font-bold [&::-webkit-details-marker]:hidden"
-                  style={{ color: "var(--text-primary)" }}
-                >
-                  {q}
-                  <Plus
-                    className="h-5 w-5 shrink-0 transition-transform group-open:rotate-45"
-                    style={{ color: "var(--accent)" }}
-                  />
-                </summary>
-                <p
-                  className="mt-3 text-sm leading-relaxed sm:text-base"
-                  style={{ color: "var(--text-secondary)" }}
-                >
-                  {a}
-                </p>
-              </details>
-            ))}
-          </div>
-
-          <p
-            className="mt-8 text-center text-sm"
-            style={{ color: "var(--text-muted)" }}
-          >
-            Want plan details?{" "}
-            <Link
-              href="/pricing"
-              className="font-semibold underline"
-              style={{ color: "var(--text-primary)" }}
-            >
-              See pricing
-            </Link>
-          </p>
         </div>
       </section>
 
       {/* ═════════════ VENDOR APP ═════════════ */}
-      <section id="app" className="px-4 pb-20">
-        <div
-          className="mx-auto grid max-w-7xl items-center gap-10 overflow-hidden rounded-[2rem] border px-6 py-12 sm:px-12 lg:grid-cols-[1.1fr_0.9fr] lg:py-14"
-          style={{ background: "var(--bg-secondary, var(--bg))", borderColor: "var(--border)" }}
-        >
-          <div className="text-center lg:text-left">
-            <p className="mb-3 text-sm font-bold uppercase tracking-widest" style={{ color: "var(--accent)" }}>
-              The Duka app
-            </p>
-            <h2 className="mb-4 text-3xl font-black leading-tight sm:text-5xl" style={{ color: "var(--text-primary)" }}>
-              Your whole store, in your pocket.
-            </h2>
-            <p className="mx-auto mb-7 max-w-lg text-lg lg:mx-0" style={{ color: "var(--text-secondary)" }}>
-              Get an alert the moment an order lands, confirm payments and add new products straight from your phone camera.
-            </p>
-            <ul className="mx-auto mb-8 grid w-fit max-w-lg gap-3 text-left sm:w-auto sm:grid-cols-3 lg:mx-0">
-              {[
-                { icon: Bell, t: "Instant order alerts" },
-                { icon: Camera, t: "Snap and list products" },
-                { icon: CreditCard, t: "Confirm payments fast" },
-              ].map(({ icon: Icon, t }) => (
-                <li key={t} className="flex items-center gap-2 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: "var(--accent-light)" }}>
-                    <Icon className="h-4 w-4 text-black" />
-                  </span>
-                  {t}
-                </li>
-              ))}
-            </ul>
-            <GooglePlayBadge />
-          </div>
-
-          {/* Phone mock */}
-          <div className="relative mx-auto w-56 sm:w-64" aria-hidden>
-            <div className="rounded-[2.2rem] border-[6px] border-zinc-900 bg-zinc-900 shadow-2xl">
-              <div className="overflow-hidden rounded-[1.7rem] bg-white">
-                <div className="flex items-center justify-between bg-zinc-900 px-4 pb-3 pt-4 text-white">
-                  <span className="text-sm font-black">Duka</span>
-                  <Bell className="h-4 w-4" />
-                </div>
-                <div className="space-y-2.5 p-3">
-                  <div className="rounded-xl p-3 text-black" style={{ background: "var(--accent)" }}>
-                    <p className="text-[10px] font-bold uppercase opacity-70">Today</p>
-                    <p className="text-xl font-black">₦184,500</p>
-                    <p className="text-[11px] font-semibold opacity-80">12 orders</p>
-                  </div>
-                  {[
-                    ["New order #1042", "₦24,000 · Paid", "bg-green-500"],
-                    ["New order #1041", "₦9,500 · Transfer", "bg-amber-500"],
-                    ["Low stock", "Ankara gown · 2 left", "bg-red-500"],
-                  ].map(([a, b, dot]) => (
-                    <div key={a} className="flex items-center gap-2.5 rounded-xl border border-zinc-100 p-2.5">
-                      <span className={`h-2 w-2 shrink-0 rounded-full ${dot}`} />
-                      <div className="min-w-0">
-                        <p className="truncate text-xs font-bold text-zinc-900">{a}</p>
-                        <p className="truncate text-[11px] text-zinc-500">{b}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+      <section className="px-4 pt-24">
+        <Reveal className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 rounded-3xl border p-8 sm:flex-row sm:p-10">
+          <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:text-left">
+            <Icon3D icon={Smartphone} tone="amber" size={60} />
+            <div>
+              <h2 className="text-3xl font-semibold tracking-tight" style={{ color: "var(--text-primary)" }}>Your store in your pocket.</h2>
+              <p className="mt-1" style={{ color: "var(--text-muted)" }}>New-order alerts, products and payouts on the go.</p>
             </div>
           </div>
+          <GooglePlayBadge />
+        </Reveal>
+      </section>
+
+      {/* ═════════════ FAQ ═════════════ */}
+      <section className="px-4 py-24">
+        <div className="mx-auto max-w-3xl">
+          <Reveal className="mb-8 text-center">
+            <h2 className="text-4xl font-semibold tracking-tight" style={{ color: "var(--text-primary)" }}>Questions?</h2>
+          </Reveal>
+          <Reveal>
+            <Faq items={faq} />
+          </Reveal>
         </div>
       </section>
 
       {/* ═════════════ FINAL CTA ═════════════ */}
-      <section className="px-4 pb-20">
-        <div
-          className="relative mx-auto max-w-7xl overflow-hidden rounded-[2rem]"
-          style={{ background: "#111" }}
-        >
-          <Image
-            src={IMG.cta}
-            alt=""
-            fill
-            sizes="100vw"
-            className="object-cover opacity-30"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
-          <div className="relative px-8 py-16 sm:px-16 sm:py-24">
-            <p
-              className="mb-4 text-sm font-bold uppercase tracking-widest"
-              style={{ color: "var(--accent)" }}
-            >
-              Your customers are waiting
-            </p>
-            <h2 className="mb-5 max-w-2xl text-4xl font-black leading-tight text-white sm:text-6xl">
-              Your business deserves more than a chat thread.
-            </h2>
-            <p className="mb-9 max-w-xl text-lg text-white/75">
-              Create your free Duka store today. Accept payments, manage orders
-              and get discovered by new customers, all in one place.
-            </p>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Link
-                href="/auth/signup"
-                className="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-lg font-bold text-black shadow-lg transition-all hover:scale-[1.02] hover:opacity-95"
-                style={{ background: "var(--accent)" }}
-              >
-                Create free store
-                <ArrowRight className="h-5 w-5" />
-              </Link>
-              <Link
-                href="/auth/login"
-                className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white/25 px-8 py-4 text-lg font-semibold text-white transition-all hover:bg-white/10"
-              >
-                I already have a store
-              </Link>
-            </div>
+      <section className="relative overflow-hidden bg-[#05090a] px-4 py-28 text-center text-white sm:py-36">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(245,158,11,0.45),transparent_60%)]" />
+        <Reveal className="relative mx-auto max-w-4xl">
+          <h2 className={H2}>
+            Your brand. Your store.
+            <br />
+            <span className="text-amber-400">Powered by Duka.</span>
+          </h2>
+          <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
+            <Link href="/auth/signup" className="group inline-flex items-center justify-center gap-2 rounded-full bg-amber-400 px-8 py-4 text-base font-bold text-black shadow-lg shadow-amber-500/30 transition-transform hover:scale-[1.03]">
+              Start for free <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+            <Link href="/pricing" className="inline-flex items-center justify-center rounded-full border border-white/25 px-8 py-4 text-base font-semibold hover:bg-white/10">
+              See pricing
+            </Link>
           </div>
-        </div>
+          <p className="mt-5 text-sm text-white/50">No card needed · Cancel anytime</p>
+        </Reveal>
       </section>
 
-      {/* ═════════════ FOOTER ═════════════ */}
       <Footer />
+    </div>
+  );
+}
 
-      {/* Sticky mobile CTA */}
-      <div
-        className="fixed inset-x-0 bottom-0 z-40 border-t p-3 backdrop-blur-md lg:hidden"
-        style={{
-          background: "color-mix(in srgb, var(--bg) 92%, transparent)",
-          borderColor: "var(--border)",
-        }}
-      >
-        <Link
-          href="/auth/signup"
-          className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-base font-bold text-black"
-          style={{ background: "var(--accent)" }}
-        >
-          Create your free store <ArrowRight className="h-5 w-5" />
-        </Link>
-      </div>
+/** Label pinned to the top of a showcase panel */
+function PanelLabel({ icon, tone, title, ink = "light" }: { icon: LucideIcon; tone: Tone; title: string; ink?: "light" | "dark" }) {
+  return (
+    <div className="absolute inset-x-0 top-0 z-10 flex items-center gap-3 px-6 pt-7">
+      <Icon3D icon={icon} tone={tone} size={40} />
+      <span className={`text-lg font-semibold ${ink === "dark" ? "text-zinc-900 dark:text-white" : "text-white"}`}>{title}</span>
     </div>
   );
 }

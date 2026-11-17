@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { ThemeProvider } from "next-themes";
+import AppThemeProvider from "@/components/AppThemeProvider";
 import { Toaster } from "react-hot-toast";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { InstallPWAPrompt } from "@/components/InstallPWAPrompt";
@@ -65,11 +65,7 @@ export default function RootLayout({
         className="bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 min-h-screen"
         style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem={false}
-        >
+        <AppThemeProvider>
           {children}
           <ServiceWorkerRegister />
           <InstallPWAPrompt />
@@ -83,7 +79,7 @@ export default function RootLayout({
               },
             }}
           />
-        </ThemeProvider>
+        </AppThemeProvider>
       </body>
     </html>
   );

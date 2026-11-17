@@ -22,6 +22,8 @@
   /* Platform colors */
   --accent: #f59e0b;
   --accent-light: #fde68a;
+  /* Highlighted areas with normal (not black) text: pale in light, a soft glow in dark */
+  --accent-tint: #fde68a;
   --accent-dark: #b45309;
   --accent-foreground: #000;
 
@@ -55,6 +57,8 @@
   --text-primary: #fafafa;
   --text-secondary: #a1a1aa;
   --text-muted: #71717a;
+
+  --accent-tint: rgb(245 158 11 / 0.14);
 }
 
 /* ─── Base ──────────────────────────────────────────────────────────────────── */
@@ -192,3 +196,22 @@ html {
 @media (prefers-reduced-motion: reduce) {
   .animate-\[feed-heart_\.8s_ease-out_forwards\] { animation-duration: 0.01s !important; }
 }
+
+/* Landing video hero: rotating captions */
+@keyframes hero-cap-in { from { opacity: 0; transform: translateY(32px); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes hero-cap-out { from { opacity: 1; transform: none; filter: none; } to { opacity: 0; transform: translateY(-28px); filter: blur(8px); } }
+@keyframes hero-word { from { opacity: 0; transform: translateY(0.4em); } to { opacity: 1; transform: none; } }
+@keyframes hero-bar { from { width: 0; } to { width: 100%; } }
+.hero-cap-in { animation: hero-cap-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.hero-cap-out { animation: hero-cap-out 0.5s cubic-bezier(0.64, 0, 0.78, 0) both; pointer-events: none; }
+.hero-word { display: inline-block; animation: hero-word 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.hero-bar { animation-name: hero-bar; animation-timing-function: linear; animation-fill-mode: both; }
+@media (prefers-reduced-motion: reduce) {
+  .hero-cap-in, .hero-cap-out, .hero-word, .hero-bar { animation: none !important; }
+}
+
+
+/* Header mega-menu items pop in */
+@keyframes nav-pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.nav-pop { animation: nav-pop 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@media (prefers-reduced-motion: reduce) { .nav-pop { animation: none; } }

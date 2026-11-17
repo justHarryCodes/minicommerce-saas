@@ -3,6 +3,8 @@ import { verifySession } from "@/lib/auth";
 import { getPageStore } from "@/lib/access";
 import { queryOne, queryMany } from "@/lib/db";
 import ProductForm from "@/components/dashboard/ProductForm";
+import ShareButton from "@/components/dashboard/ShareButton";
+import { storeCanonicalBase } from "@/lib/seo";
 import type { Product, Category } from "@/types";
 
 interface Props {
@@ -43,9 +45,22 @@ export default async function EditProductPage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-[1280px] pt-1 lg:pt-0">
-      <div className="mb-8">
-        <h1 className="text-2xl font-black text-surface-900 dark:text-white">Edit product</h1>
-        <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">{product.name}</p>
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-black text-surface-900 dark:text-white">Edit product</h1>
+          <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">{product.name}</p>
+        </div>
+        {(product.is_active ?? product.isActive) && (
+          <ShareButton
+            target={{
+              kind: "product",
+              title: product.name,
+              price: `₦${Number(product.price).toLocaleString("en-NG")}`,
+              url: `${storeCanonicalBase(store as never)}/products/${product.slug || product.id}`,
+              cardPath: `/api/og/product/${store.slug}/${product.slug || product.id}`,
+            }}
+          />
+        )}
       </div>
       <ProductForm product={product} categories={categoriesWithSubs} />
     </div>

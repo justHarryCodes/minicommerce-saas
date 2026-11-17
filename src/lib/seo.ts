@@ -339,3 +339,26 @@ export function platformLd() {
     },
   ];
 }
+
+/* ───────────────────────────── Share cards ───────────────────────────── */
+
+/** A short version stamp, so editing a product or store gives its card a new URL (social apps cache hard). */
+function cardVersion(...parts: (string | number | Date | null | undefined)[]): string {
+  let h = 0;
+  for (const ch of parts.map((p) => (p instanceof Date ? p.toISOString() : String(p ?? ""))).join("|")) h = (h * 31 + ch.charCodeAt(0)) | 0;
+  return (h >>> 0).toString(36);
+}
+
+/** The 1200x630 share card for a product (served from the Duka domain). */
+export function productCardUrl(storeSlug: string, p: { slug?: string | null; id: string; updated_at?: string | Date | null; price?: unknown; compare_price?: unknown; image_url?: string | null }, store?: { name?: string; logo_url?: string | null; accent?: string | null }) {
+  const v = cardVersion(p.updated_at, p.price as string, p.compare_price as string, p.image_url, store?.name, store?.logo_url, store?.accent);
+  return `${appUrl()}/api/og/product/${encodeURIComponent(storeSlug)}/${encodeURIComponent(p.slug || p.id)}?v=${v}`;
+}
+
+/** The 1200x630 share card for a store. */
+export function storeCardUrl(store: { slug: string; name?: string; description?: string | null; logo_url?: string | null; updated_at?: string | Date | null; accent?: string | null }) {
+  const v = cardVersion(store.updated_at, store.name, store.description, store.logo_url, store.accent);
+  return `${appUrl()}/api/og/store/${encodeURIComponent(store.slug)}?v=${v}`;
+}
+
+export const CARD_SIZE = { width: 1200, height: 630 } as const;

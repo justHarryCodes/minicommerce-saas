@@ -51,6 +51,9 @@ export async function ensureDeletionTable() {
       handled_by   TEXT
     )
   `);
+  // The table may already exist from before these columns were added
+  // (CREATE TABLE IF NOT EXISTS never adds columns): add them if missing.
+  await query(`ALTER TABLE data_deletion_requests ADD COLUMN IF NOT EXISTS admin_note TEXT, ADD COLUMN IF NOT EXISTS handled_by TEXT, ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ, ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`);
   tableReady = true;
 }
 

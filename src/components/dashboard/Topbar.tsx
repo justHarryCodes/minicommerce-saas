@@ -11,6 +11,8 @@ import { allowedPath, type Role } from "@/lib/access-shared";
 import { auth } from "@/lib/firebase-client";
 import { useDashboardDrawer } from "@/lib/dashboard-drawer-store";
 import { PushNotificationPrompt } from "@/components/PushNotificationPrompt";
+import ThemeToggle from "@/components/ThemeToggle";
+import ShareButton from "./ShareButton";
 import { pageTitle } from "./nav-config";
 import CommandPalette, { NEW_ACTIONS } from "./CommandPalette";
 
@@ -77,6 +79,8 @@ export default function DashboardTopbar({ user, store, role = "owner" }: Props) 
         <a href={storeUrl} target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800" aria-label="View store">
           <ExternalLink className="h-[18px] w-[18px]" />
         </a>
+        <ShareButton compact className="!p-2.5" target={{ kind: "store", title: store.name, url: storeUrl, cardPath: `/api/og/store/${store.slug}` }} />
+        <ThemeToggle />
         <PushNotificationPrompt subjectType="vendor" />
       </header>
 
@@ -126,6 +130,8 @@ export default function DashboardTopbar({ user, store, role = "owner" }: Props) 
           <a href={storeUrl} target="_blank" rel="noopener noreferrer" title="View your store" className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-white">
             <ExternalLink className="h-4 w-4" />
           </a>
+          <ShareButton compact className="!p-2" target={{ kind: "store", title: store.name, url: storeUrl, cardPath: `/api/og/store/${store.slug}` }} />
+          <ThemeToggle className="!h-8 !w-8" />
           <PushNotificationPrompt subjectType="vendor" />
 
           <div className="relative" ref={userMenu.ref}>
@@ -137,6 +143,9 @@ export default function DashboardTopbar({ user, store, role = "owner" }: Props) 
                 <div className="px-2 py-1.5">
                   <p className="truncate text-[13px] font-semibold text-zinc-900 dark:text-white">{name}</p>
                   <p className="truncate text-[11px] text-zinc-400">{user.email}</p>
+                </div>
+                <div className="px-2 pb-1.5">
+                  <ThemeToggle variant="segmented" className="w-full justify-between" />
                 </div>
                 <div className="my-1 border-t border-zinc-100 dark:border-zinc-800" />
                 {allowedPath(role, "/dashboard/settings") && (

@@ -9,6 +9,7 @@ import { isSoldOutToday } from "@/lib/hours";
 import { Tip } from "@/components/dashboard/Tip";
 import { PageHeader } from "@/components/dashboard/ui";
 import ProductsTable, { type ProductRow } from "./ProductsTable";
+import { storeCanonicalBase } from "@/lib/seo";
 
 export default async function ProductsPage() {
   const user = await verifySession();
@@ -16,7 +17,7 @@ export default async function ProductsPage() {
 
   const [rows, categories, plan] = await Promise.all([
     queryMany<ProductRow & { sold_out_until: string | Date | null; low_stock_threshold: number | null }>(
-      `SELECT p.id, p.name, p.image_url, p.price, p.compare_price, p.stock_quantity, p.is_active,
+      `SELECT p.id, p.slug, p.name, p.image_url, p.price, p.compare_price, p.stock_quantity, p.is_active,
               COALESCE(p.is_bookable, false) AS is_bookable, COALESCE(p.has_sizes, false) AS has_sizes,
               p.category_id, c.name AS category_name, p.sold_out_until, p.low_stock_threshold, p.created_at
        FROM products p
@@ -76,7 +77,7 @@ export default async function ProductsPage() {
         </div>
       )}
       <Suspense>
-        <ProductsTable products={products} categories={categories} atLimit={atLimit} />
+        <ProductsTable products={products} categories={categories} atLimit={atLimit} share={{ storeSlug: store.slug, storeBase: storeCanonicalBase(store as never) }} />
       </Suspense>
     </div>
   );

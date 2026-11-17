@@ -7,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowUpDown, Package, Pencil, Plus, Search, X } from "lucide-react";
+import ShareButton from "@/components/dashboard/ShareButton";
 import { formatCurrency, cn } from "@/lib/utils";
 import { clThumb } from "@/lib/cloudinary";
 import DeleteProductButton from "@/components/dashboard/DeleteProductButton";
@@ -15,6 +16,7 @@ import { EmptyState } from "@/components/dashboard/ui";
 
 export interface ProductRow {
   id: string;
+  slug?: string | null;
   name: string;
   image_url: string | null;
   price: number;
@@ -49,7 +51,18 @@ const SORTS = {
 } as const;
 type SortId = keyof typeof SORTS;
 
-export default function ProductsTable({ products, categories, atLimit }: { products: ProductRow[]; categories: { id: string; name: string }[]; atLimit: boolean }) {
+export default function ProductsTable({
+  products,
+  categories,
+  atLimit,
+  share,
+}: {
+  products: ProductRow[];
+  categories: { id: string; name: string }[];
+  atLimit: boolean;
+  /** For the Share button: the store's slug and public address */
+  share?: { storeSlug: string; storeBase: string };
+}) {
   const params = useSearchParams();
   const initial = PRODUCT_FILTERS.some((f) => f.id === params.get("filter")) ? (params.get("filter") as FilterId) : "all";
   const [filter, setFilter] = useState<FilterId>(initial);
@@ -200,6 +213,18 @@ export default function ProductsTable({ products, categories, atLimit }: { produ
                     <td className="px-2 py-1">
                       <div className="flex items-center justify-end gap-0.5">
                         {!p.is_bookable && <SoldOutTodayToggle productId={p.id} soldOut={p.sold_out_today} />}
+                        {share && p.is_active && (
+                          <ShareButton
+                            compact
+                            target={{
+                              kind: "product",
+                              title: p.name,
+                              price: `₦${Number(p.price).toLocaleString("en-NG")}`,
+                              url: `${share.storeBase}/products/${p.slug || p.id}`,
+                              cardPath: `/api/og/product/${share.storeSlug}/${p.slug || p.id}`,
+                            }}
+                          />
+                        )}
                         <Link href={`/dashboard/products/${p.id}/edit`} aria-label={`Edit ${p.name}`} className="rounded p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800">
                           <Pencil className="h-3.5 w-3.5" />
                         </Link>
