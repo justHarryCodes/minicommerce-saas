@@ -1,6 +1,7 @@
 import type { StorefrontTheme, ThemeCategory, ThemeCopy } from "./types";
 import { withKit, type ThemeSeed } from "./kits";
 import { MORE_THEMES } from "./catalog-more";
+import { SIGNATURE_THEMES } from "./catalog-signature";
 
 // ── Shared copy per vertical ────────────────────────────────────────────────
 // Themes spread these and override a few lines so each one has its own voice
@@ -387,6 +388,9 @@ const SEEDS: ThemeSeed[] = [
 
   // Perfume, local market, gadgets, hair and interiors (catalog-more.ts)
   ...MORE_THEMES,
+
+  // Signature themes with bespoke homepages (catalog-signature.ts)
+  ...SIGNATURE_THEMES,
 ];
 
 /** Every theme, with its kit (tier, price, navigation) applied. */

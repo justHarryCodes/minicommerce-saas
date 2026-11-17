@@ -1,16 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, ChevronDown, Pause, Play } from "lucide-react";
+import { ArrowRight, ChevronDown } from "lucide-react";
 
 // The landing page's first screen: the Duka story video looping behind
 // short, rotating captions and two clear calls to action.
 //
 // Light on data: the poster shows instantly; the video (1.3 MB on phones,
 // 4 MB on desktop) only loads after the page is up, and not at all for
-// people with Data Saver or "reduce motion" on. A pause button keeps it
-// accessible (moving content must be stoppable).
+// people with Data Saver or "reduce motion" on.
 
 const CAPTIONS: { lead: string; hi: string }[] = [
   { lead: "Turn what you sell into", hi: "a real online store." },
@@ -23,11 +22,9 @@ const CAPTIONS: { lead: string; hi: string }[] = [
 const EVERY_MS = 3400;
 
 export default function VideoHero({ storeCount }: { storeCount: number }) {
-  const video = useRef<HTMLVideoElement>(null);
   const [i, setI] = useState(0);
   const [prev, setPrev] = useState<number | null>(null);
   const [src, setSrc] = useState<string | null>(null);
-  const [playing, setPlaying] = useState(true);
   const [calm, setCalm] = useState(false); // prefers-reduced-motion
 
   // Pick the video for this screen, after the page has loaded
@@ -35,10 +32,7 @@ export default function VideoHero({ storeCount }: { storeCount: number }) {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
     setCalm(reduce);
-    if (reduce || saveData) {
-      setPlaying(false);
-      return;
-    }
+    if (reduce || saveData) return;
     const pick = () => setSrc(window.innerWidth < 768 ? "/hero-720.mp4" : "/hero-1280.mp4");
     if (document.readyState === "complete") pick();
     else window.addEventListener("load", pick, { once: true });
@@ -59,18 +53,6 @@ export default function VideoHero({ storeCount }: { storeCount: number }) {
     return () => clearInterval(t);
   }, [i, go]);
 
-  const toggle = () => {
-    const v = video.current;
-    if (!v) return setPlaying((p) => !p);
-    if (v.paused) {
-      v.play().catch(() => {});
-      setPlaying(true);
-    } else {
-      v.pause();
-      setPlaying(false);
-    }
-  };
-
   const c = CAPTIONS[i];
   const p = prev !== null ? CAPTIONS[prev] : null;
 
@@ -78,7 +60,6 @@ export default function VideoHero({ storeCount }: { storeCount: number }) {
     <section className="relative isolate flex min-h-[600px] items-end overflow-hidden bg-zinc-950 text-white sm:items-center" style={{ height: "100svh", maxHeight: 980 }}>
       {/* Video (decorative) */}
       <video
-        ref={video}
         className="absolute inset-0 -z-20 h-full w-full object-cover"
         poster="/hero-poster.jpg"
         src={src ?? undefined}
@@ -89,8 +70,6 @@ export default function VideoHero({ storeCount }: { storeCount: number }) {
         preload="none"
         aria-hidden="true"
         tabIndex={-1}
-        onPlay={() => setPlaying(true)}
-        onPause={() => setPlaying(false)}
       />
       {/* Overlay: readable text over any frame */}
       <div className="absolute inset-0 -z-10 bg-gradient-to-t from-black/85 via-black/45 to-black/25 sm:bg-gradient-to-r sm:from-black/80 sm:via-black/45 sm:to-black/10" aria-hidden />
@@ -169,12 +148,6 @@ export default function VideoHero({ storeCount }: { storeCount: number }) {
         </div>
       </div>
 
-      {/* Controls */}
-      {src && (
-        <button type="button" onClick={toggle} aria-label={playing ? "Pause background video" : "Play background video"} className="absolute bottom-5 right-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/40 backdrop-blur-md hover:bg-black/60 sm:right-6">
-          {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-        </button>
-      )}
       <a href="#how-duka-works" className="absolute bottom-5 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-1 text-[11px] font-semibold text-white/70 hover:text-white sm:flex" aria-label="Scroll to see how Duka works">
         See how it works
         <ChevronDown className="h-4 w-4 animate-bounce" />

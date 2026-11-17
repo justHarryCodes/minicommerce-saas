@@ -4,7 +4,7 @@
 
 import { createHmac, randomInt, timingSafeEqual } from "crypto";
 import { query } from "@/lib/db";
-import { metaAppId, metaAppSecret } from "./config";
+import { isBusinessAppOnboarding, metaAppId, metaAppSecret } from "./config";
 import { encryptToken } from "./crypto";
 import { ensureSocialTables } from "./db";
 import { graph } from "./graph";
@@ -63,8 +63,11 @@ export async function discoverAccount(token: string): Promise<{ wabaId: string; 
 export async function onboard(storeId: string, token: string, ids: { wabaId: string; phoneNumberId: string; businessId?: string | null }): Promise<{ ok: true } | { ok: false; error: string }> {
   const sub = await graph(`${ids.wabaId}/subscribed_apps`, { token, method: "POST" });
   if (!sub.ok) return { ok: false, error: `Couldn't link your WhatsApp account: ${sub.error}` };
-  // Already-registered numbers (and WhatsApp Business app numbers) can skip this
-  const reg = await graph(`${ids.phoneNumberId}/register`, { token, body: { messaging_product: "whatsapp", pin: String(randomInt(100000, 999999)) } });
+  // Numbers coming from the WhatsApp Business app are already registered
+  // (registering them again fails); new numbers need it to send messages.
+  const reg = isBusinessAppOnboarding()
+    ? ({ ok: true } as const)
+    : await graph(`${ids.phoneNumberId}/register`, { token, body: { messaging_product: "whatsapp", pin: String(randomInt(100000, 999999)) } });
   const d = await phoneDetails(ids.phoneNumberId, token);
   await saveConnection(storeId, {
     phoneNumberId: ids.phoneNumberId,

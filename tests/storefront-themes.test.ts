@@ -13,10 +13,13 @@ import { getDemoStore } from "@/lib/themes/demo";
 
 describe("theme catalog", () => {
   it("ships the agreed number of themes per category", () => {
+    // Signature themes (bespoke homepages) are counted on their own
+    const core = THEMES.filter((t) => t.tier !== "signature");
     for (const { id, limit } of THEME_CATEGORIES) {
-      expect(THEMES.filter((t) => t.category === id)).toHaveLength(limit);
+      expect(core.filter((t) => t.category === id)).toHaveLength(limit);
     }
-    expect(THEMES).toHaveLength(41);
+    expect(core).toHaveLength(41);
+    expect(THEMES.filter((t) => t.tier === "signature").map((t) => t.id)).toEqual(["ember", "crave", "nexus", "clarity", "terra"]);
   });
 
   it("has unique ids and valid accent colors", () => {
@@ -73,9 +76,9 @@ describe("resolveStoreTheme", () => {
 
 describe("theme preview encoding", () => {
   it("round-trips, including non-ASCII text", () => {
-    const raw = encodeThemePreview({ themeId: "quick-bites", customization: { copy: { announcement: "Free delivery over ₦20,000 🎉" } } });
+    const raw = encodeThemePreview({ themeId: "quick-bites", customization: { copy: { announcement: "Free delivery over â‚¦20,000 ðŸŽ‰" } } });
     expect(raw).toMatch(/^[A-Za-z0-9_-]+$/);
-    expect(decodeThemePreview(raw)).toEqual({ themeId: "quick-bites", customization: { copy: { announcement: "Free delivery over ₦20,000 🎉" } } });
+    expect(decodeThemePreview(raw)).toEqual({ themeId: "quick-bites", customization: { copy: { announcement: "Free delivery over â‚¦20,000 ðŸŽ‰" } } });
   });
 
   it("rejects junk", () => {
@@ -101,7 +104,7 @@ describe("highlights", () => {
     expect(parseCustomization({ copy: { highlights: Array(5).fill({ icon: "star", title: "x", text: "" }) } }).copy?.highlights).toBeUndefined();
   });
 
-  it("every theme ships 2–4 highlights with titles", () => {
+  it("every theme ships 2â€“4 highlights with titles", () => {
     for (const t of THEMES) {
       expect(t.copy.highlights.length).toBeGreaterThanOrEqual(2);
       expect(t.copy.highlights.length).toBeLessThanOrEqual(4);

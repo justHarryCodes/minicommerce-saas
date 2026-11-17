@@ -6,6 +6,9 @@
 //   META_WEBHOOK_VERIFY_TOKEN          shared with Meta's webhook settings
 //   META_TOKEN_ENCRYPTION_KEY          64 hex chars; encrypts vendors' tokens
 //   META_ES_CONFIG_ID                  Embedded Signup ("Connect WhatsApp") config
+//                                      (optional when META_ES_HOSTED_URL carries config_id)
+//   META_ES_HOSTED_URL                 Meta-hosted signup link (fallback page)
+//   META_ES_FEATURE_TYPE               optional; else read from the hosted link's extras
 //   META_GRAPH_VERSION                 optional, defaults below
 //   WHATSAPP_TEST_PHONE_NUMBER_ID      Meta's free test number (development)
 //   WHATSAPP_TEST_WABA_ID
@@ -28,7 +31,7 @@ export function tokenCryptoReady(): boolean {
 
 /** Vendors can connect their own WhatsApp number with Meta's popup. */
 export function embeddedSignupReady(): boolean {
-  return !!env("META_APP_ID") && !!env("META_APP_SECRET") && !!env("META_ES_CONFIG_ID") && tokenCryptoReady();
+  return !!env("META_APP_ID") && !!env("META_APP_SECRET") && !!embeddedSignupConfigId() && tokenCryptoReady();
 }
 
 /** Meta's test number is set up (for trying the bot before App Review). */
@@ -50,8 +53,44 @@ export function metaAppSecret(): string {
 export function webhookVerifyToken(): string {
   return env("META_WEBHOOK_VERIFY_TOKEN");
 }
+/** A setting carried inside the hosted signup link (config_id, extras), if any. */
+function hostedParam(name: string): string {
+  try {
+    return new URL(env("META_ES_HOSTED_URL")).searchParams.get(name) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * The Login for Business configuration used by the "Connect WhatsApp" popup.
+ * Falls back to the one inside the hosted signup link, so a deployment that
+ * only pasted the link still gets the popup (which returns to Duka reliably).
+ */
 export function embeddedSignupConfigId(): string {
-  return env("META_ES_CONFIG_ID");
+  const id = env("META_ES_CONFIG_ID") || hostedParam("config_id");
+  return /^\d{5,30}$/.test(id) ? id : "";
+}
+
+/**
+ * Which signup flow the configuration is for, e.g.
+ * "whatsapp_business_app_onboarding" (numbers already on the WhatsApp
+ * Business app). Taken from the hosted link's extras; empty = a fresh number.
+ */
+export function embeddedSignupFeatureType(): string {
+  const set = env("META_ES_FEATURE_TYPE");
+  if (set) return set;
+  try {
+    const t = JSON.parse(hostedParam("extras") || "{}")?.featureType;
+    return typeof t === "string" ? t : "";
+  } catch {
+    return "";
+  }
+}
+
+/** Numbers onboarded from the WhatsApp Business app are already registered. */
+export function isBusinessAppOnboarding(): boolean {
+  return embeddedSignupFeatureType() === "whatsapp_business_app_onboarding";
 }
 /**
  * Meta-hosted Embedded Signup link (App Dashboard -> WhatsApp -> Embedded
@@ -79,7 +118,7 @@ export function whatsappSetupStatus() {
       !env("META_WEBHOOK_VERIFY_TOKEN") && "META_WEBHOOK_VERIFY_TOKEN",
       !tokenCryptoReady() && "META_TOKEN_ENCRYPTION_KEY",
       !env("META_APP_ID") && "META_APP_ID",
-      !env("META_ES_CONFIG_ID") && "META_ES_CONFIG_ID",
+      !embeddedSignupConfigId() && "META_ES_CONFIG_ID",
     ].filter(Boolean) as string[],
   };
 }

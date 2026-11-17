@@ -102,6 +102,12 @@ const KITS: Record<string, Kit> = {
   "nest-interiors": { tier: "free", price: 0, nav: "overlay", pages: ["editorial", "lookbook", "visual"] },
   "luxe-living": { tier: "premium", price: 35_000, nav: "mega", navOptions: { tone: "dark" }, pages: ["showcase", "lookbook", "spotlight"] },
   "aesthetic-corner": { tier: "standard", price: 20_000, nav: "floating", pages: ["split", "grid", "visual"] },
+  // Signature (bespoke homepage, see catalog-signature.ts)
+  ember: { tier: "signature", price: 45_000, nav: "overlay", pages: ["showcase", "menu", "visual"] },
+  crave: { tier: "signature", price: 40_000, nav: "app", pages: ["split", "grid", "visual"] },
+  nexus: { tier: "signature", price: 50_000, nav: "mega", navOptions: { tone: "dark" }, pages: ["showcase", "grid", "spotlight"] },
+  clarity: { tier: "signature", price: 40_000, nav: "marketplace", pages: ["split", "catalog", "list"] },
+  terra: { tier: "signature", price: 45_000, nav: "overlay", pages: ["split", "grid", "spotlight"] },
 };
 
 export function kitFor(id: string): Kit {

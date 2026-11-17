@@ -98,12 +98,13 @@ describe("who can use a theme", () => {
 describe("the catalogue", () => {
   it("has the new verticals with the agreed counts, one free theme each", () => {
     const want: Record<string, number> = { perfume: 5, market: 5, gadgets: 5, hair: 5, interior: 3 };
+    const core = THEMES.filter((t) => t.tier !== "signature");
     for (const [cat, n] of Object.entries(want)) {
-      expect(THEMES.filter((t) => t.category === cat)).toHaveLength(n);
+      expect(core.filter((t) => t.category === cat)).toHaveLength(n);
       expect(THEMES.filter((t) => t.category === cat && FREE_THEME_IDS.has(t.id))).toHaveLength(1);
       expect(THEME_CATEGORIES.find((c) => c.id === cat)?.limit).toBe(n);
     }
-    expect(THEMES).toHaveLength(41);
+    expect(core).toHaveLength(41);
   });
 
   it("every new theme has a demo store that fits its vertical", () => {

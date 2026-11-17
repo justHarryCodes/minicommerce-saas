@@ -215,3 +215,23 @@ html {
 @keyframes nav-pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .nav-pop { animation: nav-pop 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
 @media (prefers-reduced-motion: reduce) { .nav-pop { animation: none; } }
+
+/* Ember (Signature storefront theme): rising sparks, spinning ring, floating dish */
+@keyframes ember-rise { 0% { transform: translateY(0) scale(1); opacity: 0; } 10% { opacity: .9; } 100% { transform: translateY(-85vh) translateX(30px) scale(.4); opacity: 0; } }
+.ember-spark { animation: ember-rise 6s linear infinite; filter: blur(.5px); box-shadow: 0 0 8px currentColor; }
+@keyframes ember-spin { to { transform: rotate(360deg); } }
+.ember-spin { animation: ember-spin 40s linear infinite; }
+@keyframes ember-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+.ember-float { animation: ember-float 6s ease-in-out infinite; }
+@keyframes ember-pop { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.ember-pop { animation: ember-pop .4s cubic-bezier(.22,1,.36,1) both; }
+@media (prefers-reduced-motion: reduce) { .ember-spark, .ember-spin, .ember-float, .ember-pop { animation: none; } .ember-spark { display: none; } }
+
+/* Nexus (Signature storefront theme): glass cards, blueprint grid, category ticker */
+.nexus-card { background: color-mix(in srgb, var(--sf-ink) 4%, transparent); border: 1px solid color-mix(in srgb, var(--sf-ink) 9%, transparent); }
+.nexus-card:hover { border-color: color-mix(in srgb, var(--sf-accent) 55%, transparent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--sf-accent) 25%, transparent), 0 18px 40px -22px var(--sf-accent); }
+.nexus-grid { background-image: linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px); background-size: 56px 56px; mask-image: radial-gradient(ellipse at 60% 40%, black, transparent 75%); }
+@keyframes nexus-marquee { to { transform: translateX(-50%); } }
+.nexus-marquee { animation: nexus-marquee 40s linear infinite; }
+.nexus-marquee:hover { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .nexus-marquee { animation: none; } }

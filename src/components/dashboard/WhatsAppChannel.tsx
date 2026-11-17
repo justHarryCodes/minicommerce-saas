@@ -23,7 +23,7 @@ import {
 interface Status {
   available: boolean;
   included: boolean;
-  embeddedSignup: { appId: string; configId: string; version: string } | null;
+  embeddedSignup: { appId: string; configId: string; version: string; featureType: string | null } | null;
   /** Meta's hosted signup page (link), when configured */
   hostedSignup: string | null;
   admin: { missing: string[]; testNumber: boolean } | null;
@@ -100,6 +100,16 @@ export default function WhatsAppChannel() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Load Facebook's SDK as soon as the popup is available, so a click opens
+  // the popup straight away. Waiting for the script inside the click loses
+  // the "user gesture": browsers then block the popup or open Facebook in the
+  // same tab, where it never returns to Duka.
+  useEffect(() => {
+    if (s?.embeddedSignup && s.included && !s.connection) {
+      loadFacebookSdk(s.embeddedSignup.appId, s.embeddedSignup.version).catch(() => {});
+    }
+  }, [s]);
 
   // Back from Meta's hosted signup page (/api/meta/es-callback -> ?whatsapp=...)
   useEffect(() => {
@@ -206,18 +216,22 @@ export default function WhatsAppChannel() {
     if (!s?.embeddedSignup) return;
     setBusy("connect");
     try {
-      await loadFacebookSdk(s.embeddedSignup.appId, s.embeddedSignup.version);
+      // Normally already loaded (see above); only waits on a very fast click
+      if (!window.FB) await loadFacebookSdk(s.embeddedSignup.appId, s.embeddedSignup.version);
+      signup.current = {};
+      const { configId, featureType } = s.embeddedSignup;
       const code = await new Promise<string | null>((resolve) =>
         window.FB!.login((r) => resolve(r.authResponse?.code ?? null), {
-          config_id: s.embeddedSignup!.configId,
+          config_id: configId,
           response_type: "code",
           override_default_response_type: true,
-          // v4 (the version selected in the Login for Business configuration)
-          extras: { setup: {} },
+          // Embedded Signup v4; featureType picks the flow the configuration is for
+          // (e.g. numbers already on the WhatsApp Business app)
+          extras: { setup: {}, sessionInfoVersion: "3", ...(featureType ? { featureType } : {}) },
         }),
       );
       const { wabaId, phoneNumberId, businessId } = signup.current;
-      if (!code || !wabaId || !phoneNumberId) {
+      if (!code) {
         setBusy(null);
         return toast.error(
           wabaId && !phoneNumberId
@@ -231,8 +245,9 @@ export default function WhatsAppChannel() {
           {
             action: "embedded_signup",
             code,
-            wabaId,
-            phoneNumberId,
+            // Duka finds them from the token if Meta didn't report them
+            ...(wabaId ? { wabaId } : {}),
+            ...(phoneNumberId ? { phoneNumberId } : {}),
             ...(businessId ? { businessId } : {}),
           },
           "connect",
@@ -353,7 +368,7 @@ export default function WhatsAppChannel() {
               className={`${btn} ${s.embeddedSignup ? "border border-surface-200 text-surface-700 dark:border-surface-700 dark:text-surface-200" : "bg-[#25D366] text-white hover:bg-[#1ebe5a]"}`}
             >
               <MessageCircle className="h-4 w-4" />{" "}
-              {s.embeddedSignup ? "Connect on Meta's page" : "Connect WhatsApp"}
+              {s.embeddedSignup ? "Use Meta's page instead" : "Connect WhatsApp"}
             </a>
           )}
           {s.admin?.testNumber && (
@@ -376,7 +391,16 @@ export default function WhatsAppChannel() {
           <p className="mt-3 text-xs text-surface-500">
             You&apos;ll log in with Facebook and pick (or create) a WhatsApp
             Business account and number. A number already on the WhatsApp
-            Business app can be connected too.
+            Business app can be connected too. Allow pop-ups for this site if
+            nothing opens.
+          </p>
+        )}
+        {s.hostedSignup && s.included && (
+          <p className="mt-2 text-xs text-surface-500">
+            On Meta&apos;s page: if Facebook asks you to log in and then shows
+            your Facebook home instead of the WhatsApp steps, come back here and
+            tap the button again. You&apos;re logged in now, so it goes straight
+            to the steps and returns you to Duka at the end.
           </p>
         )}
         {!s.embeddedSignup && !s.admin && (

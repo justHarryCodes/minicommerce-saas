@@ -356,7 +356,7 @@ export function Hero(props: HeroProps) {
 
 /* ───────────────────────────── Highlights ───────────────────────────── */
 
-const HIGHLIGHT_ICON: Record<HighlightIcon, React.ComponentType<{ className?: string }>> = {
+export const HIGHLIGHT_ICON: Record<HighlightIcon, React.ComponentType<{ className?: string }>> = {
   truck: Truck,
   clock: Clock,
   shield: ShieldCheck,

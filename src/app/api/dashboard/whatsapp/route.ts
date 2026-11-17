@@ -5,14 +5,14 @@ import { verifyAdminSession } from "@/lib/admin-auth";
 import { query, queryOne } from "@/lib/db";
 import { whatsappAddonActive } from "@/lib/meta/addon";
 import { storeCanonicalBase } from "@/lib/seo";
-import { embeddedSignupConfigId, embeddedSignupReady, GRAPH_VERSION, hostedSignupUrl, metaAppId, testNumber, whatsappSetupStatus } from "@/lib/meta/config";
+import { embeddedSignupConfigId, embeddedSignupFeatureType, embeddedSignupReady, GRAPH_VERSION, hostedSignupUrl, metaAppId, testNumber, whatsappSetupStatus } from "@/lib/meta/config";
 
 function withState(url: string, state: string): string {
   const u = new URL(url);
   u.searchParams.set("state", state);
   return u.toString();
 }
-import { exchangeCode, onboard, phoneDetails, saveConnection, signupState } from "@/lib/meta/connect";
+import { discoverAccount, exchangeCode, onboard, phoneDetails, saveConnection, signupState } from "@/lib/meta/connect";
 import { ensureSocialTables } from "@/lib/meta/db";
 
 export const dynamic = "force-dynamic";
@@ -50,7 +50,9 @@ export async function GET() {
   const base = {
     available: setup.available,
     included: await whatsappAddonActive(o.store.id),
-    embeddedSignup: setup.embeddedSignup ? { appId: metaAppId(), configId: embeddedSignupConfigId(), version: GRAPH_VERSION() } : null,
+    embeddedSignup: setup.embeddedSignup
+      ? { appId: metaAppId(), configId: embeddedSignupConfigId(), version: GRAPH_VERSION(), featureType: embeddedSignupFeatureType() || null }
+      : null,
     // Meta's hosted signup page, tagged with this store (signed) so the callback knows whose number it is
     hostedSignup: hostedSignupUrl() ? withState(hostedSignupUrl()!, signupState(o.store.id)) : null,
     // Admins see what's missing (names only) and can try Meta's test number
@@ -80,7 +82,8 @@ export async function GET() {
 }
 
 const PostSchema = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("embedded_signup"), code: z.string().min(10).max(2000), wabaId: z.string().regex(/^\d{5,30}$/), phoneNumberId: z.string().regex(/^\d{5,30}$/), businessId: z.string().regex(/^\d{5,30}$/).optional() }),
+  // The popup usually reports the account + number; when it doesn't, they're found from the token
+  z.object({ action: z.literal("embedded_signup"), code: z.string().min(10).max(2000), wabaId: z.string().regex(/^\d{5,30}$/).optional(), phoneNumberId: z.string().regex(/^\d{5,30}$/).optional(), businessId: z.string().regex(/^\d{5,30}$/).optional() }),
   z.object({ action: z.literal("test_number") }),
 ]);
 
@@ -108,7 +111,10 @@ export async function POST(req: NextRequest) {
   // The popup's code -> a business token, then link + register + save
   const tok = await exchangeCode(code);
   if (!tok.ok || !tok.data.access_token) return NextResponse.json({ error: tok.ok ? "Meta didn't return a token" : tok.error }, { status: 502 });
-  const done = await onboard(o.store.id, tok.data.access_token, { wabaId, phoneNumberId, businessId });
+  const token = tok.data.access_token;
+  const ids = wabaId && phoneNumberId ? { wabaId, phoneNumberId } : await discoverAccount(token);
+  if (!ids) return NextResponse.json({ error: "No WhatsApp number was shared. Run the signup again and pick a phone number." }, { status: 422 });
+  const done = await onboard(o.store.id, token, { ...ids, businessId });
   if (!done.ok) return NextResponse.json({ error: done.error }, { status: 502 });
   firstSync(o.store.id);
   return NextResponse.json({ ok: true });

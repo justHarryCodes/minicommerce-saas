@@ -7,6 +7,7 @@ import { ChevronRight, Film, MessageCircle, Package } from "lucide-react";
 import CollectionView from "@/components/storefront/collection/CollectionView";
 import BookmarkSlider from "@/components/storefront/BookmarkSlider";
 import StorefrontFooter from "@/components/storefront/StorefrontFooter";
+import { signatureHome } from "@/components/storefront/signature";
 import {
   AboutSection,
   CategoryStrip,
@@ -234,6 +235,22 @@ export default function StorefrontHome(props: StorefrontHomeProps) {
     );
 
   const fullBleedHero = isHome && sections[0] === "hero" && theme.layout.hero === "fullbleed";
+
+  // Signature themes bring their own homepage
+  const Signature = isHome ? signatureHome(theme.id) : null;
+  if (Signature) {
+    return (
+      <>
+        <Signature {...props} />
+        {!props.hideBookmarks && (
+          <div className="mx-auto max-w-7xl px-4 pt-12 lg:px-8">
+            <BookmarkSlider storeSlug={slug} />
+          </div>
+        )}
+        <StorefrontFooter store={store} theme={theme} storeBase={storeBase} categories={topCategories} pageLinks={props.footerLinks} />
+      </>
+    );
+  }
 
   return (
     <>
