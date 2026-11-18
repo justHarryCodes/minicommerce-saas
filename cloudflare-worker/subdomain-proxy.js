@@ -43,8 +43,12 @@ function shouldSkipPrefix(pathname) {
   );
 }
 
+// Duka's own sites under the root domain: passed straight through, never a store
+const PLATFORM_SUBDOMAINS = new Set(["www", "brandkit"]);
+
 function isPlatformHost(hostname) {
-  return hostname === ROOT_DOMAIN || hostname === `www.${ROOT_DOMAIN}`;
+  if (hostname === ROOT_DOMAIN) return true;
+  return hostname.endsWith(`.${ROOT_DOMAIN}`) && PLATFORM_SUBDOMAINS.has(hostname.slice(0, -ROOT_DOMAIN.length - 1));
 }
 
 /** Custom hostname → store slug, via the app, cached at the edge. */

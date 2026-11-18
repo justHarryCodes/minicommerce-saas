@@ -88,3 +88,68 @@ export async function generateText({
   }
   return text.trim();
 }
+
+// ─── Chat with tools (the Duka Assistant) ─────────────────────────
+export type ChatMessage =
+  | { role: "system" | "user"; content: string }
+  | { role: "assistant"; content: string | null; tool_calls?: ToolCall[] }
+  | { role: "tool"; tool_call_id: string; content: string };
+export interface ToolCall { id: string; type: "function"; function: { name: string; arguments: string } }
+
+/** Groq said "too many tokens per minute" and the wait is too long to sit through. */
+export class GroqRateLimitError extends Error {
+  constructor(public retryAfterSeconds: number) { super(`Groq rate limit (retry in ${retryAfterSeconds}s)`); }
+}
+
+/**
+ * One chat-completions round with tools. Returns the assistant message
+ * (text and/or tool calls). Short rate-limit waits (≤ 8s) and transient
+ * server errors are retried; a longer rate limit throws GroqRateLimitError so
+ * the caller can switch to a lighter model.
+ */
+export async function chatWithTools(opts: {
+  messages: ChatMessage[];
+  tools: unknown[];
+  model?: string;
+  maxTokens?: number;
+  temperature?: number;
+}): Promise<{ content: string | null; toolCalls: ToolCall[]; finishReason: string }> {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) throw new Error("GROQ_API_KEY is not configured");
+  const body = JSON.stringify({
+    model: opts.model || process.env.GROQ_ASSISTANT_MODEL || process.env.GROQ_MODEL || DEFAULT_MODEL,
+    messages: opts.messages,
+    tools: opts.tools,
+    tool_choice: "auto",
+    max_tokens: opts.maxTokens ?? 1600,
+    temperature: opts.temperature ?? 0.3,
+    reasoning_effort: "low",
+  });
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const res = await fetch(GROQ_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body,
+      signal: AbortSignal.timeout(45_000),
+    });
+    if (res.ok) {
+      const json = await res.json();
+      const choice = json?.choices?.[0];
+      return {
+        content: typeof choice?.message?.content === "string" ? choice.message.content : null,
+        toolCalls: Array.isArray(choice?.message?.tool_calls) ? choice.message.tool_calls : [],
+        finishReason: choice?.finish_reason ?? "unknown",
+      };
+    }
+    const detail = await res.text().catch(() => "");
+    if (res.status === 429) {
+      const hinted = Number(res.headers.get("retry-after")) || Number(detail.match(/try again in ([d.]+)s/i)?.[1]) || 0;
+      const wait = Math.ceil(hinted || 2);
+      if (wait <= 8 && attempt < 2) { await new Promise((r) => setTimeout(r, wait * 1000 + 250)); continue; }
+      throw new GroqRateLimitError(wait);
+    }
+    if (res.status >= 500 && attempt < 2) { await new Promise((r) => setTimeout(r, 1200)); continue; }
+    throw new Error(`Groq request failed (${res.status}): ${detail.slice(0, 200)}`);
+  }
+  throw new Error("Groq request failed");
+}

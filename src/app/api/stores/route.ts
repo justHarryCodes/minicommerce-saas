@@ -41,6 +41,9 @@ const RESERVED_SLUGS = new Set([
   "docs",
   "blog",
   "app",
+  // brandkit.dukanigeria.com: the brand kit site
+  "brandkit",
+  "brand",
 ]);
 
 const FIELD_LABELS: Record<string, string> = {

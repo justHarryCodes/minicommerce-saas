@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
 // Every external domain the app actually loads client-side today (confirmed
-// by grep, not guessed): Tawk.to chat widget, Firebase Auth's own network
+// by grep, not guessed): Firebase Auth's own network
 // calls + its Google sign-in popup, Google Fonts, and the three image CDNs
 // already listed in images.remotePatterns below.
 // Report-Only: logs violations, blocks nothing — this is a live site with
@@ -14,12 +14,12 @@ import { withSentryConfig } from "@sentry/nextjs";
 // nothing else is missing.
 const CSP_REPORT_ONLY = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://embed.tawk.to",
+  "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: blob: https://res.cloudinary.com https://firebasestorage.googleapis.com https://storage.googleapis.com https://*.dukanigeria.com https://*.awarizonmall.com",
-  "connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.tawk.to wss://*.tawk.to",
-  "frame-src https://*.tawk.to https://accounts.google.com",
+  "connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com",
+  "frame-src https://accounts.google.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

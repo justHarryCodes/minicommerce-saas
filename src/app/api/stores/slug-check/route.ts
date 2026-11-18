@@ -8,6 +8,8 @@ const RESERVED_SLUGS = new Set([
   'static', 'public', 'assets', 'images', 'media', 'uploads',
   // Infrastructure hostnames under dukanigeria.com (stores.* is the custom-domain CNAME target)
   'stores', 'mail', 'smtp', 'ftp', 'cdn', 'status', 'docs', 'blog', 'app',
+  // brandkit.dukanigeria.com: the brand kit site
+  'brandkit', 'brand',
 ])
 
 export async function GET(req: NextRequest) {

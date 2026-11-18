@@ -16,6 +16,7 @@ const columns: { title: string; links: { href: string; label: string }[] }[] = [
     title: "Company",
     links: [
       { href: "/affiliate", label: "Affiliates" },
+      { href: "https://brandkit.dukanigeria.com", label: "Brand kit" },
       { href: "/terms", label: "Terms" },
     ],
   },
@@ -84,17 +85,24 @@ export default function Footer() {
                   {col.title}
                 </h3>
                 <ul className="space-y-2.5">
-                  {col.links.map((l) => (
-                    <li key={l.href}>
-                      <Link
-                        href={l.href}
-                        className="text-sm transition-opacity hover:underline hover:opacity-80"
-                        style={{ color: "var(--text-secondary)" }}
-                      >
-                        {l.label}
-                      </Link>
-                    </li>
-                  ))}
+                  {col.links.map((l) => {
+                    const cls = "text-sm transition-opacity hover:underline hover:opacity-80";
+                    const style = { color: "var(--text-secondary)" };
+                    return (
+                      <li key={l.href}>
+                        {/* Other Duka sites (e.g. the brand kit) are plain links, not app routes */}
+                        {l.href.startsWith("http") ? (
+                          <a href={l.href} className={cls} style={style}>
+                            {l.label}
+                          </a>
+                        ) : (
+                          <Link href={l.href} className={cls} style={style}>
+                            {l.label}
+                          </Link>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             ))}

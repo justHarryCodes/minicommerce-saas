@@ -10,7 +10,7 @@ import Topbar from "@/components/dashboard/Topbar";
 import DashboardBottomNav from "@/components/dashboard/DashboardBottomNav";
 import TutorialBanner from "@/components/dashboard/TutorialBanner";
 import AppBanner from "@/components/dashboard/AppBanner";
-import TawkChat from "@/components/dashboard/TawkChat";
+import DukaAssistant from "@/components/dashboard/assistant/DukaAssistant";
 import DashboardFrame from "@/components/dashboard/DashboardFrame";
 import { queryOne } from "@/lib/db";
 
@@ -80,7 +80,7 @@ export default async function DashboardLayout({
           {/* Duka announcements (admin campaigns) */}
           <AnnouncementBanner storeId={store.id} />
           {children}
-          <TawkChat />
+          <DukaAssistant storeId={store.id} storeName={store.name} firstName={(user.displayName ?? "").trim().split(/s+/)[0] || undefined} />
         </main>
       </DashboardFrame>
 
