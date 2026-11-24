@@ -9,6 +9,8 @@ import StorefrontShell from "@/components/storefront/StorefrontShell";
 import { storeCached } from "@/lib/store-cache";
 import VisitTracker from "@/components/storefront/VisitTracker";
 import AssistantWidget from "@/components/storefront/AssistantWidget";
+import WelcomeOffer from "@/components/storefront/WelcomeOffer";
+import { welcomeHeadline } from "@/lib/growth-shared";
 import type { Store, Category } from "@/types";
 import type { Metadata } from "next";
 import { CARD_SIZE, metaText, storeCanonicalBase, storeCardUrl } from "@/lib/seo";
@@ -126,6 +128,12 @@ export default async function StorefrontLayout({ params, children }: Props) {
   const showAssistant =
     !!store.ai_assistant_enabled && isAiEnabled().groq && (await hasFeature(store.id, "ai_tools"));
 
+  // Growth engine: the store's first-order offer, if the vendor switched it on
+  const st = store as typeof store & { welcome_offer_enabled?: boolean; welcome_offer_percent?: number; welcome_offer_headline?: string | null };
+  const welcome = st.welcome_offer_enabled && (await hasFeature(store.id, "coupons"))
+    ? { percent: Number(st.welcome_offer_percent ?? 10), headline: welcomeHeadline(Number(st.welcome_offer_percent ?? 10), st.welcome_offer_headline) }
+    : null;
+
   return (
     <StorefrontShell
       store={store}
@@ -139,6 +147,7 @@ export default async function StorefrontLayout({ params, children }: Props) {
         <>
           <VisitTracker storeSlug={slug} storeId={store.id} />
           {showAssistant && <AssistantWidget storeSlug={slug} storeName={store.name} />}
+          {welcome && <WelcomeOffer storeSlug={slug} storeName={store.name} percent={welcome.percent} headline={welcome.headline} />}
         </>
       }
     >

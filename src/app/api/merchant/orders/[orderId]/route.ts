@@ -5,6 +5,7 @@ import { getStoreFor } from "@/lib/access";
 import { eventsForChange, notifyCustomer } from "@/lib/notify/order-messages";
 import { restockCancelledOrder } from "@/lib/inventory";
 import { refundGiftCardForOrder } from "@/lib/gift-cards";
+import { rewardReferral, voidReferral } from "@/lib/growth-referrals";
 import { z } from "zod";
 
 const Schema = z.object({
@@ -70,6 +71,11 @@ export async function PATCH(
     if (rows[0]?.order_status === "cancelled" && before.order_status !== "cancelled") {
       await restockCancelledOrder(orderId, store.id).catch((e) => console.error("[restock] failed:", e));
       await refundGiftCardForOrder(orderId, store.id).catch((e) => console.error("[gift card refund] failed:", e));
+      await voidReferral(orderId);
+    }
+    // A friend's referred order arrived: the person who referred them earns credit
+    if (rows[0]?.order_status === "delivered" && before.order_status !== "delivered") {
+      await rewardReferral(orderId, store.id).catch((e) => console.error("[referral reward] failed:", e));
     }
 
     for (const event of eventsForChange(before, rows[0])) void notifyCustomer(orderId, event);

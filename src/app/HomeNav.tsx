@@ -9,6 +9,7 @@ import {
   ArrowRight,
   ArrowUpRight,
   BookOpen,
+  Newspaper,
   Bot,
   ChevronDown,
   CornerDownLeft,
@@ -92,8 +93,9 @@ const GROUPS: Group[] = [
   {
     id: "resources",
     label: "Resources",
-    matches: ["/resources", "/terms"],
+    matches: ["/resources", "/terms", "/blog"],
     items: [
+      { href: "/blog", title: "Blog", desc: "Tips and stories for sellers", icon: Newspaper, tone: "amber" },
       { href: "/resources#guides", title: "Guides", desc: "Step-by-step store help", icon: BookOpen, tone: "blue" },
       { href: "/resources#articles", title: "Articles", desc: "Tips to grow your business", icon: FileText, tone: "green" },
       { href: "/terms", title: "Terms", desc: "Our terms of service", icon: Scale, tone: "slate" },

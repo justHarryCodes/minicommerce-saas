@@ -122,6 +122,18 @@ export default function CheckoutClient({
   const [showGiftInput, setShowGiftInput] = useState(false);
   const [loyalty, setLoyalty] = useState<{ eligible: boolean; remaining: number; percent: number; everyN: number } | null>(null);
   const [policyOpen, setPolicyOpen] = useState(false);
+  // Growth engine: opt-in (never pre-ticked) to hear about offers from this store
+  const [offersOptIn, setOffersOptIn] = useState(false);
+  // A welcome code they got on this device (see WelcomeOffer) or a friend's code is filled in for them
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`sf_welcome_code:${storeSlug}`);
+      if (saved && /^WELCOME[A-Z0-9]{5}$/.test(saved)) setCouponCode((c) => c || saved);
+      // ...or the friend code from a referral link they arrived through
+      const ref = localStorage.getItem(`sf_ref:${storeSlug}`);
+      if (ref && /^[A-Z]{1,6}-[A-Z0-9]{4}$/.test(ref)) setCouponCode((c) => c || ref);
+    } catch {}
+  }, [storeSlug]);
 
   const [form, setForm] = useState({
     customerName: "",
@@ -370,6 +382,9 @@ export default function CheckoutClient({
           couponCode: appliedCoupon?.code ?? null,
           giftCardCode: appliedGift?.code ?? null,
           checkoutToken,
+          // Which visit led to this order (the storefront's anonymous id)
+          visitorId: (() => { try { return localStorage.getItem("sf_vid"); } catch { return null; } })(),
+          marketingConsent: offersOptIn,
           // Came from a WhatsApp chat: order updates go back to that chat
           socialRef: (() => { try { return localStorage.getItem(socialRefKey(storeSlug)); } catch { return null; } })(),
         }),
@@ -675,6 +690,17 @@ export default function CheckoutClient({
                       className="w-full px-4 py-3 rounded-xl border border-surface-200 dark:border-surface-700 bg-transparent text-surface-900 dark:text-white placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-[var(--sf-accent)] text-sm"
                     />
                   </div>
+
+                  <label className="flex cursor-pointer items-start gap-2.5 text-sm text-surface-600 dark:text-surface-300 sm:col-span-2">
+                    <input
+                      type="checkbox"
+                      checked={offersOptIn}
+                      onChange={(e) => setOffersOptIn(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 shrink-0 rounded border-surface-300"
+                      style={{ accentColor: "var(--sf-accent)" }}
+                    />
+                    <span>Send me offers and new arrivals from this store. You can stop them anytime.</span>
+                  </label>
 
                   {deliveryMethod === "delivery" && !allBookable && (<>
                   <div className="sm:col-span-2">

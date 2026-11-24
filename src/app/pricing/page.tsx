@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FREE_LIMITS } from "@/lib/features-shared";
 import Image from "next/image";
 import {
   Check,
@@ -219,6 +220,17 @@ export default async function PricingPage() {
               { text: "Paystack and bank transfer checkout" },
               { text: "Order and inventory dashboard" },
               { text: "AI-assisted store setup" },
+              // Free gets a taste of Pro (FREE_LIMITS); paid plans get the full tools
+              ...(isFree
+                ? [
+                    { text: `Sales analytics (last ${FREE_LIMITS.analyticsDays} days)` },
+                    { text: `Customer list and ${FREE_LIMITS.activeCoupons} discount code` },
+                    { text: `${FREE_LIMITS.posSalesPerMonth} in-store sales a month` },
+                  ]
+                : [
+                    { text: "Full analytics and where visitors come from" },
+                    { text: "Unlimited discount codes and in-store sales" },
+                  ]),
             ];
 
             return (

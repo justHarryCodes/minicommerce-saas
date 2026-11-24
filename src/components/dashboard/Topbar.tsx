@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
-import { ChevronRight, ExternalLink, LogOut, Menu, Plus, Search, Settings } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, ExternalLink, Eye, LogOut, Plus, Search, Settings } from "lucide-react";
 import type { Store as StoreType } from "@/types";
 import type { SessionUser } from "@/lib/auth";
 import { allowedPath, type Role } from "@/lib/access-shared";
@@ -14,6 +15,7 @@ import { PushNotificationPrompt } from "@/components/PushNotificationPrompt";
 import ThemeToggle from "@/components/ThemeToggle";
 import ShareButton from "./ShareButton";
 import { pageTitle } from "./nav-config";
+import { clLogo } from "@/lib/cloudinary";
 import CommandPalette, { NEW_ACTIONS } from "./CommandPalette";
 
 interface Props {
@@ -50,7 +52,7 @@ export default function DashboardTopbar({ user, store, role = "owner" }: Props) 
   const { title, parent } = pageTitle(pathname);
   const customDomain = store.customDomain ?? store.custom_domain;
   const storeUrl = customDomain ? `https://${customDomain}` : `https://${store.slug}.${ROOT}`;
-  const { setOpen, setPaletteOpen } = useDashboardDrawer();
+  const { setPaletteOpen } = useDashboardDrawer();
   const newMenu = usePopover();
   const userMenu = usePopover();
   const actions = NEW_ACTIONS.filter((a) => allowedPath(role, a.href));
@@ -68,21 +70,15 @@ export default function DashboardTopbar({ user, store, role = "owner" }: Props) 
   return (
     <>
       {/* ── Mobile ── */}
-      <header className="fixed inset-x-0 top-0 z-30 flex h-12 items-center gap-2 border-b border-zinc-100 bg-white px-3 dark:border-zinc-800 dark:bg-zinc-950 lg:hidden">
-        <button onClick={() => setOpen(true)} className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800" aria-label="Open menu">
-          <Menu className="h-5 w-5" />
-        </button>
-        <p className="min-w-0 flex-1 truncate text-sm font-bold text-zinc-900 dark:text-white">{title}</p>
-        <button onClick={() => setPaletteOpen(true)} className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800" aria-label="Search">
-          <Search className="h-[18px] w-[18px]" />
-        </button>
-        <a href={storeUrl} target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800" aria-label="View store">
-          <ExternalLink className="h-[18px] w-[18px]" />
-        </a>
-        <ShareButton compact className="!p-2.5" target={{ kind: "store", title: store.name, url: storeUrl, cardPath: `/api/og/store/${store.slug}` }} />
-        <ThemeToggle />
-        <PushNotificationPrompt subjectType="vendor" />
-      </header>
+      <MobileHeader
+        pathname={pathname}
+        title={title}
+        backHref={parent?.href ?? (role === "staff" ? "/dashboard/orders" : "/dashboard/me")}
+        storeName={store.name}
+        storeUrl={storeUrl}
+        storeLogo={store.logoUrl ?? store.logo_url}
+        onSearch={() => setPaletteOpen(true)}
+      />
 
       {/* ── Desktop ── */}
       <header className="sticky top-0 z-20 hidden h-12 items-center gap-3 border-b border-zinc-100 bg-white/85 px-4 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/85 lg:flex">
@@ -164,5 +160,110 @@ export default function DashboardTopbar({ user, store, role = "owner" }: Props) 
 
       <CommandPalette role={role} storeUrl={storeUrl} />
     </>
+  );
+}
+
+/* ───────────────────────── Phone header ─────────────────────────
+   Familiar app headers: Home shows the store like a profile (logo, name,
+   link); Orders and Products get a big title like WhatsApp's "Chats"; every
+   other page gets a round back button. The light/dark switch is always in
+   view, on every screen. */
+const ROOT_TITLES: Record<string, { title: string; sub: string }> = {
+  "/dashboard/orders": { title: "Orders", sub: "Tap an order to open it" },
+  "/dashboard/products": { title: "Products", sub: "Everything you sell" },
+  "/dashboard/bookings": { title: "Bookings", sub: "Appointments customers booked" },
+  "/dashboard/inventory": { title: "Stock", sub: "How many of each item you have" },
+};
+const roundBtn =
+  "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-800 ring-1 ring-inset ring-zinc-200/80 transition active:scale-95 dark:bg-zinc-800 dark:text-zinc-100 dark:ring-zinc-700";
+
+export function MobileHeader({ pathname, title, backHref, storeName, storeUrl, storeLogo, onSearch }: {
+  pathname: string; title: string; backHref: string; storeName: string; storeUrl: string; storeLogo?: string | null; onSearch: () => void;
+}) {
+  const shell =
+    "fixed inset-x-0 top-0 z-30 flex h-14 items-center gap-2 border-b border-zinc-200/70 bg-white/90 px-3 shadow-[0_1px_12px_-6px_rgba(0,0,0,0.12)] backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/90 lg:hidden";
+  // A thin brand line along the very top
+  const accent = <span aria-hidden className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-amber-400 via-orange-500 to-amber-400" />;
+  const theme = <ThemeToggle variant="switch" />;
+  const search = (
+    <button type="button" onClick={onSearch} className={roundBtn} aria-label="Search">
+      <Search className="h-[18px] w-[18px]" strokeWidth={2.1} />
+    </button>
+  );
+  const viewStore = (
+    <a href={storeUrl} target="_blank" rel="noopener noreferrer" className={roundBtn} aria-label="View your store">
+      <Eye className="h-[18px] w-[18px]" strokeWidth={2.1} />
+    </a>
+  );
+  const host = storeUrl.replace(/^https?:\/\//, "");
+
+  if (pathname === "/dashboard") {
+    return (
+      <header className={shell}>
+        {accent}
+        <Link href="/dashboard/me" className="flex min-w-0 flex-1 items-center gap-2.5">
+          <span className="shrink-0 rounded-full bg-[conic-gradient(from_200deg,#f59e0b,#f97316,#ef4444,#f59e0b)] p-[2px]">
+            <span className="block rounded-full bg-white p-[2px] dark:bg-zinc-950">
+              {storeLogo ? (
+                <Image src={clLogo(storeLogo)} alt="" width={32} height={32} className="h-8 w-8 rounded-full bg-white object-contain" />
+              ) : (
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-400 text-[14px] font-black text-black">{storeName.charAt(0).toUpperCase()}</span>
+              )}
+            </span>
+          </span>
+          <span className="min-w-0 leading-tight">
+            <span className="block truncate text-[16px] font-extrabold tracking-tight text-zinc-950 dark:text-white">{storeName}</span>
+            <span className="flex items-center gap-0.5 text-[11.5px] font-medium text-zinc-500">
+              <span className="truncate">{host}</span>
+              <ChevronDown className="h-3 w-3 shrink-0" strokeWidth={2.5} />
+            </span>
+          </span>
+        </Link>
+        {theme}
+        <PushNotificationPrompt subjectType="vendor" className={roundBtn} />
+        {search}
+      </header>
+    );
+  }
+  const root = ROOT_TITLES[pathname];
+  if (root) {
+    return (
+      <header className={shell}>
+        {accent}
+        <span className="min-w-0 flex-1 leading-tight">
+          <h1 className="truncate text-[22px] font-extrabold tracking-tight text-zinc-950 dark:text-white">{root.title}</h1>
+          <span className="block truncate text-[11.5px] font-medium text-zinc-500">{root.sub}</span>
+        </span>
+        {theme}
+        {search}
+        {viewStore}
+      </header>
+    );
+  }
+  if (pathname === "/dashboard/me") {
+    return (
+      <header className={shell}>
+        {accent}
+        <span className="min-w-0 flex-1 leading-tight">
+          <span className="block truncate text-[19px] font-extrabold tracking-tight text-zinc-950 dark:text-white">{storeName}</span>
+          <span className="block truncate text-[11.5px] font-medium text-zinc-500">Your store and every tool</span>
+        </span>
+        {theme}
+        <Link href="/dashboard/settings" className={roundBtn} aria-label="Settings">
+          <Settings className="h-[18px] w-[18px]" strokeWidth={2.1} />
+        </Link>
+      </header>
+    );
+  }
+  return (
+    <header className={shell}>
+      {accent}
+      <Link href={backHref} className={roundBtn} aria-label="Back">
+        <ChevronLeft className="h-5 w-5" strokeWidth={2.6} />
+      </Link>
+      <h1 className="min-w-0 flex-1 truncate text-[17px] font-bold tracking-tight text-zinc-950 dark:text-white">{title}</h1>
+      {theme}
+      {search}
+    </header>
   );
 }

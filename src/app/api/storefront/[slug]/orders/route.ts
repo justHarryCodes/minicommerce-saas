@@ -18,6 +18,9 @@ import { newOrderNumber } from "@/lib/order-number";
 import { checkoutMethods, dukaPayActive } from "@/lib/duka-pay";
 import { getPlatformSettings } from "@/lib/admin-auth";
 import { linkOrder } from "@/lib/meta/cart-links";
+import { firstSourceFor, upsertContact } from "@/lib/growth";
+import { checkReferralUse, recordReferral } from "@/lib/growth-referrals";
+import { growthSchemaReady } from "@/lib/growth-schema";
 import { z } from "zod";
 
 // Thrown from inside the order transaction when a size's stock was raced
@@ -45,6 +48,10 @@ const OrderSchema = z.object({
   checkoutToken: z.string().max(64).optional().nullable(),
   /** The WhatsApp cart link this order came from (see src/lib/meta/cart-links.ts) */
   socialRef: z.string().max(64).optional().nullable(),
+  /** The storefront's anonymous visitor id (growth engine: which visit led to the order) */
+  visitorId: z.string().max(64).optional().nullable(),
+  /** Ticked "Send me offers and news" at checkout */
+  marketingConsent: z.boolean().optional(),
   items: z
     .array(
       z.object({
@@ -251,6 +258,9 @@ export async function POST(
       discount = c.discount;
       couponCode = d.couponCode.trim().toUpperCase();
     }
+    // A shopper's friend code: first orders only, and not your own
+    const referral = couponCode ? await checkReferralUse(store.id, couponCode, d.customerPhone) : null;
+    if (referral && !referral.ok) return NextResponse.json({ error: referral.error }, { status: 400 });
 
     // ── Minimum order (measured after discounts, before delivery) ──────────
     const minimum = store.minimum_order != null ? Number(store.minimum_order) : 0;
@@ -305,6 +315,11 @@ export async function POST(
     const pickup = quote.method === "pickup";
     const appointment = quote.method === "appointment";
 
+    const visitorId = d.visitorId && /^[\w-]{8,64}$/.test(d.visitorId) ? d.visitorId : null;
+    const firstSource = await firstSourceFor(store.id, visitorId);
+    // Attribution columns only once they exist (see lib/growth-schema)
+    const tracked = await growthSchemaReady();
+
     const stockChanges: StockChange[] = [];
     const reserved: { product: string; startsAt: string }[] = [];
     const lowStock: { productId: string; name: string; label: string | null; stock: number }[] = [];
@@ -316,8 +331,8 @@ export async function POST(
           delivery_method, delivery_zone, delivery_fee,
           subtotal, total, total_amount, deposit_amount,
           payment_method, coupon_code, discount_amount, scheduled_for,
-          gift_card_code, gift_card_amount, loyalty_discount, payment_status
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)
+          gift_card_code, gift_card_amount, loyalty_discount, payment_status${tracked ? ", visitor_id, first_source" : ""}
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23${tracked ? ",$24,$25" : ""})
         RETURNING id, order_number, access_token`,
         [
           store.id, orderNumber,
@@ -342,6 +357,7 @@ export async function POST(
           totals.giftCard,
           loyalty,
           fullyCovered ? "paid" : "pending",
+          ...(tracked ? [visitorId, firstSource] : []),
         ]
       );
 
@@ -432,6 +448,11 @@ export async function POST(
     });
 
     void alertLowStock(store.id, lowStock);
+    if (referral?.ok) await recordReferral(store.id, referral.referrerId, result.id, referral.friendPhoneKey).catch(() => {});
+    // Growth engine: they asked to hear about offers
+    if (d.marketingConsent) {
+      void upsertContact(store.id, { phone: d.customerPhone, name: d.customerName, email: d.customerEmail || null, visitorId }, "checkout").catch(() => {});
+    }
     if (d.socialRef) await linkOrder(store.id, d.socialRef, result.id);
     invalidateStoreSoon(store.id, slug); // stock changed
 

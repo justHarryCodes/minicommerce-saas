@@ -4,7 +4,7 @@
 // browser usually sends no referrer, so those visits land in "direct" unless
 // the link is tagged.
 
-export const SOURCES = ["whatsapp", "instagram", "facebook", "tiktok", "twitter", "google", "duka", "other", "direct"] as const;
+export const SOURCES = ["whatsapp", "instagram", "facebook", "tiktok", "twitter", "google", "email", "referral", "duka", "other", "direct"] as const;
 export type TrafficSource = (typeof SOURCES)[number];
 
 export const SOURCE_LABELS: Record<TrafficSource, string> = {
@@ -14,6 +14,8 @@ export const SOURCE_LABELS: Record<TrafficSource, string> = {
   tiktok: "TikTok",
   twitter: "X / Twitter",
   google: "Google search",
+  email: "Your emails",
+  referral: "Customer referrals",
   duka: "Duka marketplace",
   other: "Other websites",
   direct: "Direct / untagged",
@@ -26,6 +28,8 @@ const RULES: [RegExp, TrafficSource][] = [
   [/(^|\.)(tiktok\.com)$|^tiktok$/, "tiktok"],
   [/(^|\.)(t\.co|twitter\.com|x\.com)$|^(twitter|x)$/, "twitter"],
   [/(^|\.)google\.[a-z.]+$|(^|\.)(bing\.com|duckduckgo\.com|yahoo\.com)$|^google$/, "google"],
+  [/^email$/, "email"],
+  [/^referral$/, "referral"],
   [/(^|\.)(dukanigeria\.com|awarizonmall\.com)$|^duka$/, "duka"],
 ];
 

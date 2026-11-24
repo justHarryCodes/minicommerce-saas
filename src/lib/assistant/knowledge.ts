@@ -75,8 +75,8 @@ Tips: keep it to 3–8 main categories, name them the way customers search ("Wig
     url: "/dashboard/inventory",
     body: `- Stock goes down automatically when an order is placed, and goes back up when you cancel an order.
 - **Low-stock alerts:** set a threshold in Settings (or per product). You get a notification when an item drops to it.
-- **Inventory page** (paid plans): every stock change with the reason (sale, edit, cancellation, point of sale), so you always know where stock went.
-- **Back-in-stock alerts** (paid plans): shoppers can ask to be told when a sold-out item returns.`,
+- **Inventory page / stock history** (paid plans): every stock change with the reason (sale, edit, cancellation, point of sale), so you always know where stock went.
+- **Back-in-stock alerts** (every plan): shoppers can ask to be told when a sold-out item returns.`,
   },
   /* ───────────────────────── Orders & payments ───────────────────────── */
   {
@@ -186,6 +186,20 @@ Your dukanigeria.com link keeps working too.`,
   },
   /* ───────────────────────── Growth tools ───────────────────────── */
   {
+    id: "growth",
+    title: "Growth: reach more people and win repeat buyers",
+    keywords: "growth grow marketing more customers repeat buyers returning welcome offer popup pop-up list contacts audience share links tracked links follow up follow-ups win back review emails automation broadcast newsletter blast referral refer friend word of mouth store credit",
+    url: "/dashboard/growth",
+    body: `**Growth** (in the menu) runs a simple loop: reach → capture → convert → bring back.
+- **Share links that tell you what works:** copy a different link for WhatsApp, Instagram, TikTok, Facebook and X. Growth then shows which app brings buyers, not just visitors.
+- **Welcome offer:** switch it on and new visitors see a pop-up offering 5–20% off their first order for their WhatsApp number (and email if they like). They join your list and get their own one-time code, filled in for them at checkout.
+- **Your list:** everyone who agreed to hear from you (from the pop-up or the "send me offers" box at checkout). Message anyone from your own WhatsApp with one tap, or download it as a CSV.
+- **Automatic follow-ups (Pro):** emails in your store's name: "your code is waiting" 2 days after sign-up, a thank-you and review request after delivery, and "we miss you" with a comeback code 45 days after someone's last order. Every email has a one-click stop link.
+- **Broadcasts (Pro):** tell your whole list about new arrivals, a sale or news: by email (with up to 3 products and a discount code; one broadcast a day) or on WhatsApp, one tap per person from your own phone.
+- **Customer referrals (Pro):** switch it on and each buyer gets their own friend code and link on their receipt and thank-you email. Their friend gets 5–20% off a first order; once it's delivered, the buyer earns store credit (₦500–₦5,000, you choose), spent like a gift card.
+The page shows visitors, new contacts, first orders, returning buyers and sales from each step. Free shows the last 7 days; Pro shows 30 and 90.`,
+  },
+  {
     id: "whatsapp-shop",
     title: "WhatsApp shop: selling inside WhatsApp",
     keywords: "whatsapp shop bot chat catalog connect number business automation dm",
@@ -212,7 +226,7 @@ Your dukanigeria.com link keeps working too.`,
     title: "Coupons and discount codes",
     keywords: "coupon discount code promo promotion percent off influencer sale voucher",
     url: "/dashboard/coupons",
-    body: `On paid plans, create codes in **Coupons** (or ask me to):
+    body: `Create codes in **Coupons** (or ask me to). The Free plan can have 1 code switched on at a time; paid plans have as many as you like.
 - **Percentage** (e.g. 10% off) or **fixed amount** (e.g. ₦2,000 off).
 - Optional **minimum order**, **maximum number of uses** and **expiry date**.
 Smart uses: a code for each influencer (to see who brings sales), "WELCOME10" for first orders, a weekend flash code with a short expiry. Avoid giving discounts so big you sell at a loss.`,
@@ -237,7 +251,7 @@ Why carts get abandoned: surprise delivery fees, no trusted payment option, slow
     title: "Reels: shoppable product videos",
     keywords: "reels video short video discover feed tiktok style shoppable",
     url: "/dashboard/reels",
-    body: `On paid plans, upload short vertical videos (15–60 seconds) and tag up to 5 products. They show on your store and in Duka's Discover feed. Show the product in use, start with the best moment, and keep it bright and steady.`,
+    body: `Upload short vertical videos (15–60 seconds) and tag up to 5 products. The Free plan includes 1 reel a month; paid plans include more. They show on your store and in Duka's Discover feed. Show the product in use, start with the best moment, and keep it bright and steady.`,
   },
   {
     id: "reviews",
@@ -251,14 +265,14 @@ Why carts get abandoned: surprise delivery fees, no trusted payment option, slow
     title: "Analytics: sales, visitors and top products",
     keywords: "analytics stats statistics report sales visitors traffic conversion best seller top products performance",
     url: "/dashboard/analytics",
-    body: `On paid plans, **Analytics** shows sales, orders and visitors over time, your top products, where visitors come from, what shoppers search for (and couldn't find), and new vs returning customers. Check it weekly and stock more of what sells.`,
+    body: `**Analytics** shows sales, orders and visitors over time (the Free plan shows the last 7 days; paid plans add 30 and 90 days and traffic sources), your top products, where visitors come from, what shoppers search for (and couldn't find), and new vs returning customers. Check it weekly and stock more of what sells.`,
   },
   {
     id: "customers",
     title: "Customers list",
     keywords: "customers buyers crm contacts repeat customer list export",
     url: "/dashboard/customers",
-    body: `On paid plans, **Customers** lists everyone who ordered, how often and how much they spent. Use it to thank your best customers and to tell repeat buyers about new arrivals first.`,
+    body: `**Customers** (every plan) lists everyone who ordered, how often and how much they spent. Use it to thank your best customers and to tell repeat buyers about new arrivals first.`,
   },
   {
     id: "bookings",
@@ -272,7 +286,7 @@ Why carts get abandoned: surprise delivery fees, no trusted payment option, slow
     title: "Point of sale: selling in person",
     keywords: "pos point of sale in person walk in shop counter till physical store",
     url: "/dashboard/pos",
-    body: `On paid plans, **Point of sale** records sales to walk-in customers. It uses the same stock as your online store, so nothing gets sold twice.`,
+    body: `**Point of sale** records sales to walk-in customers (the Free plan includes 10 a month; paid plans are unlimited). It uses the same stock as your online store, so nothing gets sold twice.`,
   },
   {
     id: "team",
@@ -289,7 +303,7 @@ Only the owner can change payment details, plans and the team.`,
     title: "Plans and billing",
     keywords: "plan plans pricing price upgrade downgrade pro subscription billing pay monthly yearly free",
     url: "/dashboard/billing",
-    body: `Duka has a **Free** plan and paid plans. Free includes products, orders, categories, checkout, delivery and receipts. Paid plans add tools like analytics, coupons, abandoned-cart recovery, custom domain, reels, team accounts, POS and more.
+    body: `Duka has a **Free** plan and paid plans. Free includes products, orders, categories, checkout, delivery, receipts, low-stock alerts, back-in-stock alerts and the customer list, plus a taste of Pro: analytics for the last 7 days, 1 discount code, 1 reel a month and 10 in-store sales a month. Paid plans remove those limits and add custom domain, AI tools, abandoned-cart recovery, customer SMS/email, team accounts, bookings, gift cards, stock history and more.
 Upgrade or renew in **Billing**. Paying yearly is cheaper. If a paid plan ends, your store keeps working on Free.
 (Ask me for current plan prices and what your plan includes.)`,
   },

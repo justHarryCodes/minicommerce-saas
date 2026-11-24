@@ -25,7 +25,8 @@ export default async function ReelsDashboardPage() {
   }
 
   const globalSettings = await getPlatformSettings();
-  const monthlyLimit = store.reels_monthly_limit ?? globalSettings.reels_monthly_limit;
+  // Same order as the upload API: a per-store override, then the plan, then the platform default
+  const monthlyLimit = store.reels_monthly_limit ?? effectivePlan.max_reels ?? globalSettings.reels_monthly_limit;
 
   const usageRow = await queryOne<{ count: string }>(
     "SELECT COUNT(*) as count FROM reels WHERE store_id = $1 AND created_at >= date_trunc('month', NOW())",

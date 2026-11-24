@@ -1,5 +1,6 @@
 import { queryOne } from "@/lib/db";
-import { hasFeature } from "@/lib/plan";
+import { freeLimitsFor, hasFeature } from "@/lib/plan";
+import { ensureGrowthSchema } from "@/lib/growth-schema";
 
 export interface CouponRow {
   id: string;
@@ -35,10 +36,15 @@ export function evaluateCoupon(coupon: CouponRow | null, amount: number, now = n
 
 export async function checkCoupon(storeId: string, code: string, amount: number): Promise<CouponCheck> {
   if (!(await hasFeature(storeId, "coupons"))) return { valid: false, error: "Invalid or inactive coupon code" };
+  const limits = await freeLimitsFor(storeId);
+  await ensureGrowthSchema();
   const coupon = await queryOne<CouponRow>(
     `SELECT id, code, discount_type, discount_value, min_order_amount, max_uses, uses_count, expires_at
-     FROM coupons WHERE store_id = $1 AND code = $2 AND is_active = true`,
-    [storeId, code.trim().toUpperCase()]
+     FROM coupons WHERE store_id = $1 AND code = $2 AND is_active = true
+       AND ($3::int IS NULL OR kind <> 'standard' OR id IN (
+         SELECT id FROM coupons WHERE store_id = $1 AND kind = 'standard' AND is_active = true AND (expires_at IS NULL OR expires_at > NOW())
+         ORDER BY created_at DESC LIMIT $3))`,
+    [storeId, code.trim().toUpperCase(), limits?.activeCoupons ?? null]
   );
   return evaluateCoupon(coupon, amount);
 }

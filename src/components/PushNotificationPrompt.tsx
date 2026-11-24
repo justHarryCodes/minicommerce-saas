@@ -21,7 +21,7 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
  *  admin. Mounted in the dashboard and admin layouts respectively — never
  *  on the public storefront, push is a vendor/admin tool here, not a
  *  customer-facing feature. */
-export function PushNotificationPrompt({ subjectType, variant = "icon" }: Props) {
+export function PushNotificationPrompt({ subjectType, variant = "icon", className }: Props & { className?: string }) {
   const [supported, setSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission | null>(null);
   const [subscribed, setSubscribed] = useState(false);
@@ -108,7 +108,7 @@ export function PushNotificationPrompt({ subjectType, variant = "icon" }: Props)
         disabled={loading}
         title={subscribed ? "Disable notifications" : "Enable notifications"}
         aria-label={subscribed ? "Disable notifications" : "Enable notifications"}
-        className="relative flex items-center justify-center w-9 h-9 rounded-xl text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800 transition-all disabled:opacity-50"
+        className={className ?? "relative flex items-center justify-center w-9 h-9 rounded-xl text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800 transition-all disabled:opacity-50"}
       >
         {subscribed ? <Bell className="w-4.5 h-4.5" /> : <BellOff className="w-4.5 h-4.5" />}
       </button>

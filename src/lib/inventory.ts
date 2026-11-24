@@ -10,7 +10,6 @@ import { invalidateStoreSoon } from "@/lib/store-cache";
 import { query, withTransaction } from "@/lib/db";
 import { notifyStoreEvent } from "@/lib/push";
 import { notifyBackInStock } from "@/lib/stock-alerts";
-import { hasFeature } from "@/lib/plan";
 
 export type MovementReason = "order" | "order_cancelled" | "manual" | "created";
 
@@ -71,7 +70,7 @@ export function lowStockMessage(items: { name: string; label: string | null; sto
 
 export async function alertLowStock(storeId: string, items: { productId: string; name: string; label: string | null; stock: number }[]): Promise<void> {
   if (!items.length) return;
-  if (!(await hasFeature(storeId, "inventory_tools"))) return;
+  // Low-stock alerts are on every plan; stock history is the paid part
   const { title, body } = lowStockMessage(items);
   await notifyStoreEvent(storeId, {
     type: "low_stock",

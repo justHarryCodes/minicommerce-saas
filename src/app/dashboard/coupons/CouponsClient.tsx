@@ -102,13 +102,16 @@ export default function CouponsClient({ initialCoupons }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ is_active: !coupon.is_active }),
       });
-      if (!res.ok) throw new Error("Failed to update coupon");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(typeof data.error === "string" ? data.error : "Failed to update coupon");
+      }
       setCoupons((prev) =>
         prev.map((c) => (c.id === coupon.id ? { ...c, is_active: !c.is_active } : c))
       );
       toast.success(coupon.is_active ? "Coupon deactivated" : "Coupon activated");
-    } catch {
-      toast.error("Failed to update coupon");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update coupon");
     } finally {
       setTogglingId(null);
     }

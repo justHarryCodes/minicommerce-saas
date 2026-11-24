@@ -60,6 +60,11 @@ const MIGRATIONS = [
   { name: "seo.sql",                            path: join(__dirname, "../migrations/seo.sql") },
   { name: "product_likes.sql",                  path: join(__dirname, "../migrations/product_likes.sql") },
   { name: "social_channels.sql",                path: join(__dirname, "../migrations/social_channels.sql") },
+  { name: "platform_blog.sql",                  path: join(__dirname, "../migrations/platform_blog.sql") },
+  { name: "free_plan_taste.sql",                path: join(__dirname, "../migrations/free_plan_taste.sql") },
+  { name: "growth_engine.sql",                  path: join(__dirname, "../migrations/growth_engine.sql") },
+  { name: "growth_automations.sql",             path: join(__dirname, "../migrations/growth_automations.sql") },
+  { name: "growth_phase3.sql",                  path: join(__dirname, "../migrations/growth_phase3.sql") },
 ];
 
 async function run() {

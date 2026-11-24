@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { invalidateStoreSoon } from "@/lib/store-cache";
-import { requireFeature } from "@/lib/plan";
+import { freeLimitsFor, planLimitResponse, posSalesThisMonth, requireFeature } from "@/lib/plan";
 import { newOrderNumber } from "@/lib/order-number";
 import { z } from "zod";
 import { verifySession } from "@/lib/auth";
@@ -48,6 +48,10 @@ export async function POST(req: NextRequest) {
   if (!access) return NextResponse.json({ error: "Not allowed" }, { status: 403 });
   const denied = await requireFeature(access.store.id, "pos");
   if (denied) return denied;
+  const limits = await freeLimitsFor(access.store.id);
+  if (limits && (await posSalesThisMonth(access.store.id)) >= limits.posSalesPerMonth) {
+    return planLimitResponse(`The Free plan includes ${limits.posSalesPerMonth} in-store sales a month, and you've used them all. Upgrade to Pro for unlimited sales.`);
+  }
   const { store, role } = access;
 
   const parsed = SaleSchema.safeParse(await req.json().catch(() => ({})));

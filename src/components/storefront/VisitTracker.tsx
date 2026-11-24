@@ -9,6 +9,14 @@ interface Props {
 }
 
 export default function VisitTracker({ storeSlug, storeId }: Props) {
+  // A friend's referral link (?ref=ADA-K7P2): keep the code for checkout
+  useEffect(() => {
+    try {
+      const ref = new URLSearchParams(window.location.search).get("ref")?.trim().toUpperCase();
+      if (ref && /^[A-Z]{1,6}-[A-Z0-9]{4}$/.test(ref)) localStorage.setItem(`sf_ref:${storeSlug}`, ref);
+    } catch {}
+  }, [storeSlug]);
+
   useEffect(() => {
     // Only fire once per browser session per store
     const sessionKey = `sf_visited_${storeId}`;

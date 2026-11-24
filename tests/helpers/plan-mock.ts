@@ -29,6 +29,11 @@ export const planMock = {
       }),
       requirePro: vi.fn(async () => null),
       planRequiredResponse: vi.fn(),
+      // A paid plan: no Free limits apply
+      freeLimitsFor: vi.fn(async () => null),
+      planLimitResponse: vi.fn(),
+      activeCouponCount: vi.fn(async () => 0),
+      posSalesThisMonth: vi.fn(async () => 0),
     };
   },
 };

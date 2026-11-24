@@ -56,6 +56,7 @@ export default async function ProductsPage() {
   return (
     <div className="pt-1 lg:pt-0">
       <PageHeader
+        className="hidden lg:flex"
         subtitle={`${products.length} of ${plan.max_products} products on the ${plan.name} plan`}
         actions={
           atLimit ? (

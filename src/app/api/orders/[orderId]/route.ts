@@ -5,6 +5,7 @@ import { query, queryOne } from '@/lib/db'
 import { eventsForChange, notifyCustomer } from '@/lib/notify/order-messages'
 import { restockCancelledOrder } from '@/lib/inventory'
 import { refundGiftCardForOrder } from '@/lib/gift-cards'
+import { rewardReferral, voidReferral } from '@/lib/growth-referrals'
 
 type Params = { params: Promise<{ orderId: string }> }
 
@@ -53,6 +54,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (after?.order_status === 'cancelled' && before.order_status !== 'cancelled') {
     await restockCancelledOrder(orderId, store.id).catch((e) => console.error('[restock] failed:', e))
     await refundGiftCardForOrder(orderId, store.id).catch((e) => console.error('[gift card refund] failed:', e))
+    await voidReferral(orderId)
+  }
+  // A friend's referred order arrived: the person who referred them earns credit
+  if (after?.order_status === 'delivered' && before.order_status !== 'delivered') {
+    await rewardReferral(orderId, store.id).catch((e) => console.error('[referral reward] failed:', e))
   }
   if (after) for (const event of eventsForChange(before, after)) void notifyCustomer(orderId, event)
   return NextResponse.json({ data: rows[0] })

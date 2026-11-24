@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifySession } from '@/lib/auth'
 import { queryOne, query } from '@/lib/db'
-import { requireFeature } from '@/lib/plan'
+import { activeCouponCount, freeLimitsFor, planLimitResponse, requireFeature } from '@/lib/plan'
+import { ensureGrowthSchema } from '@/lib/growth-schema'
 import { z } from 'zod'
 
 const CreateSchema = z.object({
@@ -22,10 +23,11 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const store = await getStore(user.firebaseUid)
   if (!store) return NextResponse.json({ error: 'Store not found' }, { status: 404 })
+  await ensureGrowthSchema()
   const coupons = await query(
     `SELECT id, code, discount_type, discount_value, min_order_amount,
             max_uses, uses_count, expires_at, is_active, created_at
-     FROM coupons WHERE store_id = $1 ORDER BY created_at DESC`,
+     FROM coupons WHERE store_id = $1 AND kind = 'standard' ORDER BY created_at DESC`,
     [store.id]
   )
   return NextResponse.json({ data: coupons })
@@ -39,6 +41,10 @@ export async function POST(req: NextRequest) {
 
   const proErr = await requireFeature(store.id, "coupons")
   if (proErr) return proErr
+  const limits = await freeLimitsFor(store.id)
+  if (limits && (await activeCouponCount(store.id)) >= limits.activeCoupons) {
+    return planLimitResponse('The Free plan includes 1 active discount code. Switch your other code off, or upgrade to Pro for unlimited codes.')
+  }
 
   const body = await req.json()
   const parsed = CreateSchema.safeParse(body)

@@ -90,6 +90,8 @@ export async function GET(req: NextRequest) {
                LEFT JOIN products p ON p.store_id = s.id AND p.is_active = true
                WHERE ${storeWhere}
                GROUP BY s.id, s.name, s.slug, s.logo_url, s.primary_category, s.description
+               -- Stores with nothing to buy aren't listed
+               HAVING COUNT(DISTINCT p.id) > 0
                ORDER BY product_count DESC, s.created_at DESC
                LIMIT $${si++} OFFSET $${si++}`,
               [...storeVals, limit, offset]

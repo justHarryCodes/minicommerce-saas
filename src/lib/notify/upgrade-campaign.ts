@@ -27,11 +27,12 @@ const naira = (n: number) => `₦${Math.round(n).toLocaleString("en-NG")}`;
 /** The selling points, in the order a small seller cares about them. */
 const HIGHLIGHTS: { feature: Feature; emoji: string; title: string; text: string }[] = [
   { feature: "custom_domain", emoji: "🌐", title: "Your own web address", text: "Sell on yourbrand.com instead of a Duka link. Customers trust it, and it's easy to remember." },
-  { feature: "analytics", emoji: "📊", title: "See what sells", text: "Sales, visitors, top products and where your customers come from, in one place." },
+  { feature: "analytics", emoji: "📊", title: "See the full picture", text: "30 and 90 days of sales and visitors, plus where your customers come from: WhatsApp, Instagram, TikTok or Google." },
+  { feature: "automations", emoji: "💌", title: "Bring buyers back on autopilot", text: "Thank-you, review and \"we miss you\" emails go out in your store's name, with a comeback code, while you sell." },
   { feature: "abandoned_carts", emoji: "🛒", title: "Win back lost sales", text: "Shoppers who leave without paying get an automatic reminder to complete their order." },
-  { feature: "coupons", emoji: "🏷️", title: "Discount codes", text: "Run promos and give influencers their own codes, and see which ones bring orders." },
+  { feature: "coupons", emoji: "🏷️", title: "Unlimited discount codes", text: "Run several promos at once and give each influencer their own code, and see which ones bring orders." },
   { feature: "ai_tools", emoji: "✨", title: "AI writes for you", text: "Product descriptions and categories done in seconds from a photo." },
-  { feature: "customers", emoji: "👥", title: "Know your customers", text: "Every customer, what they bought and who keeps coming back." },
+  { feature: "team", emoji: "🤝", title: "Bring your team", text: "Give staff their own login to handle orders and sales, without access to your money or settings." },
 ];
 
 export function buildUpgradeEmail(d: {

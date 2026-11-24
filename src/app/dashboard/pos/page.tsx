@@ -4,6 +4,8 @@ import { verifySession } from "@/lib/auth";
 import { getPageAccess, can } from "@/lib/access";
 import { query } from "@/lib/db";
 import PosClient, { type PosProduct } from "./PosClient";
+import { freeLimitsFor, posSalesThisMonth } from "@/lib/plan";
+import FreeLimitNote from "@/components/dashboard/FreeLimitNote";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +44,15 @@ export default async function PosPage() {
     sizesBy.set(s.product_id, list);
   }
 
+  const limits = await freeLimitsFor(store.id);
+  const used = limits ? await posSalesThisMonth(store.id) : 0;
   return (
+    <>
+    {limits && (
+      <FreeLimitNote full={used >= limits.posSalesPerMonth}>
+        <strong>Free plan:</strong> {Math.min(used, limits.posSalesPerMonth)} of {limits.posSalesPerMonth} in-store sales used this month. Go Pro for unlimited sales.
+      </FreeLimitNote>
+    )}
     <PosClient
       storeName={store.name}
       canDiscount={can(role, "products")}
@@ -59,5 +69,6 @@ export default async function PosPage() {
         sizes: p.has_sizes ? sizesBy.get(p.id) ?? [] : null,
       }))}
     />
+    </>
   );
 }

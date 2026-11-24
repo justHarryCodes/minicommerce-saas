@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireFeature } from "@/lib/plan";
+import { activeCouponCount, freeLimitsFor, planLimitResponse, requireFeature } from "@/lib/plan";
 import { verifySession } from '@/lib/auth'
 import { queryOne, query } from '@/lib/db'
 
@@ -18,6 +18,13 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   if (denied) return denied;
   const { id } = await params
   const body = await req.json()
+  if (body.is_active === true) {
+    const limits = await freeLimitsFor(store.id)
+    const already = await queryOne('SELECT 1 FROM coupons WHERE id = $1 AND store_id = $2 AND is_active = true', [id, store.id])
+    if (limits && !already && (await activeCouponCount(store.id)) >= limits.activeCoupons) {
+      return planLimitResponse('The Free plan includes 1 active discount code. Switch your other code off, or upgrade to Pro for unlimited codes.')
+    }
+  }
   if (typeof body.is_active === 'boolean') {
     await query('UPDATE coupons SET is_active = $1 WHERE id = $2 AND store_id = $3', [body.is_active, id, store.id])
   }

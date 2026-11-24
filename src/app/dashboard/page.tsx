@@ -3,11 +3,12 @@ import WhatsAppHomeBanner from "@/components/dashboard/WhatsAppHomeBanner";
 import Image from "next/image";
 import { AlertTriangle, ArrowRight, CalendarDays, Clock, CreditCard, Lock, PackageX, ShoppingBag, ShoppingCart, TrendingDown } from "lucide-react";
 import { verifySession } from "@/lib/auth";
-import { getPageStore } from "@/lib/access";
+import { getPageAccess } from "@/lib/access";
 import { queryMany, queryOne } from "@/lib/db";
-import { getEffectivePlan } from "@/lib/plan";
+import { getEffectivePlan, getStoreFeatures } from "@/lib/plan";
 import { formatCurrency, getStoreUrl } from "@/lib/utils";
-import { clThumb } from "@/lib/cloudinary";
+import { MobileHomeBottom, MobileHomeTop, type MobileHomeData } from "./MobileHome";
+import { clLogo, clThumb } from "@/lib/cloudinary";
 import OnboardingChecklist, { type ChecklistItem } from "@/components/dashboard/OnboardingChecklist";
 import { ColumnChart } from "@/components/dashboard/charts";
 import { EmptyState, Kpi, Panel, PanelLink, PaymentText, StatusPill, pctChange, timeAgo } from "@/components/dashboard/ui";
@@ -99,10 +100,11 @@ async function loadOverview(storeId: string) {
 
 export default async function DashboardPage() {
   const user = await verifySession();
-  const store = await getPageStore(user!, "overview");
-  const [d, plan] = await Promise.all([loadOverview(store.id), getEffectivePlan(store.id)]);
+  const { store, role } = await getPageAccess(user!, "overview");
+  const [d, plan, features] = await Promise.all([loadOverview(store.id), getEffectivePlan(store.id), getStoreFeatures(store.id)]);
   const { k, attention: a } = d;
-  const pro = plan.isPro;
+  // Sales figures come with Analytics, which the Free plan includes too
+  const pro = features.has("analytics");
   const s = store as typeof store & { duka_pay_status?: string; dukaPayStatus?: string };
 
   const checklist: ChecklistItem[] = [
@@ -129,14 +131,41 @@ export default async function DashboardPage() {
   ].filter((t) => t.n > 0);
 
   const aov = k.paid30 ? k.rev30 / k.paid30 : 0;
+  const storeUrl = getStoreUrl(store.slug, store.customDomain ?? store.custom_domain);
+  const logo = store.logoUrl ?? store.logo_url;
+  const phone: MobileHomeData = {
+    pro,
+    role,
+    firstName: (user!.displayName ?? "").trim().split(/\s+/)[0] || undefined,
+    store: { name: store.name, url: storeUrl, logo: logo ? clLogo(logo) : null },
+    k,
+    visitors7: d.visitors.v7,
+    series: d.series,
+    attention: a,
+    checklist,
+    recent: d.recent,
+    top: d.top,
+  };
 
   return (
     <div className="space-y-3 pt-1 lg:pt-0">
-      <OnboardingChecklist items={checklist} storeUrl={getStoreUrl(store.slug, store.customDomain ?? store.custom_domain)} />
+      {/* Phones: stories, today card, setup (see MobileHome) */}
+      <div className="lg:hidden">
+        <MobileHomeTop d={phone} />
+      </div>
+      <div className="hidden lg:block">
+        <OnboardingChecklist items={checklist} storeUrl={storeUrl} />
+      </div>
 
       {/* Add-on #1, where every vendor sees it */}
       <WhatsAppHomeBanner storeId={store.id} />
 
+      {/* Phones: chat-style orders and best sellers */}
+      <div className="lg:hidden">
+        <MobileHomeBottom d={phone} />
+      </div>
+
+      <div className="hidden space-y-3 lg:block">
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
         {pro ? (
@@ -223,6 +252,7 @@ export default async function DashboardPage() {
             </ol>
           )}
         </Panel>
+      </div>
       </div>
     </div>
   );

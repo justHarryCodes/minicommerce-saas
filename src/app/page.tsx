@@ -130,7 +130,8 @@ export default async function HomePage() {
         query<{ primary_category: string; count: string }>(
           `SELECT primary_category, COUNT(*) as count
        FROM stores
-       WHERE is_active = true AND primary_category IS NOT NULL
+       WHERE is_active = true AND deleted_at IS NULL AND primary_category IS NOT NULL
+         AND EXISTS (SELECT 1 FROM products p WHERE p.store_id = stores.id AND p.is_active = true)
        GROUP BY primary_category
        ORDER BY count DESC`,
           [],

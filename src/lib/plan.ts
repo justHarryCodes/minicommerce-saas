@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import * as React from 'react'
 import { queryOne } from './db'
-import { FEATURES, featuresForPlan, type Feature } from './features-shared'
+import { FEATURES, FREE_LIMITS, featuresForPlan, type Feature } from './features-shared'
 
 // Per-request memo in server components; a plain call elsewhere (route
 // handlers, scripts, tests) where React's cache isn't available.
@@ -116,4 +116,38 @@ export async function requirePro(storeId: string): Promise<NextResponse | null> 
     )
   }
   return null
+}
+
+/* ───────────── Free plan limits (its taste of Pro) ─────────────
+   The Free plan can use some paid features within FREE_LIMITS. Paid plans
+   have no limits here. */
+
+/** The limits that apply to this store, or null on a paid plan. */
+export async function freeLimitsFor(storeId: string): Promise<typeof FREE_LIMITS | null> {
+  return (await getEffectivePlan(storeId)).isPro ? null : FREE_LIMITS
+}
+
+export function planLimitResponse(message: string): NextResponse {
+  return NextResponse.json({ error: message, code: 'plan_limit' }, { status: 403 })
+}
+
+/** The vendor's own discount codes switched on and not expired (welcome codes don't count). */
+export async function activeCouponCount(storeId: string): Promise<number> {
+  await (await import('./growth-schema')).ensureGrowthSchema()
+  const row = await queryOne<{ n: number }>(
+    `SELECT COUNT(*)::int AS n FROM coupons WHERE store_id = $1 AND kind = 'standard' AND is_active = true AND (expires_at IS NULL OR expires_at > NOW())`,
+    [storeId]
+  )
+  return row?.n ?? 0
+}
+
+/** In-person (POS) sales recorded this calendar month, Lagos time. */
+export async function posSalesThisMonth(storeId: string): Promise<number> {
+  const row = await queryOne<{ n: number }>(
+    `SELECT COUNT(*)::int AS n FROM orders
+     WHERE store_id = $1 AND channel = 'pos'
+       AND created_at >= (date_trunc('month', NOW() AT TIME ZONE 'Africa/Lagos') AT TIME ZONE 'Africa/Lagos')`,
+    [storeId]
+  )
+  return row?.n ?? 0
 }

@@ -11,6 +11,8 @@ import { reconcilePendingPayments } from "@/lib/payments";
 import { getPlatformSettings } from "@/lib/admin-auth";
 import { sendDueSetupReminders } from "@/lib/notify/setup-reminders";
 import { syncAllCatalogs } from "@/lib/meta/catalog";
+import { sendDueGrowthMessages } from "@/lib/growth-automations";
+import { sendBroadcastBatch } from "@/lib/growth-broadcasts";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +28,7 @@ async function run(req: NextRequest) {
   if (!process.env.CRON_SECRET) return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 503 });
   if (!authorized(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const settings = await getPlatformSettings().catch(() => null);
-  const [carts, bookings, domains, payments, setupReminders, catalogs] = await Promise.all([
+  const [carts, bookings, domains, payments, setupReminders, catalogs, growth, broadcasts] = await Promise.all([
     sendDueCartReminders(),
     sendDueBookingReminders(),
     // Domains Cloudflare has verified since we last looked, then plan sync
@@ -41,8 +43,12 @@ async function run(req: NextRequest) {
     })),
     // WhatsApp / Meta catalogs <-> Duka products, both ways (does nothing without Meta keys)
     syncAllCatalogs().catch((err) => ({ stores: 0, failed: 0, error: err instanceof Error ? err.message : "failed" })),
+    // Growth engine follow-ups: welcome code reminder, review request, win-back (Pro stores)
+    sendDueGrowthMessages().catch((err) => ({ stores: 0, sent: 0, failed: 0, skipped: err instanceof Error ? err.message : "failed" })),
+    // Vendors' broadcasts still being sent
+    sendBroadcastBatch(300).catch((err) => ({ sent: 0, failed: 0, error: err instanceof Error ? err.message : "failed" })),
   ]);
-  return NextResponse.json({ ok: true, carts, bookings, domains, payments, setupReminders, catalogs });
+  return NextResponse.json({ ok: true, carts, bookings, domains, payments, setupReminders, catalogs, growth, broadcasts });
 }
 
 export const GET = run;

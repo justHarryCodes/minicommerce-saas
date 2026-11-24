@@ -9,7 +9,7 @@ vi.mock("@/lib/db", () => ({ query: vi.fn(), queryOne: vi.fn(), withTransaction:
 
 import { queryOne } from "@/lib/db";
 import { getStoreFeatures, hasFeature, invalidatePlanCache, requireFeature } from "@/lib/plan";
-import { ALL_FEATURES, featureForPath, featuresForPlan, FREE_THEME_IDS } from "@/lib/features-shared";
+import { ALL_FEATURES, featureForPath, featuresForPlan, FREE_FEATURES, FREE_THEME_IDS } from "@/lib/features-shared";
 import { resolveStoreTheme } from "@/lib/themes/resolve";
 import { THEMES } from "@/lib/themes/catalog";
 
@@ -25,10 +25,10 @@ const future = new Date(Date.now() + 86_400_000).toISOString();
 const past = new Date(Date.now() - 86_400_000).toISOString();
 
 describe("featuresForPlan", () => {
-  it("defaults: paid plans get everything, Free gets nothing", () => {
+  it("defaults: paid plans get everything, Free gets its taste of Pro", () => {
     expect(featuresForPlan({ isPro: true })).toEqual(ALL_FEATURES);
-    expect(featuresForPlan({ isPro: false })).toEqual([]);
-    expect(featuresForPlan({ isPro: false, features: null })).toEqual([]);
+    expect(featuresForPlan({ isPro: false })).toEqual(FREE_FEATURES);
+    expect(featuresForPlan({ isPro: false, features: null })).toEqual(FREE_FEATURES);
   });
 
   it("an admin list wins, and unknown names are ignored", () => {
@@ -44,9 +44,9 @@ describe("getStoreFeatures", () => {
     expect((await getStoreFeatures("s1")).has("pos")).toBe(true);
   });
 
-  it("an expired paid plan falls back to Free — nothing paid keeps working", async () => {
+  it("an expired paid plan falls back to Free — only Free's taste of Pro keeps working", async () => {
     mockedQueryOne.mockResolvedValueOnce({ current_plan_id: "pro", plan_expires_at: past }).mockResolvedValueOnce(FREE);
-    expect([...(await getStoreFeatures("s1"))]).toEqual([]);
+    expect([...(await getStoreFeatures("s1"))]).toEqual(FREE_FEATURES);
   });
 
   it("no plan at all is Free", async () => {
@@ -59,7 +59,7 @@ describe("getStoreFeatures", () => {
       .mockResolvedValueOnce({ current_plan_id: "pro", plan_expires_at: future })
       .mockResolvedValueOnce(null) // plan row inactive / gone
       .mockResolvedValueOnce(FREE);
-    expect(await hasFeature("s1", "coupons")).toBe(false);
+    expect(await hasFeature("s1", "team")).toBe(false);
   });
 
   it("honours a plan's custom feature list", async () => {

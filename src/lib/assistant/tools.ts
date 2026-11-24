@@ -8,7 +8,7 @@
 
 import { query, queryOne } from "@/lib/db";
 import { ROLE_PERMISSIONS, type Permission, type Role } from "@/lib/access-shared";
-import { FEATURES, type Feature } from "@/lib/features-shared";
+import { FEATURES, FREE_LIMITS, type Feature } from "@/lib/features-shared";
 import type { EffectivePlan } from "@/lib/plan";
 import { getAnalytics, RANGES, type RangeDays } from "@/lib/analytics";
 import { lowStockItems } from "@/lib/inventory";
@@ -16,6 +16,7 @@ import { listCustomers } from "@/lib/customers";
 import { platformFeePercent } from "@/lib/duka-pay-shared";
 import { getStoreUrl } from "@/lib/utils";
 import { HELP, searchHelp } from "./knowledge";
+import { ensureGrowthSchema } from "@/lib/growth-schema";
 
 export interface AssistantContext {
   store: Record<string, any>;
@@ -214,7 +215,9 @@ export async function runTool(name: string, args: Args, ctx: AssistantContext): 
     case "sales_summary": {
       if (!can(ctx, "analytics")) return noAccess("sales figures");
       if (!ctx.features.has("analytics")) return locked("analytics");
-      const days = (RANGES as readonly number[]).includes(Number(args.days)) ? (Number(args.days) as RangeDays) : 7;
+      // Free plan: the last 7 days and no traffic sources, same as the Analytics page
+      const free = !ctx.plan.isPro;
+      const days = free ? (FREE_LIMITS.analyticsDays as RangeDays) : (RANGES as readonly number[]).includes(Number(args.days)) ? (Number(args.days) as RangeDays) : 7;
       const a = await getAnalytics(st.id, days);
       const delta = (c: number, p: number) => (p > 0 ? `${c >= p ? "+" : ""}${Math.round(((c - p) / p) * 100)}% vs previous ${days} days` : undefined);
       const conv = a.funnel.visitors > 0 ? `${((a.funnel.orders / a.funnel.visitors) * 100).toFixed(1)}%` : "n/a";
@@ -222,8 +225,9 @@ export async function runTool(name: string, args: Args, ctx: AssistantContext): 
         content: {
           days, revenue: a.kpis.revenue, revenuePrev: a.kpis.revenuePrev, orders: a.kpis.orders, ordersPrev: a.kpis.ordersPrev,
           visitors: a.kpis.visitors, visitorsPrev: a.kpis.visitorsPrev, paidRevenue: a.kpis.paidRevenue, conversion: conv,
-          topProducts: a.topProducts.slice(0, 5), sources: a.sources.slice(0, 4), searchesWithNoResults: a.zeroSearches.slice(0, 5),
+          topProducts: a.topProducts.slice(0, 5), sources: free ? "Pro only" : a.sources.slice(0, 4), searchesWithNoResults: a.zeroSearches.slice(0, 5),
           customers: a.customers,
+          ...(free && Number(args.days) > FREE_LIMITS.analyticsDays ? { note: "The Free plan shows the last 7 days. 30 and 90 days, and traffic sources, come with Pro." } : {}),
         },
         card: {
           kind: "stats", title: `Last ${days} days`, href: "/dashboard/analytics",
@@ -304,9 +308,10 @@ export async function runTool(name: string, args: Args, ctx: AssistantContext): 
     case "list_coupons": {
       if (ctx.role !== "owner") return noAccess("coupons");
       if (!ctx.features.has("coupons")) return locked("coupons");
+      await ensureGrowthSchema();
       const rows = await query(
         `SELECT code, discount_type, discount_value::float, min_order_amount::float, max_uses, uses_count, expires_at, is_active
-           FROM coupons WHERE store_id = $1 ORDER BY created_at DESC LIMIT 20`, [st.id]);
+           FROM coupons WHERE store_id = $1 AND kind = 'standard' ORDER BY created_at DESC LIMIT 20`, [st.id]);
       return { content: rows.length ? rows : { result: "No coupons yet." } };
     }
 

@@ -7,6 +7,7 @@ import { Monitor, Moon, Sun } from "lucide-react";
 // Light / Dark / System switch. Two looks:
 //   "icon"      one button that cycles (navbars)
 //   "segmented" three buttons side by side (menus, settings)
+//   "switch"    a sun/moon pill with a sliding knob, light <-> dark (phone headers)
 
 const OPTIONS = [
   { value: "light", label: "Light", Icon: Sun },
@@ -14,13 +15,37 @@ const OPTIONS = [
   { value: "system", label: "System", Icon: Monitor },
 ] as const;
 
-export default function ThemeToggle({ variant = "icon", className = "" }: { variant?: "icon" | "segmented"; className?: string }) {
+export default function ThemeToggle({ variant = "icon", className = "" }: { variant?: "icon" | "segmented" | "switch"; className?: string }) {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
   // The saved choice is only known in the browser: render a same-size placeholder first
   const current = mounted ? (theme ?? "light") : "light";
+
+  if (variant === "switch") {
+    const dark = mounted && resolvedTheme === "dark";
+    return (
+      <button
+        type="button"
+        role="switch"
+        aria-checked={dark}
+        aria-label={dark ? "Dark mode is on. Switch to light" : "Light mode is on. Switch to dark"}
+        onClick={() => setTheme(dark ? "light" : "dark")}
+        className={`relative inline-flex h-9 w-[66px] shrink-0 items-center rounded-full bg-zinc-100 p-1 ring-1 ring-inset ring-zinc-200/80 transition-colors dark:bg-zinc-800 dark:ring-zinc-700 ${className}`}
+      >
+        <Sun className={`absolute left-[9px] h-4 w-4 transition-opacity ${dark ? "text-zinc-500 opacity-100" : "opacity-0"}`} />
+        <Moon className={`absolute right-[9px] h-4 w-4 transition-opacity ${dark ? "opacity-0" : "text-zinc-400 opacity-100"}`} />
+        <span
+          className={`relative z-10 flex h-7 w-7 items-center justify-center rounded-full shadow-[0_2px_6px_rgba(0,0,0,0.18)] transition-transform duration-300 ${
+            dark ? "translate-x-[30px] bg-zinc-950 text-amber-300 ring-1 ring-zinc-600" : "translate-x-0 bg-white text-amber-500"
+          }`}
+        >
+          {dark ? <Moon className="h-4 w-4" fill="currentColor" /> : <Sun className="h-4 w-4" strokeWidth={2.4} />}
+        </span>
+      </button>
+    );
+  }
 
   if (variant === "segmented") {
     return (

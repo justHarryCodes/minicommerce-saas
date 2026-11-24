@@ -9,6 +9,9 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/**/*.test.ts"],
+    // Stubs shared by every test (e.g. one-time schema setup that would eat
+    // tests' queued database mocks)
+    setupFiles: ["tests/setup.ts"],
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],

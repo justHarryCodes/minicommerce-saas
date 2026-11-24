@@ -30,8 +30,10 @@ export async function GET() {
          FROM stores s
          LEFT JOIN products p ON p.store_id = s.id AND p.is_active = true
          LEFT JOIN reels   r ON r.store_id = s.id AND r.is_active = true
-         WHERE s.is_active = true
+         WHERE s.is_active = true AND s.deleted_at IS NULL
          GROUP BY s.id, s.name, s.slug, s.logo_url, s.primary_category
+         -- Stores with nothing to buy aren't listed
+         HAVING COUNT(DISTINCT p.id) > 0
          ORDER BY total_views DESC, product_count DESC, s.created_at DESC
          LIMIT 100`,
         []

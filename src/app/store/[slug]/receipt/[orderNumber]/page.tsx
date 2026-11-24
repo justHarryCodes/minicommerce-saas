@@ -8,6 +8,8 @@ import { formatCurrency } from "@/lib/utils";
 import PrintButton from "./PrintButton";
 import { formatAppointment } from "@/lib/booking";
 import ClearCart from "./ClearCart";
+import ReferralShare from "./ReferralShare";
+import { referralSettingsFor } from "@/lib/growth-referrals";
 
 interface Props {
   params: Promise<{ slug: string; orderNumber: string }>;
@@ -20,6 +22,7 @@ export const metadata: Metadata = { title: "Receipt", robots: { index: false, fo
 
 interface ReceiptOrder {
   id: string;
+  store_id: string;
   order_number: string;
   created_at: string;
   customer_name: string;
@@ -105,6 +108,9 @@ export default async function ReceiptPage({ params, searchParams }: Props) {
     "SELECT product_name, size, price, quantity, subtotal FROM order_items WHERE order_id = $1",
     [order.id]
   );
+
+  // Growth engine: the buyer's own share link, if this store runs referrals
+  const referrals = order.order_status !== "cancelled" ? await referralSettingsFor(order.store_id).catch(() => null) : null;
 
   const h = await headers();
   const storeBase = h.get("x-is-subdomain") === "1" ? "" : `/store/${slug}`;
@@ -272,6 +278,10 @@ export default async function ReceiptPage({ params, searchParams }: Props) {
           <span>Powered by Duka</span>
         </footer>
       </article>
+
+      {referrals?.active && (
+        <ReferralShare storeSlug={slug} storeName={order.store_name} orderNumber={order.order_number} token={t} percent={referrals.settings.friendPercent} reward={referrals.settings.reward} />
+      )}
     </div>
   );
 }

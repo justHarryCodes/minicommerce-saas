@@ -17,7 +17,9 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
   const { category, q } = await searchParams;
 
   const params: unknown[] = [];
-  let whereClause = "WHERE is_active = true";
+  // Only stores with something to buy: an empty store is a dead end for shoppers
+  const LISTED = "is_active = true AND deleted_at IS NULL AND EXISTS (SELECT 1 FROM products p WHERE p.store_id = stores.id AND p.is_active = true)";
+  let whereClause = `WHERE ${LISTED}`;
 
   if (category && category !== "all") {
     params.push(category);
@@ -42,7 +44,7 @@ export default async function DiscoverPage({ searchParams }: DiscoverPageProps) 
     query<{ primary_category: string; count: string }>(
       `SELECT primary_category, COUNT(*) as count
        FROM stores
-       WHERE is_active = true AND primary_category IS NOT NULL
+       WHERE ${LISTED} AND primary_category IS NOT NULL
        GROUP BY primary_category
        ORDER BY count DESC`,
       []

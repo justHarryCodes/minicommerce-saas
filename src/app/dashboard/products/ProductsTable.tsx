@@ -6,10 +6,10 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowUpDown, Package, Pencil, Plus, Search, X } from "lucide-react";
+import { ArrowUpDown, ChevronRight, EyeOff, Grid3x3, List, Package, Pencil, Plus, Search, X } from "lucide-react";
 import ShareButton from "@/components/dashboard/ShareButton";
 import { formatCurrency, cn } from "@/lib/utils";
-import { clThumb } from "@/lib/cloudinary";
+import { clCard, clThumb } from "@/lib/cloudinary";
 import DeleteProductButton from "@/components/dashboard/DeleteProductButton";
 import SoldOutTodayToggle from "@/components/dashboard/SoldOutTodayToggle";
 import { EmptyState } from "@/components/dashboard/ui";
@@ -97,7 +97,22 @@ export default function ProductsTable({
   }
 
   return (
-    <section className="overflow-hidden rounded-lg border border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+    <>
+    <PhoneProducts
+      rows={rows}
+      total={products.length}
+      counts={counts}
+      filter={filter}
+      onFilter={setFilter}
+      q={q}
+      onQ={setQ}
+      categories={categories}
+      cat={cat}
+      onCat={setCat}
+      atLimit={atLimit}
+      share={share}
+    />
+    <section className="hidden overflow-hidden rounded-lg border border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-900 lg:block">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2 border-b border-zinc-100 p-2 dark:border-zinc-800">
         <div className="no-scrollbar flex gap-1 overflow-x-auto">
@@ -242,5 +257,171 @@ export default function ProductsTable({
         {rows.length} of {products.length} shown{atLimit ? " · plan limit reached" : ""}
       </p>
     </section>
+    </>
   );
 }
+
+/* ───────────────────────── Phones ─────────────────────────
+   An Instagram-profile grid of product photos (tap to edit), with a list
+   view for stock and quick actions, switched like a profile's tabs. */
+const PHONE_FILTER_LABEL: Record<string, string> = { all: "All", active: "Live", hidden: "Hidden", out: "Sold out", low: "Running low", services: "Services" };
+
+function PhoneProducts({ rows, total, counts, filter, onFilter, q, onQ, categories, cat, onCat, atLimit, share }: {
+  rows: ProductRow[];
+  total: number;
+  counts: Record<string, number>;
+  filter: FilterId;
+  onFilter: (f: FilterId) => void;
+  q: string;
+  onQ: (v: string) => void;
+  categories: { id: string; name: string }[];
+  cat: string;
+  onCat: (v: string) => void;
+  atLimit: boolean;
+  share?: { storeSlug: string; storeBase: string };
+}) {
+  const [mode, setMode] = useState<"grid" | "list">("grid");
+  return (
+    <div className="-mx-3 sm:-mx-4 lg:hidden">
+      <div className="px-4 pt-2">
+        <label className="flex h-10 items-center gap-2.5 rounded-full bg-zinc-100 px-4 dark:bg-zinc-800/80">
+          <Search className="h-[18px] w-[18px] text-zinc-500" />
+          <input value={q} onChange={(e) => onQ(e.target.value)} placeholder="Search your products" className="min-w-0 flex-1 border-0 bg-transparent p-0 text-[15px] text-zinc-900 shadow-none outline-none placeholder:text-zinc-500 focus:ring-0 dark:text-white" />
+          {q && (
+            <button onClick={() => onQ("")} aria-label="Clear search" className="text-zinc-500">
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </label>
+      </div>
+
+      <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 py-3">
+        {PRODUCT_FILTERS.map((f) =>
+          counts[f.id] || f.id === "all" || f.id === filter ? (
+            <button
+              key={f.id}
+              onClick={() => onFilter(f.id)}
+              aria-pressed={filter === f.id}
+              className={cn(
+                "flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13.5px] font-semibold",
+                filter === f.id ? "bg-amber-100 text-amber-900 dark:bg-amber-500/20 dark:text-amber-200" : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300",
+                f.id === "out" && filter !== f.id && "text-red-600 dark:text-red-400",
+              )}
+            >
+              {PHONE_FILTER_LABEL[f.id]}
+              <span className="tabular-nums opacity-60">{counts[f.id]}</span>
+            </button>
+          ) : null,
+        )}
+      </div>
+
+      {/* Profile-style tabs */}
+      <div className="flex items-center border-b border-zinc-200 dark:border-zinc-800">
+        <ModeTab active={mode === "grid"} onClick={() => setMode("grid")} label="Grid view" icon={Grid3x3} />
+        <ModeTab active={mode === "list"} onClick={() => setMode("list")} label="List view" icon={List} />
+        {categories.length > 0 && (
+          <select
+            value={cat}
+            onChange={(e) => onCat(e.target.value)}
+            aria-label="Category"
+            className="mr-3 h-8 max-w-[44%] truncate rounded-full border-0 bg-zinc-100 py-0 pl-3 pr-8 text-[13px] font-semibold text-zinc-700 focus:ring-2 focus:ring-amber-400 dark:bg-zinc-800 dark:text-zinc-200"
+          >
+            <option value="">All categories</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        )}
+      </div>
+
+      {rows.length === 0 ? (
+        <p className="px-6 py-14 text-center text-[15px] text-zinc-500">No products match.</p>
+      ) : mode === "grid" ? (
+        <div className="grid grid-cols-3 gap-[2px] bg-white dark:bg-zinc-950">
+          {rows.map((p) => {
+            const out = !p.is_bookable && p.stock_quantity <= 0;
+            const low = !p.is_bookable && !out && p.stock_quantity <= p.low_at;
+            return (
+              <Link key={p.id} href={`/dashboard/products/${p.id}/edit`} className="relative aspect-[4/5] overflow-hidden bg-zinc-100 dark:bg-zinc-900" aria-label={`Edit ${p.name}`}>
+                {p.image_url ? (
+                  <Image src={clCard(p.image_url)} alt="" fill sizes="34vw" className={cn("object-cover", !p.is_active && "opacity-40 grayscale")} />
+                ) : (
+                  <span className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-2 text-center">
+                    <Package className="h-6 w-6 text-zinc-300" />
+                    <span className="line-clamp-2 text-[11px] font-medium text-zinc-500">{p.name}</span>
+                  </span>
+                )}
+                <span className="absolute left-1.5 top-1.5 flex flex-col items-start gap-1">
+                  {!p.is_active && (
+                    <span className="flex items-center gap-1 rounded-full bg-black/70 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                      <EyeOff className="h-3 w-3" /> Hidden
+                    </span>
+                  )}
+                  {(out || p.sold_out_today) && <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">Sold out</span>}
+                  {low && !p.sold_out_today && <span className="rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-black">{p.stock_quantity} left</span>}
+                </span>
+                <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-1.5 pb-1 pt-5 text-[12px] font-bold tabular-nums text-white">
+                  {formatCurrency(p.price)}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      ) : (
+        <ul className="bg-white dark:bg-zinc-950">
+          {rows.map((p) => {
+            const out = !p.is_bookable && p.stock_quantity <= 0;
+            const low = !p.is_bookable && !out && p.stock_quantity <= p.low_at;
+            return (
+              <li key={p.id} className="flex items-center gap-3 px-4 py-2.5">
+                <Link href={`/dashboard/products/${p.id}/edit`} className="flex min-w-0 flex-1 items-center gap-3">
+                  {p.image_url ? (
+                    <Image src={clThumb(p.image_url)} alt="" width={60} height={60} className={cn("h-[60px] w-[60px] shrink-0 rounded-xl object-cover", !p.is_active && "opacity-40")} />
+                  ) : (
+                    <span className="flex h-[60px] w-[60px] shrink-0 items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-900">
+                      <Package className="h-5 w-5 text-zinc-400" />
+                    </span>
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[15px] font-semibold text-zinc-950 dark:text-white">{p.name}</span>
+                    <span className="block text-[14px] font-semibold tabular-nums text-zinc-700 dark:text-zinc-300">
+                      {formatCurrency(p.price)}
+                      {p.compare_price ? <span className="ml-1.5 text-[12px] font-normal text-zinc-400 line-through">{formatCurrency(p.compare_price)}</span> : null}
+                    </span>
+                    <span className={cn("block text-[12.5px]", out ? "text-red-600" : low ? "text-amber-600" : "text-zinc-500")}>
+                      {p.is_bookable ? "Service" : out ? "Sold out" : `${p.stock_quantity} in stock`}
+                      {!p.is_active && " · Hidden"}
+                      {p.sold_out_today && " · Sold out today"}
+                    </span>
+                  </span>
+                </Link>
+                {share && p.is_active && (
+                  <ShareButton
+                    compact
+                    className="!p-2"
+                    target={{ kind: "product", title: p.name, price: `₦${Number(p.price).toLocaleString("en-NG")}`, url: `${share.storeBase}/products/${p.slug || p.id}`, cardPath: `/api/og/product/${share.storeSlug}/${p.slug || p.id}` }}
+                  />
+                )}
+                <Link href={`/dashboard/products/${p.id}/edit`} aria-label={`Edit ${p.name}`} className="text-zinc-300">
+                  <ChevronRight className="h-5 w-5" />
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <p className="px-4 py-3 text-center text-[12px] text-zinc-400">
+        {rows.length} of {total} products{atLimit ? " · plan limit reached" : ""}
+      </p>
+    </div>
+  );
+}
+
+function ModeTab({ active, onClick, label, icon: Icon }: { active: boolean; onClick: () => void; label: string; icon: typeof List }) {
+  return (
+    <button onClick={onClick} aria-pressed={active} aria-label={label} className={cn("flex h-11 flex-1 items-center justify-center border-b-2", active ? "border-zinc-950 text-zinc-950 dark:border-white dark:text-white" : "border-transparent text-zinc-400")}>
+      <Icon className="h-[22px] w-[22px]" strokeWidth={active ? 2.2 : 1.8} />
+    </button>
+  );
+}
+

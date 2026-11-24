@@ -75,6 +75,15 @@ export interface EmailOptions {
   text?: string;
   /** Marketing / reminder mail: adds RFC 8058 one-click unsubscribe headers */
   unsubscribeUrl?: string;
+  /** Sender name shown in the inbox, e.g. "Kemi's Closet via Duka" (address stays EMAIL_FROM's) */
+  fromName?: string;
+}
+
+/** "Duka <hi@x.com>" + "Kemi's Closet" -> "Kemi's Closet <hi@x.com>" (quotes and angle brackets stripped from the name). */
+export function withFromName(from: string, name: string): string {
+  const address = from.match(/<([^>]+)>/)?.[1] ?? from.trim();
+  const clean = name.replace(/["<>\s]+/g, " ").trim().slice(0, 70);
+  return clean ? `${clean} <${address}>` : from;
 }
 
 export async function sendEmail(to: string, subject: string, html: string, replyTo?: string, opts: EmailOptions = {}): Promise<SendResult> {
@@ -94,7 +103,7 @@ export async function sendEmail(to: string, subject: string, html: string, reply
       method: "POST",
       headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: process.env.EMAIL_FROM,
+        from: opts.fromName ? withFromName(process.env.EMAIL_FROM ?? "", opts.fromName) : process.env.EMAIL_FROM,
         to: [to],
         subject,
         html,

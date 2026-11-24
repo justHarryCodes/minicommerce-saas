@@ -26,7 +26,7 @@ describe("the email", () => {
   const m = buildUpgradeEmail({ storeName: "Amaka <Boutique>", ownerName: "Amaka Obi", plans, yearlyDiscount: 20, appUrl: "https://dukanigeria.com", unsubscribeUrl: "https://u/x" });
 
   it("sells what Pro gives, from the plan's real features", () => {
-    for (const t of ["Your own web address", "See what sells", "Win back lost sales", "Discount codes", "AI writes for you"]) expect(m.html).toContain(t);
+    for (const t of ["Your own web address", "See the full picture", "Win back lost sales", "Unlimited discount codes", "AI writes for you"]) expect(m.html).toContain(t);
     expect(m.subject).toContain("Pro");
   });
 

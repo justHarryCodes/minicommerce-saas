@@ -4,7 +4,7 @@
 // - "hero": a store that has never subscribed sees it like the pricing page
 // - "compact": the plan picker when renewing or switching
 import { Check, Minus, Sparkles } from "lucide-react";
-import { ALL_FEATURES, FEATURES, featuresForPlan, type Feature } from "@/lib/features-shared";
+import { ALL_FEATURES, FEATURES, FREE_LIMITS, featuresForPlan, type Feature } from "@/lib/features-shared";
 import { type BillingCycle, priceFor, yearlyPerMonth, yearlySavings } from "@/lib/plan-pricing";
 
 export interface PricingPlan {
@@ -22,7 +22,14 @@ function naira(n: number) {
 }
 
 /** The headline features to show on a card (paid ones the plan unlocks). */
-const SHOWCASE: Feature[] = ["custom_domain", "analytics", "customers", "coupons", "ai_tools", "abandoned_carts", "reels", "team", "pos"];
+/** On the Free card, features it has within a limit say so */
+const FREE_NOTE: Partial<Record<Feature, string>> = {
+  analytics: `Analytics (last ${FREE_LIMITS.analyticsDays} days)`,
+  coupons: `Coupons (${FREE_LIMITS.activeCoupons} active code)`,
+  pos: `Point of sale (${FREE_LIMITS.posSalesPerMonth} sales a month)`,
+};
+
+const SHOWCASE: Feature[] = ["custom_domain", "automations", "analytics", "customers", "coupons", "ai_tools", "abandoned_carts", "reels", "team", "pos"];
 
 export function CycleToggle({
   cycle,
@@ -195,14 +202,14 @@ export default function PlanPricing({
               </li>
               <li className="flex items-start gap-2 font-semibold" style={{ color: plan.max_reels > 0 ? ink : sub }}>
                 {plan.max_reels > 0 ? <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: dark ? "#000" : "#16a34a" }} /> : <Minus className="mt-0.5 h-4 w-4 shrink-0" />}
-                {plan.max_reels > 0 ? `${plan.max_reels} reels a month` : "No video reels"}
+                {plan.max_reels > 0 ? `${plan.max_reels} reel${plan.max_reels === 1 ? "" : "s"} a month` : "No video reels"}
               </li>
               {(hero ? showcase : showcase.slice(0, 5)).map((f) => {
                 const has = unlocked.has(f);
                 return (
                   <li key={f} className="flex items-start gap-2" style={{ color: has ? (dark ? "rgba(0,0,0,.82)" : "var(--text-secondary)") : sub, opacity: has ? 1 : 0.55 }}>
                     {has ? <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: dark ? "#000" : "#16a34a" }} /> : <Minus className="mt-0.5 h-4 w-4 shrink-0" />}
-                    <span className={has ? "" : "line-through decoration-1"}>{FEATURES[f].label}</span>
+                    <span className={has ? "" : "line-through decoration-1"}>{(free && FREE_NOTE[f]) || FEATURES[f].label}</span>
                   </li>
                 );
               })}

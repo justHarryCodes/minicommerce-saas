@@ -337,12 +337,12 @@ export default function DukaAssistant({ storeId, storeName, firstName }: { store
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Open Duka Assistant"
-          className="group fixed bottom-20 right-4 z-40 flex items-center gap-2 rounded-full bg-zinc-900 py-2 pl-2 pr-4 text-white shadow-[0_12px_32px_-10px_rgba(0,0,0,0.6)] ring-1 ring-white/10 transition-transform hover:-translate-y-0.5 lg:bottom-6 lg:right-6 dark:bg-white dark:text-zinc-900"
+          className="group fixed bottom-[calc(72px+env(safe-area-inset-bottom))] right-3 z-40 flex items-center gap-2 rounded-full bg-zinc-900 p-1.5 text-white lg:py-2 lg:pl-2 lg:pr-4 shadow-[0_12px_32px_-10px_rgba(0,0,0,0.6)] ring-1 ring-white/10 transition-transform hover:-translate-y-0.5 lg:bottom-6 lg:right-6 dark:bg-white dark:text-zinc-900"
         >
           <span className="grid h-9 w-9 place-items-center rounded-full bg-amber-400">
             <Image src="/logo-mark.png" alt="" width={14} height={22} className="h-[22px] w-auto brightness-0" />
           </span>
-          <span className="text-sm font-bold">Ask Duka</span>
+          <span className="hidden text-sm font-bold lg:inline">Ask Duka</span>
         </button>
       )}
 

@@ -1,6 +1,6 @@
 // The admin's one map: sidebar groups, top bar titles and the ⌘K palette.
 import {
-  ArrowLeftRight, CreditCard, LayoutDashboard, Megaphone, Settings, ShieldCheck, Target, UserCheck, Users, Wallet, type LucideIcon,
+  ArrowLeftRight, CreditCard, LayoutDashboard, Megaphone, Newspaper, Settings, ShieldCheck, Target, UserCheck, Users, Wallet, type LucideIcon,
 } from "lucide-react";
 
 export interface AdminNavItem {
@@ -21,6 +21,7 @@ export const ADMIN_NAV: { label: string; items: AdminNavItem[] }[] = [
     items: [
       { href: "/admin/leads", label: "Leads", icon: Target, keywords: "pipeline unfinished signups upgrade prospects sales" },
       { href: "/admin/campaigns", label: "Campaigns", icon: Megaphone, keywords: "marketing email push announcement broadcast" },
+      { href: "/admin/blog", label: "Blog", icon: Newspaper, keywords: "posts articles write publish content seo" },
     ],
   },
   {
@@ -51,6 +52,8 @@ export function isAdminActive(pathname: string, item: AdminNavItem): boolean {
 export function adminTitle(pathname: string): string {
   const m = ADMIN_NAV_ITEMS.filter((i) => isAdminActive(pathname, i)).sort((a, b) => b.href.length - a.href.length)[0];
   if (pathname.startsWith("/admin/campaigns/new")) return "New campaign";
+  if (pathname === "/admin/blog/new") return "New post";
+  if (/^\/admin\/blog\/[^/]+/.test(pathname)) return "Edit post";
   if (/^\/admin\/vendors\/[^/]+/.test(pathname)) return "Vendor";
   return m?.label ?? "Admin";
 }

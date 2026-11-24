@@ -13,6 +13,7 @@ import AppBanner from "@/components/dashboard/AppBanner";
 import DukaAssistant from "@/components/dashboard/assistant/DukaAssistant";
 import DashboardFrame from "@/components/dashboard/DashboardFrame";
 import { queryOne } from "@/lib/db";
+import { getStoreUrl } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -65,8 +66,8 @@ export default async function DashboardLayout({
       {/* Main — offset by the sidebar (full or icon rail) on desktop */}
       <DashboardFrame>
         <Topbar user={user} store={store} role={role} />
-        {/* pt-14 clears the 48px mobile header; pb-20 the mobile bottom nav */}
-        <main className="mx-auto w-full max-w-[1600px] flex-1 px-3 pb-20 pt-14 sm:px-4 lg:px-5 lg:pb-6 lg:pt-4">
+        {/* Phones: clear the 52px header and the tab bar (plus the iPhone home bar) */}
+        <main className="mx-auto w-full max-w-[1600px] flex-1 px-3 pb-[calc(84px+env(safe-area-inset-bottom))] pt-14 sm:px-4 lg:px-5 lg:pb-6 lg:pt-4">
           {role === "owner" ? (
             <>
               <TutorialBanner />
@@ -84,8 +85,17 @@ export default async function DashboardLayout({
         </main>
       </DashboardFrame>
 
-      {/* Mobile bottom nav + FAB */}
-      <DashboardBottomNav role={role} />
+      {/* Phone tab bar + create sheet */}
+      <DashboardBottomNav
+        role={role}
+        badges={{ orders: attention?.n ?? 0 }}
+        store={{
+          name: store.name,
+          slug: store.slug,
+          logoUrl: store.logoUrl ?? store.logo_url,
+          url: getStoreUrl(store.slug, store.customDomain ?? store.custom_domain),
+        }}
+      />
     </div>
   );
 }

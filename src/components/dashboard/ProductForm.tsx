@@ -1,5 +1,5 @@
 "use client";
-import { Select } from "@/components/ui/Select";
+import ProductCategoryFields from "@/components/dashboard/ProductCategoryFields";
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
@@ -74,6 +74,8 @@ export default function ProductForm({ categories, product, bookingsEnabled = tru
   const [selectedCatId, setSelectedCatId] = useState(
     product?.category_id ?? "",
   );
+  // Categories created from this form are added here, so they appear at once
+  const [cats, setCats] = useState(categories);
   const [variants, setVariants] = useState<VariantState>(() =>
     initialVariantState(product?.option_names ?? product?.optionNames, product?.sizes),
   );
@@ -113,10 +115,7 @@ export default function ProductForm({ categories, product, bookingsEnabled = tru
   }, []);
 
   // Build category tree: top-level cats with their subcategories
-  const topCats = categories.filter((c) => !c.parent_id);
-  const subCats = selectedCatId
-    ? categories.filter((c) => c.parent_id === selectedCatId)
-    : [];
+  const topCats = cats.filter((c) => !(c.parent_id ?? c.parentId));
 
   const {
     register,
@@ -614,66 +613,35 @@ export default function ProductForm({ categories, product, bookingsEnabled = tru
 
           {/* Organization */}
           <section className={cardClass}>
-            <SectionTitle title="Organization" />
-            <div className="space-y-4">
-              <div>
-                <label className={labelClass} htmlFor="pf-cat">
-                  Category
-                </label>
-                <Select
-                  id="pf-cat"
-                  value={selectedCatId}
-                  placeholder="Select category"
-                  onChange={(v) => {
-                    setValue("categoryId", v, { shouldDirty: true });
-                    setSelectedCatId(v);
-                    setValue("subcategoryId", "");
-                    setCategorySuggestion(null);
-                  }}
-                  options={[{ value: "", label: "No category" }, ...topCats.map((c) => ({ value: c.id, label: c.name }))]}
-                />
-                {categorySuggestion &&
-                  categorySuggestion.id !== selectedCatId && (
-                    <button
-                      type="button"
-                      onClick={applyCategorySuggestion}
-                      className="mt-2 flex w-full items-center gap-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 px-3 py-2 text-left text-xs font-medium text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                      <span>
-                        AI suggests &ldquo;{categorySuggestion.name}&rdquo; —{" "}
-                        <span className="font-bold underline">apply</span>
-                      </span>
-                    </button>
-                  )}
-              </div>
-
-              <div>
-                <label className={labelClass} htmlFor="pf-sub">
-                  Subcategory
-                </label>
-                <Select
-                  id="pf-sub"
-                  value={watch("subcategoryId") ?? ""}
-                  placeholder={selectedCatId && subCats.length === 0 ? "No subcategories" : "Select subcategory"}
-                  onChange={(v) => setValue("subcategoryId", v, { shouldDirty: true })}
-                  disabled={!selectedCatId || subCats.length === 0}
-                  options={[{ value: "", label: "None" }, ...subCats.map((c) => ({ value: c.id, label: c.name }))]}
-                />
-              </div>
-
-              {topCats.length === 0 && (
-                <p className="text-xs text-surface-400">
-                  No categories yet.{" "}
-                  <Link
-                    href="/dashboard/categories"
-                    className="font-semibold text-accent-600 dark:text-accent-400 hover:underline"
+            <SectionTitle title="Category" hint="Where this product sits in your store's menu. Create new ones right here." />
+            <ProductCategoryFields
+              categories={cats}
+              onCategoriesChange={setCats}
+              categoryId={selectedCatId}
+              subcategoryId={watch("subcategoryId") ?? ""}
+              onCategoryChange={(v) => {
+                setValue("categoryId", v, { shouldDirty: true });
+                setSelectedCatId(v);
+                setValue("subcategoryId", "", { shouldDirty: true });
+                setCategorySuggestion(null);
+              }}
+              onSubcategoryChange={(v) => setValue("subcategoryId", v, { shouldDirty: true })}
+              categoryExtra={
+                categorySuggestion && categorySuggestion.id !== selectedCatId ? (
+                  <button
+                    type="button"
+                    onClick={applyCategorySuggestion}
+                    className="mt-2 flex w-full items-center gap-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 px-3 py-2 text-left text-xs font-medium text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors"
                   >
-                    Create one
-                  </Link>
-                </p>
-              )}
-            </div>
+                    <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                    <span>
+                      AI suggests &ldquo;{categorySuggestion.name}&rdquo; —{" "}
+                      <span className="font-bold underline">apply</span>
+                    </span>
+                  </button>
+                ) : null
+              }
+            />
           </section>
         </aside>
       </div>

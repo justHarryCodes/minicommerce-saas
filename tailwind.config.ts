@@ -59,6 +59,7 @@ const config: Config = {
         'slide-in-left': 'slideInLeft 0.3s ease-out',
         'fade-in': 'fadeIn 0.2s ease-out',
         'scale-in': 'scaleIn 0.2s ease-out',
+        'slide-up': 'slideUp 0.28s cubic-bezier(0.32, 0.72, 0, 1)',
       },
       keyframes: {
         slideInRight: {
@@ -72,6 +73,10 @@ const config: Config = {
         fadeIn: {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },
+        },
+        slideUp: {
+          '0%': { transform: 'translateY(100%)' },
+          '100%': { transform: 'translateY(0)' },
         },
         scaleIn: {
           '0%': { transform: 'scale(0.95)', opacity: '0' },

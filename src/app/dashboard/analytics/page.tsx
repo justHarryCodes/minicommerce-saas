@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { featureGate } from "@/components/dashboard/FeatureGate";
 import { redirect } from "next/navigation";
-import { EyeOff, Search, SearchX } from "lucide-react";
+import { EyeOff, Lock, Search, SearchX } from "lucide-react";
+import { freeLimitsFor } from "@/lib/plan";
 import { productViewStats, viewedNotBought } from "@/lib/product-views";
 import { verifySession } from "@/lib/auth";
 import { getPageStore } from "@/lib/access";
@@ -33,7 +34,9 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
   if (gate) return gate;
 
   const { range } = await searchParams;
-  const days = (RANGES as readonly number[]).includes(Number(range)) ? (Number(range) as RangeDays) : 30;
+  // Free plan: the last 7 days (30 and 90 days, and traffic sources, are Pro)
+  const limits = await freeLimitsFor(store.id);
+  const days: RangeDays = limits ? (limits.analyticsDays as RangeDays) : (RANGES as readonly number[]).includes(Number(range)) ? (Number(range) as RangeDays) : 30;
   const [a, viewStats] = await Promise.all([getAnalytics(store.id, days), productViewStats(store.id, days).catch(() => [])]);
   const mostViewed = viewStats.slice(0, 8);
   const notBought = viewedNotBought(viewStats);
@@ -52,7 +55,16 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
         </div>
         {/* Date range — one row, above everything it scopes */}
         <nav className="flex w-fit rounded-xl border border-surface-200 p-0.5 dark:border-surface-700" aria-label="Date range">
-          {RANGES.map((r) => (
+          {RANGES.map((r) => limits && r !== days ? (
+            <Link
+              key={r}
+              href="/dashboard/billing"
+              title="Upgrade to Pro to see longer periods"
+              className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-medium text-surface-400 hover:text-surface-900 dark:hover:text-white"
+            >
+              <Lock className="h-3 w-3" /> {r} days
+            </Link>
+          ) : (
             <Link
               key={r}
               href={`/dashboard/analytics?range=${r}`}
@@ -66,6 +78,16 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
           ))}
         </nav>
       </div>
+
+      {limits && (
+        <Link href="/dashboard/billing" className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 hover:bg-amber-100 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-200">
+          <Lock className="h-4 w-4 shrink-0" />
+          <span className="min-w-0 flex-1">
+            You&apos;re seeing the <strong>last 7 days</strong> on the Free plan. Upgrade to Pro for 30 and 90 days and to see where your visitors come from.
+          </span>
+          <span className="shrink-0 font-bold underline underline-offset-2">Upgrade</span>
+        </Link>
+      )}
 
       {/* KPI row */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -158,13 +180,22 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <BarList
-          title="Where visitors come from"
-          subtitle="Tag your links with ?utm_source=instagram (or whatsapp, tiktok…) to track them"
-          items={a.sources.map((s) => ({ label: SOURCE_LABELS[s.source as TrafficSource] ?? s.source, value: s.visits, note: pct(s.visits, k.visitors) }))}
-          format={count}
-          empty="No visits recorded yet."
-        />
+        {limits ? (
+          <Link href="/dashboard/billing" className="flex flex-col items-start justify-center gap-2 rounded-2xl border border-dashed border-surface-300 bg-white p-5 hover:border-amber-400 dark:border-surface-700 dark:bg-surface-900">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300"><Lock className="h-4 w-4" /></span>
+            <span className="text-sm font-bold text-surface-900 dark:text-white">Where visitors come from</span>
+            <span className="text-sm text-surface-500">See whether your shoppers come from WhatsApp, Instagram, TikTok or Google. Included with Pro.</span>
+            <span className="text-sm font-bold text-amber-700 underline underline-offset-2 dark:text-amber-400">Upgrade to Pro</span>
+          </Link>
+        ) : (
+          <BarList
+            title="Where visitors come from"
+            subtitle="Tag your links with ?utm_source=instagram (or whatsapp, tiktok…) to track them"
+            items={a.sources.map((s) => ({ label: SOURCE_LABELS[s.source as TrafficSource] ?? s.source, value: s.visits, note: pct(s.visits, k.visitors) }))}
+            format={count}
+            empty="No visits recorded yet."
+          />
+        )}
         <BarList
           title="Payment methods"
           items={a.payments.map((p) => ({ label: PAYMENT_LABEL[p.method] ?? p.method, value: p.orders, note: naira(p.revenue) }))}
