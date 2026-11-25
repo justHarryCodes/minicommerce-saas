@@ -15,6 +15,9 @@ import { whatsappLink } from "@/lib/phone";
 import type { ContactRow } from "@/lib/growth-shared";
 import type { Audience, BroadcastRow } from "@/lib/growth-broadcasts";
 import SocialIcon from "@/components/SocialIcon";
+import { ELEMENT_SNIPPETS, plainText } from "@/lib/email-elements";
+import { themeById, withAccent } from "@/lib/email-themes";
+import { MessagePreview } from "@/components/marketing/MessageElements";
 
 export interface BroadcastProps {
   allowed: boolean;
@@ -27,24 +30,32 @@ export interface BroadcastProps {
 const card = "rounded-2xl border border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-900";
 const input = "w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white";
 
+// Starting points. Each has a look (emoji badge + label) and uses the email
+// elements: "• ✨" icon rows, "> 💡" tip boxes, "[[🚚 Title | line]]" tiles.
 const TEMPLATES = [
-  { label: "New arrivals", subject: "New arrivals are in 🎉", body: "Fresh stock just landed and we picked a few favourites for you.\n\nThey go fast, so have a look before your size is gone!" },
-  { label: "Sale", subject: "Our sale starts now 🔥", body: "For a few days only, we're taking money off some of our best sellers.\n\nUse the code below at checkout." },
-  { label: "Back in stock", subject: "It's back in stock!", body: "The ones everyone kept asking about are back.\n\nGrab yours while they last." },
+  { label: "New arrivals", theme: "new", subject: "New arrivals are in 🎉", body: "Fresh stock just landed and we picked a few favourites for you ✨\n\n• 🆕 **Brand-new styles**, in limited numbers\n• 📸 Real photos, real prices\n• 🚚 Quick delivery to your door\n\n> 💡 They go fast, so have a look before your size is gone!" },
+  { label: "Sale", theme: "sale", subject: "Our sale starts now 🔥", body: "For a few days only, we're taking money off some of our best sellers.\n\n[[🔥 Big savings | On best sellers]]\n[[⏳ Few days only | Ends soon]]\n[[🚚 Fast delivery | To your door]]\n\n> 🏷️ Use the code below at checkout." },
+  { label: "Back in stock", theme: "restock", subject: "It's back in stock! 📦", body: "The ones everyone kept asking about are back 🙌\n\n• ✅ **Restocked** in all the popular sizes\n• ⚡ Last time they sold out in days\n\n> 💡 Grab yours while they last." },
+  { label: "Thank you", theme: "thanks", subject: "Thank you for shopping with us 💛", body: "We just wanted to say thank you. Every order helps our small business grow 🙏\n\n• 💬 Tell a friend about us\n• ⭐ Leave a review on your order\n• 🛍️ Come back for new styles every week\n\n> 💛 Here's a little something for your next order." },
+  { label: "Festive", theme: "festive", subject: "Our festive picks are here 🎄", body: "The season is here and we're ready for it 🎉\n\n1. **Pick your gifts** early\n2. **Order before** the holiday rush\n3. **Relax**, we deliver to your door\n\n> 🎁 Gifting? Tell us at checkout and we'll wrap it nicely." },
 ];
+const LOOKS = ["new", "sale", "restock", "thanks", "festive", "plain"] as const;
+const SNIPPETS = ELEMENT_SNIPPETS.filter((e) => e.id !== "image");
 const AUDIENCES: { id: Audience; label: string }[] = [
   { id: "all", label: "Everyone" },
   { id: "buyers", label: "Past buyers" },
   { id: "not_bought", label: "Haven't bought yet" },
 ];
 
-export default function BroadcastCard({ store, data, contacts }: { store: { name: string; url: string }; data: BroadcastProps; contacts: ContactRow[] }) {
+export default function BroadcastCard({ store, data, contacts }: { store: { name: string; url: string; accent?: string }; data: BroadcastProps; contacts: ContactRow[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"email" | "whatsapp">("email");
   const [audience, setAudience] = useState<Audience>("all");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
+  const [theme, setTheme] = useState<string>("plain");
+  const [showPreview, setShowPreview] = useState(true);
   const [picked, setPicked] = useState<string[]>([]);
   const [couponId, setCouponId] = useState("");
   const [sending, setSending] = useState(false);
@@ -56,7 +67,7 @@ export default function BroadcastCard({ store, data, contacts }: { store: { name
   const coupon = data.coupons.find((c) => c.id === couponId);
   const waText = (name: string | null) => {
     const hi = name ? `Hi ${name.split(" ")[0]}! ` : "Hi! ";
-    const msg = body.trim() || subject.trim() || `We've got something new at ${store.name}`;
+    const msg = plainText(body).trim() || subject.trim() || `We've got something new at ${store.name}`;
     return `${hi}${msg}${coupon ? `\n\nUse code ${coupon.code} for ${coupon.label}.` : ""}\n\n${store.url}${store.url.includes("?") ? "&" : "?"}utm_source=whatsapp`;
   };
 
@@ -66,7 +77,7 @@ export default function BroadcastCard({ store, data, contacts }: { store: { name
       const res = await fetch("/api/dashboard/growth/broadcasts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject, body, productIds: picked, couponId: couponId || null, audience }),
+        body: JSON.stringify({ subject, body, productIds: picked, couponId: couponId || null, audience, theme }),
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(d.error ?? "Couldn't send");
@@ -75,6 +86,7 @@ export default function BroadcastCard({ store, data, contacts }: { store: { name
       setConfirming(false);
       setSubject("");
       setBody("");
+      setTheme("plain");
       setPicked([]);
       setCouponId("");
       router.refresh();
@@ -139,14 +151,61 @@ export default function BroadcastCard({ store, data, contacts }: { store: { name
             <p className="mb-1.5 text-xs font-semibold text-zinc-600 dark:text-zinc-300">Start from</p>
             <div className="flex flex-wrap gap-2">
               {TEMPLATES.map((t) => (
-                <button key={t.label} type="button" onClick={() => { setSubject(t.subject); setBody(t.body); }} className="h-8 rounded-full bg-white px-3 text-sm font-medium text-zinc-700 ring-1 ring-zinc-200 hover:ring-amber-400 dark:bg-zinc-900 dark:text-zinc-200 dark:ring-zinc-700">
+                <button key={t.label} type="button" onClick={() => { setSubject(t.subject); setBody(t.body); setTheme(t.theme); }} className="flex h-8 items-center gap-1.5 rounded-full bg-white pl-1 pr-3 text-sm font-medium text-zinc-700 ring-1 ring-zinc-200 hover:ring-amber-400 dark:bg-zinc-900 dark:text-zinc-200 dark:ring-zinc-700">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full text-[13px]" style={{ background: themeById(t.theme).tint }}>{themeById(t.theme).emoji}</span>
                   {t.label}
                 </button>
               ))}
             </div>
           </div>
           {mode === "email" && <input value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={120} placeholder="Subject, e.g. New arrivals are in 🎉" className={input} />}
-          <textarea value={body} onChange={(e) => setBody(e.target.value)} maxLength={mode === "email" ? 4000 : 700} rows={5} placeholder="Your message. Keep it short and friendly." className={cn(input, "resize-y")} />
+          {mode === "email" && (
+            <div>
+              <p className="mb-1.5 text-xs font-semibold text-zinc-600 dark:text-zinc-300">Look</p>
+              <div className="flex flex-wrap gap-1.5">
+                {LOOKS.map((id) => {
+                  const t = themeById(id);
+                  const on = theme === id;
+                  return (
+                    <button key={id} type="button" onClick={() => setTheme(id)} aria-pressed={on} className={cn("flex h-8 items-center gap-1.5 rounded-full pl-1 pr-3 text-[13px] font-semibold ring-1", on ? "bg-zinc-900 text-white ring-zinc-900 dark:bg-white dark:text-zinc-900 dark:ring-white" : "bg-white text-zinc-600 ring-zinc-200 dark:bg-zinc-900 dark:text-zinc-300 dark:ring-zinc-700")}>
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full text-[13px]" style={{ background: t.tint }}>{t.emoji}</span>
+                      {t.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          <div>
+            <div className="mb-1.5 flex flex-wrap items-center gap-1">
+              <span className="mr-1 text-xs font-semibold text-zinc-600 dark:text-zinc-300">Add</span>
+              {SNIPPETS.map((e) => (
+                <button key={e.id} type="button" onClick={() => setBody((b) => `${b.trim()}${b.trim() ? "\n\n" : ""}${e.text}`)} className="flex h-7 items-center gap-1 rounded-lg bg-white px-2 text-[12px] font-semibold text-zinc-600 ring-1 ring-zinc-200 hover:ring-amber-400 dark:bg-zinc-900 dark:text-zinc-300 dark:ring-zinc-700">
+                  <span>{e.emoji}</span> {e.label}
+                </button>
+              ))}
+            </div>
+            <textarea value={body} onChange={(e) => setBody(e.target.value)} maxLength={mode === "email" ? 4000 : 700} rows={7} placeholder={"Your message. Keep it short and friendly.\n\n• ✨ A line starting with • and an emoji becomes an icon row\n> 💡 A line starting with > becomes a tip box"} className={cn(input, "resize-y")} />
+          </div>
+          {mode === "email" && body.trim().length > 0 && (
+            <div>
+              <button type="button" onClick={() => setShowPreview((v) => !v)} className="mb-2 text-xs font-semibold text-zinc-500 underline underline-offset-2">
+                {showPreview ? "Hide preview" : "Show preview"}
+              </button>
+              {showPreview && (
+                <div className="mx-auto max-w-md">
+                  <MessagePreview
+                    theme={withAccent(theme === "plain" ? { ...themeById("plain"), emoji: "", kicker: "" } : themeById(theme), store.accent ?? "#f59e0b")}
+                    headline={subject}
+                    body={`Hi Ada,\n\n${body}`}
+                    cta="Shop now"
+                    header={<p className="text-center text-[15px] font-bold text-zinc-900">{store.name}</p>}
+                    footer={coupon ? <p className="rounded-xl border-2 border-dashed px-3 py-2 text-center font-mono text-lg font-bold tracking-widest text-zinc-900" style={{ borderColor: store.accent ?? "#f59e0b" }}>{coupon.code}</p> : null}
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
           {data.coupons.length > 0 && (
             <label className="block">

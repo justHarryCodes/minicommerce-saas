@@ -1,6 +1,8 @@
 // Growth engine emails: written in the STORE's name and colours (a shopper
 // hears from the shop they bought from, not from Duka), with a one-click,
 // signed "stop emails from this store" link.
+import { blocksHtml, parseBlocks, plainText } from "./email-elements";
+import { heroHtml, themeById, themeColors, withAccent } from "./email-themes";
 import crypto from "crypto";
 import { getAppUrl } from "./paystack";
 
@@ -216,18 +218,20 @@ ${codeBox(brand, d.creditCode, `Your balance: ${naira(d.balance)}. Enter this co
   return { subject, html };
 }
 
-/** A vendor's broadcast. Their words are plain text: escaped, blank lines become paragraphs. */
-export function broadcastEmail(brand: StoreBrand, d: { name?: string | null; subject: string; body: string; products: ProductTeaser[]; coupon?: { code: string; note: string } | null; unsubscribeUrl: string | null }) {
-  const paragraphs = d.body
-    .trim()
-    .split(/\n\s*\n/)
-    .map((p) => `<p style="margin:0 0 12px">${esc(p.trim()).replace(/\n/g, "<br>")}</p>`)
-    .join("");
+/**
+ * A vendor's broadcast, in the store's colour. Their words are escaped plain
+ * text; simple line markers become the custom elements (steps, icon rows,
+ * tips, tiles, pictures: lib/email-elements.ts), and the chosen theme adds
+ * its emoji badge and label at the top.
+ */
+export function broadcastEmail(brand: StoreBrand, d: { name?: string | null; subject: string; body: string; theme?: string | null; products: ProductTeaser[]; coupon?: { code: string; note: string } | null; unsubscribeUrl: string | null }) {
+  const th = withAccent(themeById(d.theme), brand.accent, onAccent(brand.accent));
   const html = shell(
     brand,
-    d.body.trim().slice(0, 110),
-    `<p style="margin:0 0 12px">${hi(d.name)}</p>
-${paragraphs}
+    plainText(d.body).replace(/\s+/g, " ").slice(0, 110),
+    `${d.theme && d.theme !== "plain" ? heroHtml(th, { showImage: false }) : ""}
+<p style="margin:0 0 12px">${hi(d.name)}</p>
+${blocksHtml(parseBlocks(d.body), themeColors(th))}
 ${d.coupon ? codeBox(brand, d.coupon.code, d.coupon.note) : ""}
 <p style="margin:6px 0 0;text-align:center">${button(brand, emailLink(brand.url), "Shop now")}</p>
 ${products(d.products, "Picked for you")}`,

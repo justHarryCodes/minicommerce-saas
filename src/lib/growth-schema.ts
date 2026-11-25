@@ -107,6 +107,7 @@ export const GROWTH_STATEMENTS = [
   rewarded_at      TIMESTAMPTZ
 )`,
   `CREATE INDEX IF NOT EXISTS idx_shopper_referrals_referrer ON shopper_referrals (referrer_id, status)`,
+  `ALTER TABLE broadcasts ADD COLUMN IF NOT EXISTS theme TEXT`,
 ];
 
 let ready: Promise<void> | null = null;

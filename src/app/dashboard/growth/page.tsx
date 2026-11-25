@@ -7,6 +7,7 @@ import { audienceCounts, listBroadcasts } from "@/lib/growth-broadcasts";
 import { parseReferralSettings, referralStats } from "@/lib/growth-referrals";
 import { query } from "@/lib/db";
 import { getStoreUrl } from "@/lib/utils";
+import { storeAccent } from "@/lib/store-brand";
 import GrowthClient from "./GrowthClient";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +25,7 @@ export default async function GrowthPage({ searchParams }: { searchParams: Promi
   const days = limits ? limits.analyticsDays : (RANGES as readonly number[]).includes(asked) ? asked : 30;
 
   const s = store as typeof store & { welcome_offer_enabled?: boolean; welcome_offer_percent?: number; welcome_offer_headline?: string | null; growth_automations?: unknown; referral_settings?: unknown };
-  const [stats, contacts, features, results, audience, broadcasts, refStats, products, coupons] = await Promise.all([
+  const [stats, contacts, features, results, audience, broadcasts, refStats, products, coupons, accent] = await Promise.all([
     growthStats(store.id, days),
     listContacts(store.id),
     getStoreFeatures(store.id),
@@ -41,11 +42,13 @@ export default async function GrowthPage({ searchParams }: { searchParams: Promi
       "SELECT id, code, discount_type, discount_value FROM coupons WHERE store_id = $1 AND kind = 'standard' AND is_active AND (expires_at IS NULL OR expires_at > NOW()) ORDER BY created_at DESC LIMIT 20",
       [store.id],
     ),
+    // The store's brand colour: broadcast emails are sent in it
+    storeAccent(store as never).catch(() => "#f59e0b"),
   ]);
 
   return (
     <GrowthClient
-      store={{ name: store.name, slug: store.slug, url: getStoreUrl(store.slug, store.customDomain ?? store.custom_domain) }}
+      store={{ name: store.name, slug: store.slug, url: getStoreUrl(store.slug, store.customDomain ?? store.custom_domain), accent }}
       stats={stats}
       contacts={contacts}
       days={days}

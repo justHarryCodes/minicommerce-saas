@@ -31,6 +31,7 @@ const ContentSchema = z.object({
   ctaLabel: z.string().trim().max(40).optional().nullable(),
   ctaUrl: z.string().trim().max(500).regex(/^(https:\/\/|\/)/, "Link must start with https:// or /").optional().nullable().or(z.literal("")),
   channels: z.array(z.enum(CHANNELS as [string, ...string[]])).min(1),
+  theme: z.string().trim().max(30).regex(/^[a-z-]+$/).optional().nullable(),
 });
 const Body = z.discriminatedUnion("action", [
   z.object({ action: z.literal("preview"), audience: AudienceSchema }),

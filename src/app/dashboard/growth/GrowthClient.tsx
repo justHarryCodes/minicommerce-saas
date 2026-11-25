@@ -20,7 +20,7 @@ import ReferralCard from "./ReferralCard";
 import SocialIcon, { type SocialName } from "@/components/SocialIcon";
 
 interface Props {
-  store: { name: string; slug: string; url: string };
+  store: { name: string; slug: string; url: string; accent?: string };
   stats: GrowthStats;
   contacts: ContactRow[];
   days: number;

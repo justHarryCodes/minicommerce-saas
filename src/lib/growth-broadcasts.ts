@@ -46,6 +46,8 @@ export interface BroadcastInput {
   productIds: string[];
   couponId?: string | null;
   audience: Audience;
+  /** Look of the email (lib/email-themes.ts) */
+  theme?: string | null;
 }
 
 export type CreateResult = { ok: true; id: string; recipients: number } | { ok: false; error: string };
@@ -76,8 +78,8 @@ export async function createBroadcast(storeId: string, d: BroadcastInput): Promi
     : [];
 
   const b = await queryOne<{ id: string }>(
-    `INSERT INTO broadcasts (store_id, subject, body, product_ids, coupon_code, audience) VALUES ($1, $2, $3, $4::uuid[], $5, $6) RETURNING id`,
-    [storeId, d.subject.trim(), d.body.trim(), products, couponCode, d.audience],
+    `INSERT INTO broadcasts (store_id, subject, body, product_ids, coupon_code, audience, theme) VALUES ($1, $2, $3, $4::uuid[], $5, $6, $7) RETURNING id`,
+    [storeId, d.subject.trim(), d.body.trim(), products, couponCode, d.audience, d.theme || null],
   );
   const inserted = await query<{ email: string }>(
     `INSERT INTO broadcast_recipients (broadcast_id, email, name, contact_id)
@@ -108,8 +110,8 @@ export async function sendBroadcastBatch(budget: number, broadcastId?: string): 
     `UPDATE broadcast_recipients r SET status = 'failed', error = 'interrupted'
      FROM broadcasts b WHERE b.id = r.broadcast_id AND r.status = 'sending' AND b.status = 'sending' AND b.created_at < NOW() - INTERVAL '2 hours'`,
   );
-  const live = await query<{ id: string; store_id: string; subject: string; body: string; product_ids: string[]; coupon_code: string | null }>(
-    `SELECT id, store_id, subject, body, product_ids, coupon_code FROM broadcasts WHERE status = 'sending' ${broadcastId ? "AND id = $1" : ""} ORDER BY created_at LIMIT 20`,
+  const live = await query<{ id: string; store_id: string; subject: string; body: string; product_ids: string[]; coupon_code: string | null; theme: string | null }>(
+    `SELECT id, store_id, subject, body, product_ids, coupon_code, theme FROM broadcasts WHERE status = 'sending' ${broadcastId ? "AND id = $1" : ""} ORDER BY created_at LIMIT 20`,
     broadcastId ? [broadcastId] : [],
   );
   let sent = 0;
@@ -152,7 +154,7 @@ export async function sendBroadcastBatch(budget: number, broadcastId?: string): 
         continue;
       }
       const unsubscribeUrl = growthUnsubUrl(store.id, r.email);
-      const msg = broadcastEmail(brand, { name: r.name, subject: b.subject, body: b.body, products, coupon: b.coupon_code ? { code: b.coupon_code, note: couponNote } : null, unsubscribeUrl });
+      const msg = broadcastEmail(brand, { name: r.name, subject: b.subject, body: b.body, theme: b.theme, products, coupon: b.coupon_code ? { code: b.coupon_code, note: couponNote } : null, unsubscribeUrl });
       const res = await sendEmail(r.email, msg.subject, msg.html, store.email || store.owner_email || undefined, { unsubscribeUrl, fromName: `${store.name} via Duka` });
       await query("UPDATE broadcast_recipients SET status = $3, error = $4, sent_at = NOW() WHERE broadcast_id = $1 AND email = $2", [
         b.id,

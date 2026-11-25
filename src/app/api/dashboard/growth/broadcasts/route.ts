@@ -14,6 +14,7 @@ const Body = z.object({
   productIds: z.array(z.string().uuid()).max(3).default([]),
   couponId: z.string().uuid().optional().nullable(),
   audience: z.enum(["all", "buyers", "not_bought"]).default("all"),
+  theme: z.string().trim().max(30).regex(/^[a-z-]+$/).optional().nullable(),
 });
 
 export async function POST(req: NextRequest) {

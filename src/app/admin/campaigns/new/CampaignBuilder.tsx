@@ -6,6 +6,9 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { Bell, CheckCircle2, FileText, Loader2, Mail, Monitor, Send, Sparkles, Users } from "lucide-react";
 import { CAMPAIGN_TEMPLATES, TEMPLATE_GROUPS, templateById, type CampaignTemplate } from "@/lib/admin/campaign-templates";
+import { EMAIL_THEMES, themeById } from "@/lib/email-themes";
+import { ELEMENT_SNIPPETS } from "@/lib/email-elements";
+import { MessagePreview } from "@/components/marketing/MessageElements";
 
 // Admin -> Campaigns -> New. Audience on the left builds a live count;
 // the message and a preview sit beside it.
@@ -72,6 +75,8 @@ export default function CampaignBuilder({ adminEmail, storeIds, templateId }: { 
   const [body, setBody] = useState<string>(start?.body ?? "");
   const [ctaLabel, setCtaLabel] = useState<string>(start?.ctaLabel ?? "");
   const [ctaUrl, setCtaUrl] = useState<string>(start?.ctaUrl ?? "");
+  const [theme, setTheme] = useState<string>(start?.theme ?? "celebrate");
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
   const [count, setCount] = useState<number | null>(null);
   const [sample, setSample] = useState<{ id: string; name: string; primary_category: string | null }[]>([]);
   const [busy, setBusy] = useState<"test" | "send" | null>(null);
@@ -82,7 +87,7 @@ export default function CampaignBuilder({ adminEmail, storeIds, templateId }: { 
   function apply(t: CampaignTemplate | null) {
     setTpl(t?.id ?? null);
     if (!t) {
-      setName(""); setSubject(""); setHeadline(""); setBody(""); setCtaLabel(""); setCtaUrl("");
+      setName(""); setSubject(""); setHeadline(""); setBody(""); setCtaLabel(""); setCtaUrl(""); setTheme("plain");
       return;
     }
     setName(t.name);
@@ -91,6 +96,7 @@ export default function CampaignBuilder({ adminEmail, storeIds, templateId }: { 
     setBody(t.body);
     setCtaLabel(t.ctaLabel);
     setCtaUrl(t.ctaUrl);
+    setTheme(t.theme);
     setChannels([...t.channels]);
     if (!picked.length) {
       setCategories([]);
@@ -132,7 +138,7 @@ export default function CampaignBuilder({ adminEmail, storeIds, templateId }: { 
     return () => clearInterval(t);
   }, [progress]);
 
-  const content = { name: name || subject || headline, subject: subject || headline, headline, body, ctaLabel: ctaLabel || null, ctaUrl: ctaUrl || null, channels };
+  const content = { name: name || subject || headline, subject: subject || headline, headline, body, ctaLabel: ctaLabel || null, ctaUrl: ctaUrl || null, channels, theme };
   const ready = channels.length > 0 && headline.trim().length > 1 && body.trim().length > 4 && (!channels.includes("email") || (subject || headline).trim().length > 1);
 
   async function post(action: "test" | "send") {
@@ -153,6 +159,19 @@ export default function CampaignBuilder({ adminEmail, storeIds, templateId }: { 
     }
   }
 
+  /** Put an element where the cursor is in the message (on its own lines). */
+  function insertElement(text: string) {
+    const el = bodyRef.current;
+    const at = el ? el.selectionEnd : body.length;
+    const before = body.slice(0, at).replace(/\s+$/, "");
+    const after = body.slice(at).replace(/^\s+/, "");
+    setBody(`${before}${before ? "\n\n" : ""}${text}${after ? `\n\n${after}` : ""}`);
+    requestAnimationFrame(() => {
+      const pos = (before ? before.length + 2 : 0) + text.length;
+      el?.focus();
+      el?.setSelectionRange(pos, pos);
+    });
+  }
   const fill = (s: string) => s.replace(/\{store\}/gi, sample[0]?.name ?? "Amaka Styles").replace(/\{name\}/gi, "Amaka");
   const chOpts: { id: Channel; label: string; Icon: typeof Mail; hint: string }[] = [
     { id: "email", label: "Email", Icon: Mail, hint: opts && !opts.emailReady ? "not configured" : "with unsubscribe" },
@@ -303,8 +322,34 @@ export default function CampaignBuilder({ adminEmail, storeIds, templateId }: { 
               <input id="c-head" value={headline} onChange={(e) => setHeadline(e.target.value)} placeholder="Get ready for Black Friday, {name}" className={input} style={inputStyle} />
             </div>
             <div>
-              <label className={label} style={{ color: "var(--text-muted)" }} htmlFor="c-body">Message</label>
-              <textarea id="c-body" value={body} onChange={(e) => setBody(e.target.value)} rows={6} placeholder={"Write to your vendors. Use {store} and {name} to personalise, **bold** for emphasis.\n\nBlank line = new paragraph."} className={input} style={inputStyle} />
+              <p className={label} style={{ color: "var(--text-muted)" }}>Look</p>
+              <div className="flex flex-wrap gap-1.5">
+                {EMAIL_THEMES.filter((t) => !["new", "sale", "restock", "thanks"].includes(t.id)).map((t) => {
+                  const on = theme === t.id;
+                  return (
+                    <button key={t.id} type="button" aria-pressed={on} onClick={() => setTheme(t.id)} title={t.kicker || t.label}
+                      className="inline-flex items-center gap-1.5 rounded-full border py-1 pl-1 pr-2.5 text-[12px] font-semibold transition hover:border-zinc-400"
+                      style={{ borderColor: on ? t.accent : "var(--border)", boxShadow: on ? `0 0 0 2px ${t.accent}55` : undefined, color: "var(--text-primary)" }}>
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full text-[13px]" style={{ background: t.tint }}>{t.emoji}</span>
+                      {t.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div>
+              <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
+                <label className={`${label} mb-0`} style={{ color: "var(--text-muted)" }} htmlFor="c-body">Message</label>
+                <div className="flex flex-wrap gap-1">
+                  {ELEMENT_SNIPPETS.map((e) => (
+                    <button key={e.id} type="button" onClick={() => insertElement(e.text)} title={`Add ${e.label.toLowerCase()}`}
+                      className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold hover:border-amber-400" style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}>
+                      <span>{e.emoji}</span> {e.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <textarea ref={bodyRef} id="c-body" value={body} onChange={(e) => setBody(e.target.value)} rows={10} placeholder={"Write to your vendors. Use {store} and {name} to personalise, **bold** for emphasis.\n\n1. Numbered lines become step cards\n• 💬 A bullet with an emoji becomes an icon row\n> 💡 A line starting with > becomes a tip box"} className={input} style={inputStyle} />
             </div>
             <div className="grid gap-3 sm:grid-cols-[1fr_1.4fr]">
               <div>
@@ -329,16 +374,13 @@ export default function CampaignBuilder({ adminEmail, storeIds, templateId }: { 
       <aside className="space-y-4 xl:sticky xl:top-20 xl:self-start">
         <section className={card} style={cardStyle}>
           <p className={label} style={{ color: "var(--text-muted)" }}>Preview</p>
-          <div className="rounded-lg border bg-white p-4 text-zinc-900" style={{ borderColor: "var(--border)" }}>
-            {channels.includes("email") && <p className="mb-2 text-[11px] text-zinc-500">Subject: <strong className="text-zinc-800">{fill(subject || headline) || "…"}</strong></p>}
-            <p className="text-base font-black leading-snug">{fill(headline) || "Your headline"}</p>
-            <div className="mt-2 space-y-2 text-[13px] leading-relaxed text-zinc-600">
-              {(fill(body) || "Your message…").split(/\n{2,}/).map((p, i) => (
-                <p key={i} dangerouslySetInnerHTML={{ __html: p.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\n/g, "<br>") }} />
-              ))}
-            </div>
-            {ctaLabel && <span className="mt-3 inline-block rounded-lg bg-amber-400 px-3 py-1.5 text-[13px] font-bold text-black">{ctaLabel}</span>}
-          </div>
+          <MessagePreview
+            theme={themeById(theme)}
+            headline={fill(headline)}
+            body={fill(body)}
+            cta={ctaLabel || null}
+            header={channels.includes("email") ? <p className="text-[11px] text-zinc-500">Subject: <strong className="text-zinc-800">{fill(subject || headline) || "…"}</strong></p> : null}
+          />
           {sample.length > 0 && (
             <div className="mt-3">
               <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Includes</p>

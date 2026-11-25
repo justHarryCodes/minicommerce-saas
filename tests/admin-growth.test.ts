@@ -62,14 +62,14 @@ describe("messages", () => {
     const h = bodyHtml("Hello <script>x</script> **now**\n\nSee https://dukanigeria.com/pricing");
     expect(h).not.toContain("<script>");
     expect(h).toContain("&lt;script&gt;");
-    expect(h).toContain("<strong>now</strong>");
+    expect(h).toMatch(/<strong[^>]*>now<\/strong>/);
     expect(h).toContain('<a href="https://dukanigeria.com/pricing"');
     expect(h.match(/<p /g)).toHaveLength(2);
   });
   it("email has the button and an unsubscribe link", () => {
     const m = campaignEmail({ subject: "{store} news", headline: "Hi {name}", body: "Text", ctaLabel: "Go", ctaUrl: "https://dukanigeria.com/dashboard" }, { store: "Amaka", name: "Ada", unsubscribe: "https://u/x" });
     expect(m.subject).toBe("Amaka news");
-    expect(m.html).toContain(">Go</a>");
+    expect(m.html).toContain(">Go &rarr;</a>");
     expect(m.html).toContain('href="https://u/x"');
   });
 });

@@ -11,7 +11,7 @@ const squash = (s: string) => s.replace(/--[^\n]*/g, "").replace(/\s+/g, " ").tr
 
 describe("growth engine schema", () => {
   it("the first-use setup matches the growth migrations", () => {
-    const migration = ["growth_engine.sql", "growth_automations.sql", "growth_phase3.sql"].map((f) => squash(readFileSync(join(__dirname, "../migrations", f), "utf8"))).join(" ");
+    const migration = ["growth_engine.sql", "growth_automations.sql", "growth_phase3.sql", "broadcast_theme.sql"].map((f) => squash(readFileSync(join(__dirname, "../migrations", f), "utf8"))).join(" ");
     for (const st of GROWTH_STATEMENTS) expect(migration).toContain(squash(st));
   });
 });

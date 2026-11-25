@@ -12,6 +12,8 @@ import { getAppUrl } from "@/lib/paystack";
 import { emailConfigured, sendEmail } from "@/lib/notify/providers";
 import { emailHeader } from "@/lib/notify/email-brand";
 import { ensureTable as ensureRemindersTable, esc, unsubscribeUrl } from "@/lib/notify/setup-reminders";
+import { blocksHtml, parseBlocks, plainText } from "@/lib/email-elements";
+import { buttonHtml, heroHtml, themeById, themeColors } from "@/lib/email-themes";
 
 import { ACTIVITIES, CHANNELS, type Activity, type Audience, type Channel } from "./campaigns-shared";
 export { ACTIVITIES, CHANNELS, type Activity, type Audience, type Channel };
@@ -24,6 +26,8 @@ export interface CampaignContent {
   ctaLabel?: string | null;
   ctaUrl?: string | null;
   channels: Channel[];
+  /** Look of the message (lib/email-themes.ts) */
+  theme?: string | null;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -61,6 +65,7 @@ export async function ensureCampaignTables() {
       dismissed_at TIMESTAMPTZ,
       PRIMARY KEY (campaign_id, store_id, channel)
     )`);
+  await query(`ALTER TABLE admin_campaigns ADD COLUMN IF NOT EXISTS theme TEXT`);
   await query(`CREATE INDEX IF NOT EXISTS admin_campaign_recipients_inapp ON admin_campaign_recipients (store_id) WHERE channel = 'inapp' AND dismissed_at IS NULL`);
   ready = true;
 }
@@ -157,19 +162,9 @@ export async function audienceOptions() {
 
 /* ───────────────────────────── Content ───────────────────────────── */
 
-/** Body text -> email HTML (paragraphs, line breaks, **bold**, links). Everything escaped first. */
-export function bodyHtml(body: string): string {
-  return body
-    .trim()
-    .split(/\n{2,}/)
-    .map((para) => {
-      const html = esc(para)
-        .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-        .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" style="color:#b45309">$1</a>')
-        .replace(/\n/g, "<br>");
-      return `<p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:#3f3f46">${html}</p>`;
-    })
-    .join("");
+/** Body text -> email HTML with the custom elements (steps, icon rows, tips, tiles…). Everything escaped first. */
+export function bodyHtml(body: string, theme?: string | null): string {
+  return blocksHtml(parseBlocks(body), themeColors(themeById(theme)));
 }
 
 /** {store} and {name} placeholders. */
@@ -178,17 +173,23 @@ export function personalise(text: string, d: { store: string; name?: string | nu
   return text.replace(/\{store\}/gi, d.store).replace(/\{name\}/gi, first);
 }
 
-export function campaignEmail(c: Pick<CampaignContent, "subject" | "headline" | "body" | "ctaLabel" | "ctaUrl">, d: { store: string; name?: string | null; unsubscribe: string }) {
+export function campaignEmail(c: Pick<CampaignContent, "subject" | "headline" | "body" | "ctaLabel" | "ctaUrl" | "theme">, d: { store: string; name?: string | null; unsubscribe: string }) {
+  const th = themeById(c.theme);
   const headline = personalise(c.headline, d);
   const body = personalise(c.body, d);
-  const cta = c.ctaLabel && c.ctaUrl ? `<p style="margin:22px 0 0"><a href="${esc(c.ctaUrl)}" style="display:inline-block;background:#f59e0b;color:#000;font-weight:700;font-size:15px;text-decoration:none;padding:13px 22px;border-radius:10px">${esc(c.ctaLabel)}</a></p>` : "";
-  const html = `<!doctype html><html><body style="margin:0;background:#f4f4f5;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#18181b">
+  const cta = c.ctaLabel && c.ctaUrl ? buttonHtml(th, c.ctaUrl, c.ctaLabel) : "";
+  const preheader = plainText(body).replace(/\s+/g, " ").slice(0, 120);
+  const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#f4f4f5;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#18181b">
+<span style="display:none;max-height:0;overflow:hidden;opacity:0">${esc(preheader)}</span>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:24px 12px"><tr><td align="center">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;padding:28px"><tr><td>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:20px;overflow:hidden">
+<tr><td style="height:6px;background:${th.accent};font-size:0;line-height:0">&nbsp;</td></tr>
+<tr><td style="padding:24px 28px 28px">
 ${emailHeader()}
-<h1 style="margin:0 0 14px;font-size:22px;line-height:1.3">${esc(headline)}</h1>
-${bodyHtml(body)}${cta}
-<p style="margin:24px 0 0;font-size:12px;color:#a1a1aa">Questions? Just reply to this email.</p>
+${heroHtml(th)}
+<h1 style="margin:0 0 14px;font-size:24px;line-height:1.25;letter-spacing:-0.3px;color:#18181b">${esc(headline)}</h1>
+${bodyHtml(body, c.theme)}${cta}
+<p style="margin:26px 0 0;font-size:12px;color:#a1a1aa">Questions? Just reply to this email.</p>
 </td></tr></table>
 <p style="margin:16px 0 0;font-size:11px;color:#a1a1aa">You're receiving this because you have a store on Duka. <a href="${d.unsubscribe}" style="color:#a1a1aa">Unsubscribe from offers</a></p>
 </td></tr></table></body></html>`;
@@ -201,9 +202,9 @@ export async function createCampaign(c: CampaignContent, audience: Audience, by:
   await ensureCampaignTables();
   const size = await audienceCount(audience);
   const row = await queryOne<{ id: string }>(
-    `INSERT INTO admin_campaigns (name, channels, audience, subject, headline, body, cta_label, cta_url, audience_size, created_by)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
-    [c.name, c.channels, JSON.stringify(audience), c.subject, c.headline, c.body, c.ctaLabel || null, c.ctaUrl || null, size, by],
+    `INSERT INTO admin_campaigns (name, channels, audience, subject, headline, body, cta_label, cta_url, audience_size, created_by, theme)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
+    [c.name, c.channels, JSON.stringify(audience), c.subject, c.headline, c.body, c.ctaLabel || null, c.ctaUrl || null, size, by, c.theme || null],
   );
   return { id: row!.id, size };
 }
@@ -212,8 +213,8 @@ export async function createCampaign(c: CampaignContent, audience: Audience, by:
 export async function runCampaign(id: string): Promise<{ sent: number; failed: number }> {
   await ensureCampaignTables();
   await ensureRemindersTable();
-  const c = await queryOne<{ channels: Channel[]; audience: Audience; subject: string; headline: string; body: string; cta_label: string | null; cta_url: string | null }>(
-    `SELECT channels, audience, subject, headline, body, cta_label, cta_url FROM admin_campaigns WHERE id = $1`,
+  const c = await queryOne<{ channels: Channel[]; audience: Audience; subject: string; headline: string; body: string; cta_label: string | null; cta_url: string | null; theme: string | null }>(
+    `SELECT channels, audience, subject, headline, body, cta_label, cta_url, theme FROM admin_campaigns WHERE id = $1`,
     [id],
   );
   if (!c) return { sent: 0, failed: 0 };
@@ -227,7 +228,7 @@ export async function runCampaign(id: string): Promise<{ sent: number; failed: n
   const { notifyStoreEvent } = await import("@/lib/push");
   let sent = 0;
   let failed = 0;
-  const content = { subject: c.subject, headline: c.headline, body: c.body, ctaLabel: c.cta_label, ctaUrl: c.cta_url };
+  const content = { subject: c.subject, headline: c.headline, body: c.body, ctaLabel: c.cta_label, ctaUrl: c.cta_url, theme: c.theme };
 
   for (const s of stores) {
     for (const ch of c.channels) {
@@ -266,8 +267,8 @@ export async function runCampaign(id: string): Promise<{ sent: number; failed: n
         } else if (ch === "push") {
           await notifyStoreEvent(s.id, {
             type: "announcement",
-            title: personalise(c.headline, { store: s.name }).slice(0, 80),
-            body: personalise(c.body, { store: s.name }).replace(/\*\*/g, "").replace(/\s+/g, " ").slice(0, 160),
+            title: `${themeById(c.theme).emoji} ${personalise(c.headline, { store: s.name })}`.slice(0, 80),
+            body: plainText(personalise(c.body, { store: s.name })).replace(/\s+/g, " ").slice(0, 160),
             data: { campaignId: id },
             url: c.cta_url && c.cta_url.startsWith("/") ? c.cta_url : "/dashboard",
           });
@@ -305,8 +306,8 @@ export async function listCampaigns() {
 
 export async function activeAnnouncement(storeId: string) {
   try {
-    return await queryOne<{ campaign_id: string; headline: string; body: string; cta_label: string | null; cta_url: string | null; store_name: string }>(
-      `SELECT r.campaign_id, c.headline, c.body, c.cta_label, c.cta_url, s.name AS store_name
+    return await queryOne<{ campaign_id: string; headline: string; body: string; cta_label: string | null; cta_url: string | null; store_name: string; theme: string | null }>(
+      `SELECT r.campaign_id, c.headline, c.body, c.cta_label, c.cta_url, s.name AS store_name, c.theme
          FROM admin_campaign_recipients r
          JOIN admin_campaigns c ON c.id = r.campaign_id
          JOIN stores s ON s.id = r.store_id
