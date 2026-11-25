@@ -1,6 +1,6 @@
 // The admin's one map: sidebar groups, top bar titles and the ⌘K palette.
 import {
-  ArrowLeftRight, CreditCard, LayoutDashboard, Megaphone, Newspaper, Settings, ShieldCheck, Target, UserCheck, Users, Wallet, type LucideIcon,
+  ArrowLeftRight, CreditCard, HandCoins, LayoutDashboard, Megaphone, Newspaper, Settings, ShieldCheck, Target, UserCheck, Users, Wallet, type LucideIcon,
 } from "lucide-react";
 
 export interface AdminNavItem {
@@ -22,6 +22,7 @@ export const ADMIN_NAV: { label: string; items: AdminNavItem[] }[] = [
       { href: "/admin/leads", label: "Leads", icon: Target, keywords: "pipeline unfinished signups upgrade prospects sales" },
       { href: "/admin/campaigns", label: "Campaigns", icon: Megaphone, keywords: "marketing email push announcement broadcast" },
       { href: "/admin/blog", label: "Blog", icon: Newspaper, keywords: "posts articles write publish content seo" },
+      { href: "/admin/grants", label: "Vendor Grant", icon: HandCoins, keywords: "grant fund support applications apply round winner" },
     ],
   },
   {

@@ -71,7 +71,7 @@ export const TEXT_HEADERS = {
 
 /* ───────────────────────────── Platform ──────────────────────────── */
 
-const PLATFORM_PATHS = ["/", "/pricing", "/discover", "/resources", "/blog", "/affiliate", "/terms", "/data-deletion"];
+const PLATFORM_PATHS = ["/", "/pricing", "/discover", "/resources", "/blog", "/grant", "/affiliate", "/terms", "/data-deletion"];
 
 export function platformSitemapUrls(): SitemapUrl[] {
   const base = appUrl();

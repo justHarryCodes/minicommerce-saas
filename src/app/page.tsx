@@ -11,6 +11,8 @@ import ProductSlider, { type ProductSlide } from "./ProductSlider";
 import HomeNav from "./HomeNav";
 import VideoHero from "./VideoHero";
 import Footer from "@/components/Footer";
+import GrantHomeSection from "@/components/grant/GrantHomeSection";
+import { currentRound } from "@/lib/grants";
 import GooglePlayBadge from "@/components/GooglePlayBadge";
 import {
   ArrowRight,
@@ -45,6 +47,7 @@ import {
 } from "./landing/screens/Screens";
 import type { Metadata } from "next";
 import { jsonLd, platformLd } from "@/lib/seo";
+import SocialIcon, { type SocialName } from "@/components/SocialIcon";
 
 export const metadata: Metadata = {
   title: {
@@ -123,7 +126,7 @@ export default async function HomePage() {
 
   // Platform-wide figures: the same for every visitor, so cached briefly
   // (the product query sorts the whole catalogue at random).
-  const [categoryStats, products] = await Promise.all([
+  const [categoryStats, products, grantRound] = await Promise.all([
     getOrSet(
       "home:categoryStats",
       () =>
@@ -157,6 +160,8 @@ export default async function HomePage() {
         ),
       300,
     ).then((r) => r ?? []),
+    // The Vendor Grant round (amount, open/closed, countdown); never blocks the page
+    currentRound().catch(() => null),
   ]);
 
   // One chip per category even if stores typed it differently ("Other" / "other")
@@ -308,7 +313,7 @@ export default async function HomePage() {
             <Reveal className="relative flex min-h-[600px] flex-col items-center justify-end overflow-hidden rounded-[2rem] bg-gradient-to-b from-[#0b3d2e] to-[#04130f] px-6 pt-28">
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(37,211,102,0.35),transparent_60%)]" />
               <WhatsAppScreen className="relative w-[270px] translate-y-8" />
-              <PanelLabel icon={MessageCircle} tone="green" title="Shop inside WhatsApp" />
+              <PanelLabel icon={MessageCircle} social="whatsapp" tone="green" title="Shop inside WhatsApp" />
             </Reveal>
             <Reveal delay={0.08} className="relative flex min-h-[600px] flex-col items-center justify-end overflow-hidden rounded-[2rem] bg-gradient-to-b from-[#ffe4e6] to-[#fed7aa] px-6 pt-28 dark:from-[#3b0d17] dark:to-[#2a1405]">
               <StorefrontScreen className="relative w-[250px] translate-y-8" />
@@ -538,6 +543,9 @@ export default async function HomePage() {
         </Reveal>
       </section>
 
+      {/* ═════════════ VENDOR GRANT ═════════════ */}
+      <GrantHomeSection round={grantRound} />
+
       {/* ═════════════ FAQ ═════════════ */}
       <section className="px-4 py-24">
         <div className="mx-auto max-w-3xl">
@@ -577,10 +585,10 @@ export default async function HomePage() {
 }
 
 /** Label pinned to the top of a showcase panel */
-function PanelLabel({ icon, tone, title, ink = "light" }: { icon: LucideIcon; tone: Tone; title: string; ink?: "light" | "dark" }) {
+function PanelLabel({ icon, tone, title, ink = "light", social }: { icon: LucideIcon; tone: Tone; title: string; ink?: "light" | "dark"; social?: SocialName }) {
   return (
     <div className="absolute inset-x-0 top-0 z-10 flex items-center gap-3 px-6 pt-7">
-      <Icon3D icon={icon} tone={tone} size={40} />
+      {social ? <SocialIcon name={social} size={40} label="" className="rounded-xl shadow-lg" /> : <Icon3D icon={icon} tone={tone} size={40} />}
       <span className={`text-lg font-semibold ${ink === "dark" ? "text-zinc-900 dark:text-white" : "text-white"}`}>{title}</span>
     </div>
   );

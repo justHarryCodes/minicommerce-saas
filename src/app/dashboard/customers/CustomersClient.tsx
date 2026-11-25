@@ -8,6 +8,7 @@ import { ChevronDown, Copy, Download, Loader2, MessageCircle, Search, Users } fr
 import { formatCurrency } from "@/lib/utils";
 import { whatsappLink } from "@/lib/phone";
 import { segmentsOf, toCsv, topSpendCutoff, type CustomerRow, type Segment } from "@/lib/customers-shared";
+import SocialIcon from "@/components/SocialIcon";
 
 type Order = { id: string; order_number: string; created_at: string; total: number; order_status: string; payment_status: string; items: number };
 
@@ -176,8 +177,8 @@ export default function CustomersClient({ customers, storeName }: { customers: C
                   <p className="text-xs text-surface-400">{c.orders} order{c.orders !== 1 ? "s" : ""}</p>
                 </div>
                 {wa && (
-                  <a href={wa} target="_blank" rel="noopener noreferrer" aria-label={`WhatsApp ${c.name}`} className="rounded-lg p-2 text-[#128C7E] hover:bg-[#25D366]/10 dark:text-[#25D366]">
-                    <MessageCircle className="h-4 w-4" />
+                  <a href={wa} target="_blank" rel="noopener noreferrer" aria-label={`WhatsApp ${c.name}`} className="rounded-lg p-2 hover:bg-[#25D366]/10">
+                    <SocialIcon name="whatsapp" size={20} label="" className="rounded-[5px]" />
                   </a>
                 )}
                 <button onClick={() => toggle(c.key)} aria-label="Show orders" className="rounded-lg p-2 text-surface-400 hover:text-surface-900 dark:hover:text-white">

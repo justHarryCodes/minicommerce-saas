@@ -7,19 +7,20 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
-  BarChart3, Rocket, CalendarDays, ChevronRight, Landmark, Lock, Package, PackagePlus, PackageX, Palette, ScanBarcode, ShoppingBag, ShoppingCart, TicketPercent, TrendingDown, Users, Wallet, type LucideIcon,
+  BarChart3, Film, LayoutTemplate, Rocket, Settings, CalendarDays, ChevronRight, Landmark, Lock, Package, PackagePlus, PackageX, Palette, ScanBarcode, ShoppingBag, ShoppingCart, TicketPercent, TrendingDown, Users, Wallet, type LucideIcon,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { clCard } from "@/lib/cloudinary";
 import { allowedPath, type Role } from "@/lib/access-shared";
 import { timeAgo } from "@/components/dashboard/ui";
 import { Avatar, ORDER_WORDS, SectionTitle, StoryBubble, needsAction } from "@/components/dashboard/mobile/parts";
+import ShareBubble from "@/components/dashboard/mobile/ShareBubble";
 
 export interface MobileHomeData {
   pro: boolean;
   role: Role;
   firstName?: string;
-  store: { name: string; url: string; logo: string | null };
+  store: { name: string; slug: string; url: string; logo: string | null };
   k: { revToday: number; ordersToday: number; rev7: number; revPrev7: number; orders7: number; products: number };
   visitors7: number;
   series: { date: string; value: number }[];
@@ -53,13 +54,21 @@ export function MobileHomeTop({ d }: { d: MobileHomeData }) {
     { n: a.abandoned, label: "Didn't pay", href: "/dashboard/abandoned", icon: ShoppingCart },
   ].filter((t) => t.n > 0 && allowedPath(d.role, t.href));
   const setup = d.checklist.filter((c) => !c.done && SETUP_ICON[c.id] && allowedPath(d.role, c.href));
-  const shortcuts = [
-    { href: "/dashboard/growth", label: "Grow", icon: Rocket },
-    { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
-    { href: "/dashboard/pos", label: "Shop sale", icon: ScanBarcode },
-    { href: "/dashboard/customers", label: "Customers", icon: Users },
-    { href: "/dashboard/coupons", label: "Discounts", icon: TicketPercent },
+  // Quick actions: the things vendors do most, one tap away (owner/manager see what their role allows)
+  const shortcuts: { href: string; label: string; icon?: LucideIcon; src?: string; tone: string }[] = [
+    { href: "/dashboard/themes", label: "Customize", icon: Palette, tone: "bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white" },
+    { href: "/dashboard/products/new", label: "Add product", icon: PackagePlus, tone: "bg-amber-400 text-black" },
+    { href: "/dashboard/storefront", label: "Banners", icon: LayoutTemplate, tone: "bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-300" },
+    { href: "/dashboard/coupons", label: "Discounts", icon: TicketPercent, tone: "bg-pink-100 text-pink-700 dark:bg-pink-500/20 dark:text-pink-300" },
+    { href: "/dashboard/growth", label: "Grow", icon: Rocket, tone: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300" },
+    { href: "/dashboard/whatsapp", label: "WhatsApp", src: "/social/whatsapp.png", tone: "" },
+    { href: "/dashboard/reels", label: "Reels", icon: Film, tone: "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900" },
+    { href: "/dashboard/pos", label: "Shop sale", icon: ScanBarcode, tone: "bg-teal-100 text-teal-700 dark:bg-teal-500/20 dark:text-teal-300" },
+    { href: "/dashboard/customers", label: "Customers", icon: Users, tone: "bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300" },
+    { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3, tone: "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300" },
+    { href: "/dashboard/settings", label: "Settings", icon: Settings, tone: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200" },
   ].filter((s) => allowedPath(d.role, s.href));
+  const canShare = allowedPath(d.role, "/dashboard/settings");
 
   const doneCount = d.checklist.filter((c) => c.done).length;
   const nextStep = d.checklist.find((c) => !c.done && c.href);
@@ -83,8 +92,12 @@ export function MobileHomeTop({ d }: { d: MobileHomeData }) {
         {setup.map((c) => (
           <StoryBubble key={c.id} href={c.href} label={SETUP_ICON[c.id].label} icon={SETUP_ICON[c.id].icon} ring="todo" tone="bg-white text-amber-600 dark:bg-zinc-900 dark:text-amber-400" />
         ))}
-        {shortcuts.map((s) => (
-          <StoryBubble key={s.href} href={s.href} label={s.label} icon={s.icon} />
+        {shortcuts.slice(0, 2).map((s) => (
+          <StoryBubble key={s.href} href={s.href} label={s.label} icon={s.icon} src={s.src} tone={s.tone} />
+        ))}
+        {canShare && <ShareBubble store={d.store} />}
+        {shortcuts.slice(2).map((s) => (
+          <StoryBubble key={s.href} href={s.href} label={s.label} icon={s.icon} src={s.src} tone={s.tone} />
         ))}
       </div>
 

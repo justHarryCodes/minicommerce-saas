@@ -52,7 +52,17 @@ export async function GET(req: NextRequest) {
   const catId  = searchParams.get('categoryId')
   const offset = (page - 1) * limit
 
-  let sql = `SELECT p.*, c.name as category_name
+  // ?view=list: just what a product grid needs (the vendor app). Leaves out
+  // descriptions, details, size guides and variants, which can make the full
+  // rows many times bigger.
+  const lean = searchParams.get('view') === 'list'
+  const cols = lean
+    ? `p.id, p.name, p.slug, p.price, p.compare_price, p.stock_quantity,
+       COALESCE(NULLIF(p.image_url, ''), p.images[1]) AS image_url,
+       p.is_active, p.is_featured, p.is_bookable, p.category_id, p.subcategory_id, p.created_at`
+    : 'p.*'
+
+  let sql = `SELECT ${cols}, c.name as category_name
     FROM products p
     LEFT JOIN categories c ON c.id = p.category_id
     WHERE p.store_id = $1`
@@ -64,8 +74,11 @@ export async function GET(req: NextRequest) {
   sql += ` ORDER BY p.sort_order, p.created_at DESC LIMIT $${idx++} OFFSET $${idx++}`
   vals.push(limit, offset)
 
-  const products = await query(sql, vals)
-  const [{ count }] = await query('SELECT COUNT(*) FROM products WHERE store_id=$1', [store.id]) as { count: string }[]
+  const [products, countRows] = await Promise.all([
+    query(sql, vals),
+    query('SELECT COUNT(*) FROM products WHERE store_id=$1', [store.id]) as Promise<{ count: string }[]>,
+  ])
+  const [{ count }] = countRows
 
   return NextResponse.json({
     data: rowsToCamel(products as Record<string, unknown>[]),

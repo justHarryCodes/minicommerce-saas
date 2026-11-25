@@ -4,6 +4,7 @@ import {
   BarChart3, Boxes, Rocket, CalendarDays, CreditCard, FileText, Film, FolderTree, Gift, Layout, LayoutDashboard, Package, Palette,
   MessageCircle, ScanBarcode, Settings, Share2, ShoppingBag, ShoppingCart, Star, Tag, Ticket, UserCog, Users, Wallet, type LucideIcon,
 } from "lucide-react";
+import type { SocialName } from "@/components/SocialIcon";
 
 export interface NavItem {
   href: string;
@@ -19,6 +20,8 @@ export interface NavItem {
   color?: string;
   /** One plain-English line on what it's for (the mobile Store menu shows it) */
   hint?: string;
+  /** Show this brand's real logo instead of the icon (e.g. WhatsApp) */
+  social?: SocialName;
 }
 
 export interface NavGroup {
@@ -31,7 +34,7 @@ export const NAV_GROUPS: NavGroup[] = [
     // First thing in the sidebar: add-ons vendors switch on
     label: "Add-ons",
     items: [
-      { href: "/dashboard/whatsapp", label: "WhatsApp shop", icon: MessageCircle, hint: "Let customers shop inside WhatsApp", tag: "New", color: "#25D366", keywords: "whatsapp chat bot sell catalog messages wa" },
+      { href: "/dashboard/whatsapp", label: "WhatsApp shop", icon: MessageCircle, social: "whatsapp", hint: "Let customers shop inside WhatsApp", tag: "New", color: "#25D366", keywords: "whatsapp chat bot sell catalog messages wa" },
     ],
   },
   {

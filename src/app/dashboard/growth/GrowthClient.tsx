@@ -17,6 +17,7 @@ import type { AutomationResult } from "@/lib/growth-automations";
 import type { ReferralSettings, ReferralStats } from "@/lib/growth-referrals-shared";
 import BroadcastCard, { type BroadcastProps } from "./BroadcastCard";
 import ReferralCard from "./ReferralCard";
+import SocialIcon, { type SocialName } from "@/components/SocialIcon";
 
 interface Props {
   store: { name: string; slug: string; url: string };
@@ -252,9 +253,7 @@ function ShareCard({ store }: { store: Props["store"] }) {
           const link = trackedLink(store.url, c.source);
           return (
             <li key={c.source} className="flex items-center gap-3 rounded-xl border border-zinc-100 px-3 py-2 dark:border-zinc-800">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[13px] font-black text-white" style={{ background: c.color }}>
-                {c.label[0]}
-              </span>
+              <SocialIcon name={c.source === "twitter" ? "x" : (c.source as SocialName)} size={36} label="" className="rounded-[10px]" />
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-semibold text-zinc-900 dark:text-white">{c.label}</span>
                 <span className="block truncate text-xs text-zinc-500">{c.hint}</span>
@@ -419,7 +418,7 @@ function Audience({ store, contacts, total }: { store: Props["store"]; contacts:
                 </span>
                 {wa && (
                   <a href={wa} target="_blank" rel="noopener noreferrer" aria-label={`Message ${c.name ?? c.phone} on WhatsApp`} className="flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-[#25D366] px-3 text-xs font-bold text-white">
-                    <MessageCircle className="h-3.5 w-3.5" /> <span className="hidden sm:inline">WhatsApp</span>
+                    <SocialIcon name="whatsapp" size={16} label="" className="rounded-[4px] ring-1 ring-white/50" /> <span className="hidden sm:inline">WhatsApp</span>
                   </a>
                 )}
               </li>

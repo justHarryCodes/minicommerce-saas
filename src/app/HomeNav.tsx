@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import Icon3D, { type Tone } from "./landing/Icon3D";
+import SocialIcon, { type SocialName } from "@/components/SocialIcon";
 
 // Duka's public header. On the home page it floats over the video,
 // transparent with white text, and turns to frosted glass once you scroll.
@@ -44,7 +45,7 @@ const wordmarkFont = localFont({
 
 /* ─────────────────────────────── Menu config ─────────────────────────────── */
 
-type Item = { href: string; title: string; desc: string; icon: LucideIcon; tone: Tone };
+type Item = { href: string; title: string; desc: string; icon: LucideIcon; tone: Tone; social?: SocialName };
 type Group = {
   id: string;
   label: string;
@@ -73,7 +74,7 @@ const GROUPS: Group[] = [
     items: [
       { href: "/#tool-store", title: "Online store", desc: "Your brand, live in minutes", icon: Store, tone: "pink" },
       { href: "/#tool-pay", title: "Payments", desc: "Card, transfer, USSD, on delivery", icon: Wallet, tone: "green" },
-      { href: "/#how-duka-works", title: "WhatsApp shop", desc: "Customers buy inside the chat", icon: MessageCircle, tone: "teal" },
+      { href: "/#how-duka-works", title: "WhatsApp shop", desc: "Customers buy inside the chat", icon: MessageCircle, tone: "teal", social: "whatsapp" },
       { href: "/#automation", title: "Sales automation", desc: "Reminders, receipts, updates", icon: Bot, tone: "amber" },
       { href: "/#tool-run", title: "Dashboard", desc: "Orders, money and stock", icon: LayoutDashboard, tone: "violet" },
       { href: "/#tool-found", title: "Get found", desc: "On Google and Duka Discover", icon: Search, tone: "blue" },
@@ -387,7 +388,7 @@ export default function HomeNav({ overlay = false }: { overlay?: boolean }) {
                     <div className="grid grid-cols-1 gap-1 pb-4 min-[480px]:grid-cols-2">
                       {g.items.map((it) => (
                         <Link key={it.href + it.title} href={it.href} onClick={() => setMobileOpen(false)} className="flex items-center gap-3 rounded-2xl p-2 active:bg-black/5 dark:active:bg-white/5">
-                          <Icon3D icon={it.icon} tone={it.tone} size={38} />
+                          {it.social ? <SocialIcon name={it.social} size={38} label="" className="rounded-[11px]" /> : <Icon3D icon={it.icon} tone={it.tone} size={38} />}
                           <span className="min-w-0">
                             <span className="block text-[15px] font-semibold" style={{ color: "var(--text-primary)" }}>{it.title}</span>
                             <span className="block truncate text-xs" style={{ color: "var(--text-muted)" }}>{it.desc}</span>
@@ -499,7 +500,7 @@ function Panel({ group, onPick }: { group: Group; onPick: () => void }) {
             <li key={it.href + it.title} className="nav-pop" style={{ animationDelay: `${i * 35}ms` }}>
               <Link href={it.href} onClick={onPick} className="group flex items-center gap-4 rounded-2xl p-3 transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.06]">
                 <span className="transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-[-4deg]">
-                  <Icon3D icon={it.icon} tone={it.tone} size={44} />
+                  {it.social ? <SocialIcon name={it.social} size={44} label="" className="rounded-xl" /> : <Icon3D icon={it.icon} tone={it.tone} size={44} />}
                 </span>
                 <span className="min-w-0">
                   <span className="flex items-center gap-1 text-[15px] font-semibold" style={{ color: "var(--text-primary)" }}>

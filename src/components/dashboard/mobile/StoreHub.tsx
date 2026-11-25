@@ -18,6 +18,7 @@ import { clLogo } from "@/lib/cloudinary";
 import ShareButton from "@/components/dashboard/ShareButton";
 import { NAV_GROUPS } from "@/components/dashboard/nav-config";
 import { Avatar, StoryBubble } from "./parts";
+import SocialIcon from "@/components/SocialIcon";
 
 /** Items already on the tab bar aren't repeated in the list. */
 const ON_TAB_BAR = new Set(["/dashboard", "/dashboard/orders", "/dashboard/products"]);
@@ -150,9 +151,13 @@ export default function StoreHub({ store, plan, stats, role, features, badges = 
                   return (
                     <li key={item.href} className={cn(i > 0 && "border-t border-zinc-100 dark:border-zinc-800")}>
                       <Link href={item.href} className="flex items-center gap-3 px-3 py-2.5 active:bg-zinc-50 dark:active:bg-zinc-800/60">
-                        <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px]", item.color ? "text-white" : GROUP_TONE[group.label])} style={item.color ? { background: item.color } : undefined}>
-                          <item.icon className="h-[18px] w-[18px]" strokeWidth={2.1} />
-                        </span>
+                        {item.social ? (
+                          <SocialIcon name={item.social} size={36} label="" className="rounded-[11px]" />
+                        ) : (
+                          <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px]", item.color ? "text-white" : GROUP_TONE[group.label])} style={item.color ? { background: item.color } : undefined}>
+                            <item.icon className="h-[18px] w-[18px]" strokeWidth={2.1} />
+                          </span>
+                        )}
                         <span className="min-w-0 flex-1">
                           <span className="block text-[15px] font-semibold leading-tight text-zinc-900 dark:text-white">{item.label}</span>
                           {item.hint && <span className="mt-0.5 block truncate text-[12.5px] leading-tight text-zinc-500">{item.hint}</span>}

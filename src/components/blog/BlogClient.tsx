@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Check, Link2, Share2 } from "lucide-react";
+import SocialIcon, { type SocialName } from "@/components/SocialIcon";
 
 /** Thin amber bar showing how far through the article the reader is. */
 export function ReadingProgress() {
@@ -83,7 +84,7 @@ export function ShareBar({ url, title, vertical = false }: { url: string; title:
     <div className={`flex gap-2 ${vertical ? "flex-col" : "flex-wrap"}`}>
       {links.map(([k, label, href]) => (
         <a key={k} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} title={label} className={btn} style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}>
-          <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden>{ICONS[k]}</svg>
+          {k === "linkedin" ? <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden>{ICONS[k]}</svg> : <SocialIcon name={k} size={20} label="" className="rounded-[5px]" />}
         </a>
       ))}
       <button

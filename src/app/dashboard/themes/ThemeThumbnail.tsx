@@ -1,13 +1,27 @@
-// A miniature, CSS-only mock of a storefront in a given theme — used on the
+// A real screenshot of the theme (public/theme-previews), or, for a theme
+// without one yet, a miniature CSS-only mock of a storefront — used on the
 // gallery cards so merchants can compare layouts without loading 18 iframes.
 
 import { FONT_STACKS } from "@/lib/theme-presets";
 import { readableOn } from "@/lib/themes/resolve";
 import type { ResolvedTheme } from "@/lib/themes/types";
+import Image from "next/image";
+import { themePreviewSrc } from "@/lib/themes/previews";
 
 const RADIUS_PX = { none: 0, sm: 3, md: 5, lg: 7, xl: 10 } as const;
 
 export default function ThemeThumbnail({ theme }: { theme: ResolvedTheme }) {
+  // A real screenshot of the theme's demo store, when we have one
+  const shot = themePreviewSrc(theme.id);
+  if (shot) {
+    return (
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+        <Image src={shot} alt={`${theme.name} theme`} fill sizes="(min-width: 1024px) 360px, (min-width: 640px) 50vw, 100vw" className="object-cover object-top" />
+        {/* The store's own colour, so a customised accent still shows */}
+        <span className="absolute bottom-2 right-2 h-4 w-4 rounded-full ring-2 ring-white shadow" style={{ background: theme.tokens.accent }} aria-hidden />
+      </div>
+    );
+  }
   const { tokens, layout } = theme;
   const dark = tokens.mode === "dark";
   const bg = dark ? tokens.backgroundDark : tokens.background;

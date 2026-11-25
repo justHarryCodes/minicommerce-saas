@@ -7,6 +7,7 @@ import { getStoreUrl } from "@/lib/utils";
 import ChannelsClient from "./ChannelsClient";
 import Link from "next/link";
 import { ArrowRight, MessageCircle } from "lucide-react";
+import SocialIcon from "@/components/SocialIcon";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +51,7 @@ export default async function ChannelsPage() {
         </p>
       </div>
       <Link href="/dashboard/whatsapp" className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-[#075e54] to-[#25D366] p-4 text-white">
-        <MessageCircle className="h-6 w-6 shrink-0" />
+        <SocialIcon name="whatsapp" size={36} label="" className="rounded-[10px] ring-2 ring-white/40" />
         <span className="min-w-0 flex-1"><strong>WhatsApp shop</strong><span className="block text-sm text-white/85">Sell inside WhatsApp: catalog, cart and checkout in the chat.</span></span>
         <ArrowRight className="h-5 w-5 shrink-0" />
       </Link>

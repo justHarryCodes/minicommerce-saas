@@ -5,6 +5,7 @@ import Link from "next/link";
 import toast from "react-hot-toast";
 import { ArrowUpRight, Mail, Megaphone, MessageCircle, Search, StickyNote } from "lucide-react";
 import type { LeadStatus, UnfinishedLead, UpgradeLead } from "@/lib/admin/leads";
+import SocialIcon from "@/components/SocialIcon";
 
 // Admin -> Leads: unfinished sign-ups to activate, and Free stores that are
 // already selling to upgrade. Pick leads and turn them into a campaign.
@@ -224,7 +225,7 @@ export default function LeadsClient({ initialTab, unfinished, upgrade }: { initi
                     <td className="px-3 py-2.5"><StatusPicker value={l.status} onChange={(s) => update(l.key, { status: s })} /></td>
                     <td className="px-3 py-2.5">
                       <div className="flex justify-end gap-0.5">
-                        {wa && <a href={wa} target="_blank" rel="noopener noreferrer" title="WhatsApp" className="rounded p-1.5 text-[#25D366] hover:bg-zinc-100 dark:hover:bg-zinc-800"><MessageCircle className="h-4 w-4" /></a>}
+                        {wa && <a href={wa} target="_blank" rel="noopener noreferrer" title="WhatsApp" className="rounded p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800"><SocialIcon name="whatsapp" size={18} label="" className="rounded-[4px]" /></a>}
                         {l.email && <a href={`mailto:${l.email}`} title="Email" className="rounded p-1.5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"><Mail className="h-4 w-4" /></a>}
                         <button type="button" onClick={() => note(l.key, l.note)} title="Add a note" className="rounded p-1.5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"><StickyNote className="h-4 w-4" /></button>
                       </div>

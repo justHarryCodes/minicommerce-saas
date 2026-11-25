@@ -8,6 +8,7 @@ import { CalendarDays, Check, ChevronLeft, ChevronRight, Clock, Loader2, Message
 import { addDays, lagosParts, weekdayOf, WEEKDAYS } from "@/lib/hours";
 import { whatsappLink } from "@/lib/phone";
 import { formatAppointment } from "@/lib/booking";
+import SocialIcon from "@/components/SocialIcon";
 
 interface Booking {
   id: string;
@@ -214,8 +215,8 @@ export default function BookingsClient({
                     <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS[b.status].tone}`}>{STATUS[b.status].label}</span>
                     <div className="flex items-center gap-1">
                       {wa && (
-                        <a href={wa} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp customer" className="rounded-lg p-1.5 text-[#128C7E] hover:bg-[#25D366]/10 dark:text-[#25D366]">
-                          <MessageCircle className="h-4 w-4" />
+                        <a href={wa} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp customer" className="rounded-lg p-1.5 hover:bg-[#25D366]/10">
+                          <SocialIcon name="whatsapp" size={20} label="" className="rounded-[5px]" />
                         </a>
                       )}
                       {b.status === "confirmed" && (

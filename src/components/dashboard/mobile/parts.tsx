@@ -72,6 +72,8 @@ export function needsAction(o: { order_status?: string | null; payment_status?: 
   return o.order_status === "pending" || o.payment_status === "pending_confirmation";
 }
 
+export const BUBBLE_CLASS = "flex shrink-0 flex-col items-center active:scale-95 transition-transform";
+
 /** One circle in a stories-style row: icon or picture, a ring, a label, an optional count. */
 export function StoryBubble({
   href,
@@ -99,7 +101,36 @@ export function StoryBubble({
       : ring === "todo"
         ? "border-2 border-dashed border-amber-400 p-[2px]"
         : "border border-zinc-200 p-[2px] dark:border-zinc-700";
-  const inner = (
+  const face = <BubbleFace label={label} icon={Icon} src={src} ringCls={ringCls} count={count} tone={tone} />;
+  const cls = BUBBLE_CLASS;
+  return external ? (
+    <a href={href} target="_blank" rel="noopener noreferrer" className={cls}>{face}</a>
+  ) : (
+    <Link href={href} className={cls}>{face}</Link>
+  );
+}
+
+/** A section heading inside a phone screen ("Recent orders · See all"). */
+export function SectionTitle({ title, href, cta = "See all" }: { title: string; href?: string; cta?: string }) {
+  return (
+    <div className="flex items-baseline justify-between px-4 pb-2 pt-5">
+      <h2 className="text-[17px] font-bold tracking-tight text-zinc-900 dark:text-white">{title}</h2>
+      {href && (
+        <Link href={href} className="text-[13px] font-semibold text-amber-600 dark:text-amber-400">
+          {cta}
+        </Link>
+      )}
+    </div>
+  );
+}
+
+export const RING_MUTED = "border border-zinc-200 p-[2px] dark:border-zinc-700";
+
+/** The look of a bubble without the link (for buttons, e.g. "Share store"). */
+export function BubbleFace({ label, icon: Icon, src, ringCls = RING_MUTED, count, tone = "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200" }: {
+  label: string; icon?: LucideIcon; src?: string | null; ringCls?: string; count?: number; tone?: string;
+}) {
+  return (
     <>
       <span className={cn("relative block rounded-full", ringCls)}>
         <span className="block rounded-full bg-white p-[2px] dark:bg-zinc-950">
@@ -119,25 +150,5 @@ export function StoryBubble({
       </span>
       <span className="mt-1.5 block w-[72px] truncate text-center text-[11.5px] font-medium leading-tight text-zinc-700 dark:text-zinc-300">{label}</span>
     </>
-  );
-  const cls = "flex shrink-0 flex-col items-center active:scale-95 transition-transform";
-  return external ? (
-    <a href={href} target="_blank" rel="noopener noreferrer" className={cls}>{inner}</a>
-  ) : (
-    <Link href={href} className={cls}>{inner}</Link>
-  );
-}
-
-/** A section heading inside a phone screen ("Recent orders · See all"). */
-export function SectionTitle({ title, href, cta = "See all" }: { title: string; href?: string; cta?: string }) {
-  return (
-    <div className="flex items-baseline justify-between px-4 pb-2 pt-5">
-      <h2 className="text-[17px] font-bold tracking-tight text-zinc-900 dark:text-white">{title}</h2>
-      {href && (
-        <Link href={href} className="text-[13px] font-semibold text-amber-600 dark:text-amber-400">
-          {cta}
-        </Link>
-      )}
-    </div>
   );
 }

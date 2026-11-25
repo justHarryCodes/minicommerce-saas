@@ -14,6 +14,7 @@ import { clThumb } from "@/lib/cloudinary";
 import { whatsappLink } from "@/lib/phone";
 import type { ContactRow } from "@/lib/growth-shared";
 import type { Audience, BroadcastRow } from "@/lib/growth-broadcasts";
+import SocialIcon from "@/components/SocialIcon";
 
 export interface BroadcastProps {
   allowed: boolean;
@@ -113,9 +114,9 @@ export default function BroadcastCard({ store, data, contacts }: { store: { name
         <div className="mt-4 space-y-4 rounded-2xl bg-zinc-50 p-4 dark:bg-zinc-800/40">
           {/* Mode */}
           <div className="flex w-fit rounded-xl bg-white p-1 ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-700">
-            {([["email", Mail, "Email"], ["whatsapp", MessageCircle, "WhatsApp"]] as const).map(([id, Icon, label]) => (
+            {([["email", "Email"], ["whatsapp", "WhatsApp"]] as const).map(([id, label]) => (
               <button key={id} type="button" onClick={() => setMode(id)} aria-pressed={mode === id} className={cn("flex h-8 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold", mode === id ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900" : "text-zinc-500")}>
-                <Icon className="h-4 w-4" /> {label}
+                {id === "whatsapp" ? <SocialIcon name="whatsapp" size={16} label="" className="rounded-[4px]" /> : <Mail className="h-4 w-4" />} {label}
               </button>
             ))}
           </div>
@@ -216,7 +217,7 @@ export default function BroadcastCard({ store, data, contacts }: { store: { name
                       <span className="min-w-0 flex-1 truncate text-sm text-zinc-800 dark:text-zinc-100">{c.name || c.phone}</span>
                       {href && (
                         <a href={href} target="_blank" rel="noopener noreferrer" onClick={() => setDone((s) => new Set(s).add(c.id))} className={cn("flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-bold", sent ? "bg-zinc-100 text-zinc-500 dark:bg-zinc-800" : "bg-[#25D366] text-white")}>
-                          {sent ? <Check className="h-3.5 w-3.5" /> : <MessageCircle className="h-3.5 w-3.5" />} {sent ? "Opened" : "Send"}
+                          {sent ? <Check className="h-3.5 w-3.5" /> : <SocialIcon name="whatsapp" size={14} label="" className="rounded-[3px] ring-1 ring-white/50" />} {sent ? "Opened" : "Send"}
                         </a>
                       )}
                     </li>

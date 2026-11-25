@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, MessageCircle } from "lucide-react";
 import { queryOne } from "@/lib/db";
 import { whatsappAvailable } from "@/lib/meta/config";
+import SocialIcon from "@/components/SocialIcon";
 
 // Dashboard home: the WhatsApp shop add-on, right under the setup checklist.
 // Not connected -> a big green invitation. Live -> a slim status strip.
@@ -20,9 +21,7 @@ export default async function WhatsAppHomeBanner({ storeId }: { storeId: string 
   if (conn) {
     return (
       <Link href="/dashboard/whatsapp" className="flex items-center gap-3 rounded-lg border border-[#25D366]/40 bg-[#25D366]/10 px-3 py-2.5 text-[13px] hover:bg-[#25D366]/15">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-white">
-          <MessageCircle className="h-4 w-4" />
-        </span>
+        <SocialIcon name="whatsapp" size={28} label="" className="rounded-lg" />
         <span className="min-w-0 flex-1 truncate text-zinc-800 dark:text-zinc-200">
           <strong>WhatsApp shop {conn.status === "paused" ? "is paused" : "is live"}</strong>
           {conn.display_phone ? ` on ${conn.display_phone}` : ""} · {conn.chats.toLocaleString()} chat{conn.chats === 1 ? "" : "s"}
@@ -37,9 +36,7 @@ export default async function WhatsAppHomeBanner({ storeId }: { storeId: string 
       href="/dashboard/whatsapp"
       className="group flex flex-col gap-3 overflow-hidden rounded-xl bg-gradient-to-r from-[#075e54] via-[#128c7e] to-[#25D366] p-4 text-white sm:flex-row sm:items-center sm:p-5"
     >
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/15">
-        <MessageCircle className="h-6 w-6" />
-      </span>
+      <SocialIcon name="whatsapp" size={44} label="" className="rounded-xl ring-2 ring-white/30" />
       <span className="min-w-0 flex-1">
         <span className="flex flex-wrap items-center gap-2">
           <strong className="text-base">Sell on WhatsApp</strong>

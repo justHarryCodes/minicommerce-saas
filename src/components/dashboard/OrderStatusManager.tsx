@@ -7,6 +7,7 @@ import { Loader2, CheckCircle2, XCircle, MessageCircle, Check } from "lucide-rea
 import { formatCurrency } from "@/lib/utils";
 import { whatsappLink } from "@/lib/phone";
 import type { Order, OrderStatus, PaymentStatus } from "@/types";
+import SocialIcon from "@/components/SocialIcon";
 
 interface Props {
   order: Order;
@@ -189,7 +190,7 @@ export default function OrderStatusManager({ order, storeWhatsapp, storeName = "
             rel="noopener noreferrer"
             className="ml-auto flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-[#25D366]/10 text-[#128C7E] dark:text-[#25D366] border border-[#25D366]/30 hover:bg-[#25D366]/20 font-semibold transition-all"
           >
-            <MessageCircle className="w-3 h-3" />
+            <SocialIcon name="whatsapp" size={14} label="" className="rounded-[3px]" />
             WhatsApp customer
           </a>
         )}
@@ -282,7 +283,7 @@ function PhoneActions({ order, loading, update, waLink, awaitingPayment, podBala
 
       {waLink && (
         <a href={waLink} target="_blank" rel="noopener noreferrer" className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] text-[15px] font-bold text-white">
-          <MessageCircle className="h-5 w-5" /> Message customer on WhatsApp
+          <SocialIcon name="whatsapp" size={22} label="" className="rounded-[6px] ring-1 ring-white/50" /> Message customer on WhatsApp
         </a>
       )}
 

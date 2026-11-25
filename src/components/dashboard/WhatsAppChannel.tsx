@@ -14,6 +14,7 @@ import {
   ShoppingBag,
   Unplug,
 } from "lucide-react";
+import SocialIcon from "@/components/SocialIcon";
 
 // Dashboard -> Channels -> WhatsApp shop. Shoppers browse, add to cart and
 // check out inside WhatsApp; the vendor connects their number with Meta's
@@ -279,9 +280,7 @@ export default function WhatsAppChannel() {
 
   const title = (
     <div className="flex items-center gap-3">
-      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#25D366] text-white">
-        <MessageCircle className="h-5 w-5" />
-      </span>
+      <SocialIcon name="whatsapp" size={40} label="" className="rounded-xl" />
       <div className="min-w-0">
         <p className="font-semibold text-surface-900 dark:text-white">
           WhatsApp shop
@@ -357,7 +356,7 @@ export default function WhatsAppChannel() {
               {busy === "connect" ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <MessageCircle className="h-4 w-4" />
+                <SocialIcon name="whatsapp" size={18} label="" className="rounded-[4px]" />
               )}{" "}
               Connect WhatsApp
             </button>
@@ -367,7 +366,7 @@ export default function WhatsAppChannel() {
               href={s.hostedSignup}
               className={`${btn} ${s.embeddedSignup ? "border border-surface-200 text-surface-700 dark:border-surface-700 dark:text-surface-200" : "bg-[#25D366] text-white hover:bg-[#1ebe5a]"}`}
             >
-              <MessageCircle className="h-4 w-4" />{" "}
+              <SocialIcon name="whatsapp" size={18} label="" className="rounded-[4px]" />{" "}
               {s.embeddedSignup ? "Use Meta's page instead" : "Connect WhatsApp"}
             </a>
           )}

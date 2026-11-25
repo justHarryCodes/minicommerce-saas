@@ -5,6 +5,7 @@ import { verifySession, getUserStore } from "@/lib/auth";
 import { whatsappAddonActive } from "@/lib/meta/addon";
 import WhatsAppChannel from "@/components/dashboard/WhatsAppChannel";
 import WhatsAppSimulator from "@/components/dashboard/WhatsAppSimulator";
+import SocialIcon from "@/components/SocialIcon";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "WhatsApp shop" };
@@ -89,7 +90,7 @@ export default async function WhatsAppPage() {
         <div className="grid items-center gap-8 p-6 sm:p-8 lg:grid-cols-[1fr_auto]">
           <div>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-[#25D366]/15 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-[#128c7e]">
-              <MessageCircle className="h-3.5 w-3.5" /> Try it yourself
+              <SocialIcon name="whatsapp" size={14} label="" className="rounded-[3px]" /> Try it yourself
             </span>
             <h2 className="mt-3 text-xl font-black text-surface-900 dark:text-white sm:text-2xl">Chat with your WhatsApp shop</h2>
             <p className="mt-2 max-w-md text-sm text-surface-500 dark:text-surface-400">

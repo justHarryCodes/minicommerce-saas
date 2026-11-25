@@ -7,6 +7,7 @@ import { formatDistanceToNow } from "date-fns";
 import { BellRing, Copy, MessageCircle, ShoppingCart, X } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { whatsappLink } from "@/lib/phone";
+import SocialIcon from "@/components/SocialIcon";
 
 export interface AbandonedCart {
   id: string;
@@ -114,7 +115,7 @@ export default function AbandonedClient({ carts, storeName, autoReminders, stats
                       rel="noopener noreferrer"
                       className="flex items-center gap-1.5 rounded-lg bg-[#25D366] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90"
                     >
-                      <MessageCircle className="h-3.5 w-3.5" /> Nudge on WhatsApp
+                      <SocialIcon name="whatsapp" size={16} label="" className="rounded-[4px]" /> Nudge on WhatsApp
                     </a>
                   )}
                   <button

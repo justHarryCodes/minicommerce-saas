@@ -20,6 +20,7 @@ import { getPlatformSettings } from "@/lib/admin-auth";
 import { yearlyPrice, yearlySavings } from "@/lib/plan-pricing";
 import HomeNav from "../HomeNav";
 import Footer from "@/components/Footer";
+import SocialIcon, { type SocialName } from "@/components/SocialIcon";
 
 export const metadata = {
   title: "Pricing",
@@ -68,6 +69,7 @@ const INCLUDED = [
   },
   {
     icon: MessageCircle,
+    social: "whatsapp" as const,
     title: "WhatsApp contact",
     text: "Shoppers can reach you directly with one tap.",
   },
@@ -550,7 +552,7 @@ export default async function PricingPage() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {INCLUDED.map(({ icon: Icon, title, text }) => (
+            {INCLUDED.map(({ icon: Icon, title, text, ...rest }) => (
               <div
                 key={title}
                 className="flex gap-4 rounded-2xl border p-5"
@@ -559,12 +561,16 @@ export default async function PricingPage() {
                   borderColor: "var(--border)",
                 }}
               >
-                <div
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
-                  style={{ background: "var(--accent)" }}
-                >
-                  <Icon className="h-5 w-5 text-black" />
-                </div>
+                {"social" in rest && rest.social ? (
+                  <SocialIcon name={rest.social} size={44} label="" className="rounded-xl" />
+                ) : (
+                  <div
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                    style={{ background: "var(--accent)" }}
+                  >
+                    <Icon className="h-5 w-5 text-black" />
+                  </div>
+                )}
                 <div>
                   <h3
                     className="mb-1 text-sm font-bold"
