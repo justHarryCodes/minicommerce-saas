@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { verifySession } from "@/lib/auth";
 import { verifyAdminSession } from "@/lib/admin-auth";
-import { query } from "@/lib/db";
+import { query, queryOne } from "@/lib/db";
 import { getOrSet } from "@/lib/redis";
 import { getStoreAccess } from "@/lib/access";
 import ProductSlider, { type ProductSlide } from "./ProductSlider";
@@ -126,7 +126,7 @@ export default async function HomePage() {
 
   // Platform-wide figures: the same for every visitor, so cached briefly
   // (the product query sorts the whole catalogue at random).
-  const [categoryStats, products, grantRound] = await Promise.all([
+  const [categoryStats, products, grantRound, registeredStores] = await Promise.all([
     getOrSet(
       "home:categoryStats",
       () =>
@@ -162,6 +162,15 @@ export default async function HomePage() {
     ).then((r) => r ?? []),
     // The Vendor Grant round (amount, open/closed, countdown); never blocks the page
     currentRound().catch(() => null),
+    // Every store registered on Duka (with or without products yet). Discover
+    // only lists stores that have products; this headline number counts them all.
+    getOrSet(
+      "home:registeredStores",
+      () => queryOne<{ count: string }>(`SELECT COUNT(*) AS count FROM stores WHERE deleted_at IS NULL`, []),
+      600,
+    )
+      .then((r) => Number(r?.count ?? 0))
+      .catch(() => 0),
   ]);
 
   // One chip per category even if stores typed it differently ("Other" / "other")
@@ -181,10 +190,13 @@ export default async function HomePage() {
     }, {}),
   ).sort((a, b) => b.count - a.count);
 
-  const totalStores = categoryStats.reduce(
+  // Stores listed on Discover (they have products), by category
+  const listedStores = categoryStats.reduce(
     (sum, c) => sum + parseInt(c.count),
     0,
   );
+  // The headline "stores powered by Duka": everyone registered
+  const totalStores = Math.max(registeredStores, listedStores);
 
   const faq = [
     {
