@@ -1,10 +1,10 @@
 // Share cards: the image WhatsApp, Facebook, X, Telegram, TikTok and
-// iMessage show when a product or store link is pasted (og:image).
+// iMessage show when a product, store or blog link is pasted (og:image).
 // 1200x630, drawn with next/og (Satori) and saved as JPEG: WhatsApp only
 // shows previews for small images, and PNG cards are often over its limit.
 //
-// Cards are always light and brand-neutral: they represent the vendor's
-// store, not Duka's dashboard theme.
+// Product and store cards are light and brand-neutral: they represent the
+// vendor's store, not Duka's dashboard theme. Blog cards are Duka's own.
 
 import { readFile } from "fs/promises";
 import { join } from "path";
@@ -293,6 +293,79 @@ export async function storeCard(d: StoreCardData): Promise<Buffer> {
             {d.productCount} product{d.productCount === 1 ? "" : "s"} · Shop now
           </div>
         )}
+      </div>
+    </div>,
+  );
+}
+
+/* ──────────────────────────────── Blog ───────────────────────────────── */
+// Duka's own card (not a vendor's), so it carries Duka's brand: a dark
+// editorial panel with the logo, category, headline and byline, and the
+// article's cover photo on the right.
+
+let markP: Promise<string | null> | null = null;
+function dukaMark(): Promise<string | null> {
+  markP ??= readFile(join(process.cwd(), "public", "logo-mark.png"))
+    .then((b) => `data:image/png;base64,${b.toString("base64")}`)
+    .catch(() => null);
+  return markP;
+}
+
+export interface BlogCardData {
+  title: string;
+  category: string;
+  cover: string | null;
+  author: string;
+  minutes: number;
+}
+
+export async function blogCard(d: BlogCardData): Promise<Buffer> {
+  const PHOTO_W = 520;
+  const [cover, mark] = await Promise.all([loadPhoto(d.cover, PHOTO_W, CARD.height), dukaMark()]);
+  const textW = cover ? CARD.width - PHOTO_W : CARD.width;
+  const title = clip(d.title, cover ? 92 : 120);
+  const size = title.length > 70 ? 50 : title.length > 46 ? 58 : 66;
+  return render(
+    <div style={{ width: "100%", height: "100%", display: "flex", position: "relative", background: "#0b0b0c", fontFamily: "Jakarta, Noto" }}>
+      {/* Warm glow behind the text */}
+      <div style={{ position: "absolute", top: 0, left: 0, width: CARD.width, height: CARD.height, display: "flex", background: "linear-gradient(135deg, rgba(245,158,11,0.30) 0%, rgba(245,158,11,0.08) 30%, rgba(11,11,12,0) 55%)" }} />
+
+      {cover && (
+        <div style={{ position: "absolute", top: 0, right: 0, width: PHOTO_W, height: CARD.height, display: "flex" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={cover} width={PHOTO_W} height={CARD.height} style={{ width: PHOTO_W, height: CARD.height, objectFit: "cover" }} alt="" />
+          {/* Fade the photo into the panel */}
+          <div style={{ position: "absolute", top: 0, left: 0, width: 160, height: CARD.height, display: "flex", background: "linear-gradient(to right, #0b0b0c, rgba(11,11,12,0))" }} />
+        </div>
+      )}
+
+      <div style={{ position: "relative", width: textW, height: CARD.height, display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "56px 56px 52px 64px" }}>
+        {/* Duka Blog */}
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          {mark && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={mark} width={30} height={47} style={{ width: 30, height: 47 }} alt="" />
+          )}
+          <div style={{ display: "flex", fontSize: 34, fontWeight: 800, color: "#ffffff", letterSpacing: 1 }}>DUKA</div>
+          <div style={{ display: "flex", fontSize: 30, fontWeight: 500, color: "rgba(255,255,255,0.55)" }}>Blog</div>
+          {!cover && <div style={{ display: "flex", marginLeft: "auto", fontSize: 24, fontWeight: 500, color: "#fbbf24" }}>dukanigeria.com/blog</div>}
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+          <div style={{ display: "flex" }}>
+            <div style={{ display: "flex", background: ACCENT, color: "#000000", fontSize: 22, fontWeight: 800, padding: "8px 18px", borderRadius: 999, textTransform: "uppercase", letterSpacing: 1 }}>{clip(d.category, 24)}</div>
+          </div>
+          <div style={{ display: "flex", fontSize: size, fontWeight: 800, lineHeight: 1.08, color: "#ffffff", letterSpacing: -1.5 }}>{title}</div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 24, fontWeight: 500, color: "rgba(255,255,255,0.7)", whiteSpace: "nowrap" }}>
+          <div style={{ display: "flex", width: 40, height: 40, borderRadius: 40, background: ACCENT, color: "#000", fontSize: 20, fontWeight: 800, alignItems: "center", justifyContent: "center" }}>
+            {(d.author.trim()[0] ?? "D").toUpperCase()}
+          </div>
+          <div style={{ display: "flex" }}>{clip(d.author, 28)}</div>
+          <div style={{ display: "flex", opacity: 0.5 }}>·</div>
+          <div style={{ display: "flex" }}>{Math.max(1, d.minutes)} min read</div>
+        </div>
       </div>
     </div>,
   );

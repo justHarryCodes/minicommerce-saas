@@ -14,6 +14,15 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const title = post.seo_title || post.title;
   const description = post.seo_description || blogExcerpt(post, 160);
   const url = `/blog/${post.slug}`;
+  // The branded share card (title, category, cover photo, Duka logo), 1200x630 JPEG.
+  // ?v changes when the post is edited, so apps fetch the new card instead of a cached one.
+  const card = {
+    url: `/api/og/blog/${post.slug}?v=${encodeURIComponent(new Date(post.updated_at).getTime().toString(36))}`,
+    width: 1200,
+    height: 630,
+    type: "image/jpeg",
+    alt: post.title,
+  };
   return {
     title: `${title} · Duka Blog`,
     description,
@@ -28,9 +37,11 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
       authors: [post.author_name],
       section: blogCategory(post.category).label,
       tags: post.tags,
-      ...(post.cover_url ? { images: [{ url: post.cover_url, width: 1200, height: 630, alt: post.title }] } : {}),
+      siteName: "Duka",
+      locale: "en_NG",
+      images: [card],
     },
-    twitter: { card: "summary_large_image", title, description, ...(post.cover_url ? { images: [post.cover_url] } : {}) },
+    twitter: { card: "summary_large_image", title, description, images: [{ url: card.url, alt: card.alt }] },
   };
 }
 
